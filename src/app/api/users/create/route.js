@@ -20,8 +20,11 @@ export async function POST(request) {
             );
         }
 
-        // Create the user
-        const result = await createUser(userData);
+        // Create the user with initial status
+        const result = await createUser({
+            ...userData,
+            status: userData.status || 'active' // Default to active if not specified
+        });
 
         return Response.json({
             success: true,

@@ -9,17 +9,20 @@ export async function GET() {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get all active users with their profiles
+        // Get all users with their profiles (including all statuses for admin)
         const users = await queryMany(`
             SELECT 
                 u.id,
                 u.email,
                 u.designation,
-                up.full_name
+                u.status,
+                u.created_at,
+                up.full_name,
+                up.phone_number,
+                up.gender
             FROM users u
-            JOIN user_profiles up ON u.id = up.user_id
-            WHERE u.status = 'active'
-            ORDER BY up.full_name ASC
+            LEFT JOIN user_profiles up ON u.id = up.user_id
+            ORDER BY u.created_at DESC
         `);
 
         return Response.json({
@@ -28,7 +31,7 @@ export async function GET() {
         });
 
     } catch (error) {
-        console.error('Fetch users error:', error);
+        console.error('Fetch all users error:', error);
         return Response.json(
             { error: 'Failed to fetch users' },
             { status: 500 }

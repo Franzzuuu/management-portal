@@ -66,9 +66,9 @@ export async function findUserById(id) {
     return await queryOne(query, [id]);
 }
 
-// Create new user
+// Enhanced createUser function with status support
 export async function createUser(userData) {
-    const { email, password, designation, fullName, phoneNumber, gender } = userData;
+    const { email, password, designation, fullName, phoneNumber, gender, status } = userData;
 
     // Validate password
     const passwordValidation = validatePassword(password);
@@ -86,11 +86,10 @@ export async function createUser(userData) {
     const hashedPassword = await hashPassword(password);
 
     try {
-        // Start transaction-like operation
-        // Insert user
+        // Insert user with specified status (default to 'active' if not provided)
         const userResult = await executeQuery(
             'INSERT INTO users (email, password_hash, designation, status) VALUES (?, ?, ?, ?)',
-            [email, hashedPassword, designation, 'active']
+            [email, hashedPassword, designation, status || 'active']
         );
 
         const userId = userResult.insertId;
@@ -136,10 +135,79 @@ export async function authenticateUser(email, password) {
     };
 }
 
-// Update user status
+// Get user by ID with profile
+export async function getUserWithProfile(userId) {
+    const query = `
+        SELECT 
+            u.*,
+            up.full_name,
+            up.phone_number,
+            up.gender
+        FROM users u
+        LEFT JOIN user_profiles up ON u.id = up.user_id 
+        WHERE u.id = ?
+    `;
+    return await queryOne(query, [userId]);
+}
+
+// Update user profile information
+export async function updateUserProfile(userId, profileData) {
+    const { fullName, phoneNumber, gender } = profileData;
+
+    try {
+        await executeQuery(
+            'UPDATE user_profiles SET full_name = ?, phone_number = ?, gender = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+            [fullName, phoneNumber || null, gender || null, userId]
+        );
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating user profile:', error);
+        throw new Error('Failed to update user profile');
+    }
+}
+
+// Get users count by status (for dashboard stats)
+export async function getUserStats() {
+    const query = `
+        SELECT 
+            status,
+            COUNT(*) as count
+        FROM users 
+        GROUP BY status
+    `;
+    const results = await executeQuery(query);
+
+    const stats = {
+        active: 0,
+        inactive: 0,
+        pending: 0,
+        total: 0
+    };
+
+    results.forEach(row => {
+        stats[row.status] = row.count;
+        stats.total += row.count;
+    });
+
+    return stats;
+}
+
+// Update user status function
 export async function updateUserStatus(userId, status) {
-    await executeQuery(
-        'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [status, userId]
-    );
+    const validStatuses = ['active', 'inactive', 'pending'];
+    if (!validStatuses.includes(status)) {
+        throw new Error('Invalid status');
+    }
+
+    try {
+        await executeQuery(
+            'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [status, userId]
+        );
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating user status:', error);
+        throw new Error('Failed to update user status');
+    }
 }
