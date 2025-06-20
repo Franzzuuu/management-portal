@@ -663,10 +663,10 @@ export default function ViolationsManagement() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {violation.image_path ? (
+                                                {violation.has_image ? (
                                                     <button
                                                         onClick={() => {
-                                                            setSelectedImage(violation.image_path);
+                                                            setSelectedImage(`/api/violations/image/${violation.id}`);
                                                             setShowImageModal(true);
                                                         }}
                                                         className="text-blue-600 hover:text-blue-900 font-medium"
