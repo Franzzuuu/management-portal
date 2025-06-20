@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalVehicles: 0,
+        pendingApprovals: 0,
+        activeViolations: 0,
+        todayLogs: 0
+    });
+    const [recentActivity, setRecentActivity] = useState([]);
+    const [latestRegistrations, setLatestRegistrations] = useState([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -23,6 +32,7 @@ export default function AdminDashboard() {
                     return;
                 }
                 setUser(data.user);
+                await fetchDashboardData();
             } else {
                 router.push('/login');
             }
@@ -30,6 +40,21 @@ export default function AdminDashboard() {
             router.push('/login');
         }
         setLoading(false);
+    };
+
+    const fetchDashboardData = async () => {
+        try {
+            const response = await fetch('/api/dashboard/stats');
+            const data = await response.json();
+
+            if (data.success) {
+                setStats(data.stats);
+                setRecentActivity(data.recentActivity);
+                setLatestRegistrations(data.latestRegistrations);
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error);
+        }
     };
 
     const handleLogout = async () => {
@@ -62,10 +87,8 @@ export default function AdminDashboard() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
                         <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
+                            <div>
+                                <img src="/images/usclogo.png" alt="Logo" className="mx-auto h-32 w-auto" />
                             </div>
                             <div className="ml-3">
                                 <h1 className="text-xl font-bold text-white">
@@ -135,7 +158,7 @@ export default function AdminDashboard() {
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Total Users</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>--</p>
+                                <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>{stats.totalUsers}</p>
                                 <p className="text-sm text-gray-500">Registered in system</p>
                             </div>
                         </div>
@@ -152,7 +175,7 @@ export default function AdminDashboard() {
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Registered Vehicles</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#FFD700' }}>--</p>
+                                <p className="text-3xl font-bold" style={{ color: '#FFD700' }}>{stats.totalVehicles}</p>
                                 <p className="text-sm text-gray-500">Active registrations</p>
                             </div>
                         </div>
@@ -169,7 +192,7 @@ export default function AdminDashboard() {
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Pending Approvals</h3>
-                                <p className="text-3xl font-bold text-orange-500">--</p>
+                                <p className="text-3xl font-bold text-orange-500">{stats.pendingApprovals}</p>
                                 <p className="text-sm text-gray-500">Awaiting review</p>
                             </div>
                         </div>
@@ -186,9 +209,79 @@ export default function AdminDashboard() {
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Active Violations</h3>
-                                <p className="text-3xl font-bold text-red-500">--</p>
+                                <p className="text-3xl font-bold text-red-500">{stats.activeViolations}</p>
                                 <p className="text-sm text-gray-500">Unresolved issues</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Recent Activity & Latest Registrations */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    {/* Recent Activity */}
+                    <div className="bg-white rounded-xl shadow-lg">
+                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                            <h3 className="text-lg font-semibold text-white">Recent Vehicle Activity</h3>
+                            <p className="text-sm" style={{ color: '#FFD700' }}>Todays access logs: {stats.todayLogs}</p>
+                        </div>
+                        <div className="p-6">
+                            {recentActivity.length > 0 ? (
+                                <div className="space-y-3">
+                                    {recentActivity.map((activity, index) => (
+                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center space-x-3">
+                                                <div className={`h-2 w-2 rounded-full ${activity.entry_type === 'entry' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">{activity.plate_number}</p>
+                                                    <p className="text-xs text-gray-500">{activity.user_name}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs font-medium" style={{ color: activity.entry_type === 'entry' ? '#355E3B' : '#dc2626' }}>
+                                                    {activity.entry_type.toUpperCase()}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {new Date(activity.timestamp).toLocaleTimeString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 text-center py-4">No recent activity</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Latest Registrations */}
+                    <div className="bg-white rounded-xl shadow-lg">
+                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #FFD700 0%, #e6c200 100%)' }}>
+                            <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>Latest Registrations</h3>
+                            <p className="text-sm" style={{ color: '#355E3B' }}>Pending vehicle approvals</p>
+                        </div>
+                        <div className="p-6">
+                            {latestRegistrations.length > 0 ? (
+                                <div className="space-y-3">
+                                    {latestRegistrations.map((registration, index) => (
+                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">{registration.full_name}</p>
+                                                <p className="text-xs text-gray-500">{registration.plate_number} • {registration.vehicle_type}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-md">
+                                                    Pending
+                                                </span>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {new Date(registration.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 text-center py-4">No pending registrations</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -201,7 +294,12 @@ export default function AdminDashboard() {
                     </div>
                     <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <button className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300">
+
+                            {/* Add New User */}
+                            <button
+                                onClick={() => router.push('/admin/users/new')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                            >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
                                         <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,7 +313,11 @@ export default function AdminDashboard() {
                                 </div>
                             </button>
 
-                            <button className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300">
+                            {/* Vehicle Management */}
+                            <button
+                                onClick={() => router.push('/admin/vehicles')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                            >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
                                         <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +331,11 @@ export default function AdminDashboard() {
                                 </div>
                             </button>
 
-                            <button className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300">
+                            {/* View Reports */}
+                            <button
+                                onClick={() => router.push('/admin/reports')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                            >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                                         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,6 +348,98 @@ export default function AdminDashboard() {
                                     <p className="text-sm text-gray-600">Access analytics and system reports</p>
                                 </div>
                             </button>
+
+                            {/* RFID Tag Management */}
+                            <button
+                                onClick={() => router.push('/admin/rfid-tags')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                            >
+                                <div className="flex-shrink-0">
+                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
+                                        <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="ml-4 text-left">
+                                    <p className="text-lg font-semibold text-gray-900">RFID Tag Management</p>
+                                    <p className="text-sm text-gray-600">Assign and manage RFID tags</p>
+                                </div>
+                            </button>
+
+                            {/* Access Logs */}
+                            <button
+                                onClick={() => router.push('/admin/access-logs')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                            >
+                                <div className="flex-shrink-0">
+                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
+                                        <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="ml-4 text-left">
+                                    <p className="text-lg font-semibold text-gray-900">Access Logs</p>
+                                    <p className="text-sm text-gray-600">Monitor vehicle entry and exit logs</p>
+                                </div>
+                            </button>
+
+                            {/* Violation Management */}
+                            <button
+                                onClick={() => router.push('/admin/violations')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                            >
+                                <div className="flex-shrink-0">
+                                    <div className="h-12 w-12 bg-red-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="ml-4 text-left">
+                                    <p className="text-lg font-semibold text-gray-900">Violation Management</p>
+                                    <p className="text-sm text-gray-600">Handle parking violations and penalties</p>
+                                </div>
+                            </button>
+
+                        </div>
+                    </div>
+                </div>
+
+                {/* System Status */}
+                <div className="mt-8 bg-white rounded-xl shadow-lg">
+                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                        <h2 className="text-xl font-semibold text-white">System Status</h2>
+                        <p className="text-sm" style={{ color: '#FFD700' }}>Current system health and performance</p>
+                    </div>
+                    <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+                                <div>
+                                    <p className="text-sm font-medium text-green-800">Database Connection</p>
+                                    <p className="text-xs text-green-600">Online</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+                                <div>
+                                    <p className="text-sm font-medium text-green-800">RFID Scanners</p>
+                                    <p className="text-xs text-green-600">Ready for Integration</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <div className="h-3 w-3 bg-blue-500 rounded-full animate-pulse"></div>
+                                <div>
+                                    <p className="text-sm font-medium text-blue-800">Management Portal</p>
+                                    <p className="text-xs text-blue-600">Active</p>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
