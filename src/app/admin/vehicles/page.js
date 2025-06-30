@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import PageHeader from '@/components/PageHeader';
 
 export default function VehicleManagement() {
     const [vehicles, setVehicles] = useState([]);
@@ -21,9 +20,6 @@ export default function VehicleManagement() {
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState('all');
     const router = useRouter();
 
     useEffect(() => {
@@ -148,23 +144,15 @@ export default function VehicleManagement() {
         }
     };
 
-    // Filter vehicles based on search and filters
-    const filteredVehicles = vehicles.filter(vehicle => {
-        const matchesSearch = vehicle.plate_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            vehicle.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            vehicle.owner_name?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = typeFilter === 'all' || vehicle.vehicle_type === typeFilter;
-        const matchesStatus = statusFilter === 'all' || vehicle.approval_status === statusFilter;
-        return matchesSearch && matchesType && matchesStatus;
-    });
-
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-800"></div>
-                    <span className="text-gray-600">Loading vehicles...</span>
+                    <svg className="animate-spin h-5 w-5" style={{ color: '#355E3B' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-gray-600">Loading...</span>
                 </div>
             </div>
         );
@@ -172,85 +160,75 @@ export default function VehicleManagement() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Clean PageHeader Component */}
-            <PageHeader
-                title="Vehicle Management"
-                user={user}
-                onLogout={handleLogout}
-            />
+            {/* Header */}
+            <header className="shadow-lg border-b-2" style={{ backgroundColor: '#355E3B', borderBottomColor: '#FFD700' }}>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center py-4">
+                        <div className="flex items-center">
+                            <div>
+                                <img src="/images/usclogo.png" alt="Logo" className="mx-auto h-32 w-auto" />
+                            </div>
+                            <div className="ml-3">
+                                <h1 className="text-xl font-bold text-white">
+                                    RFID Vehicle Management Portal
+                                </h1>
+                                <p className="text-sm" style={{ color: '#FFD700' }}>
+                                    University of San Carlos - Talamban Campus
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4">
+                            <button
+                                onClick={() => router.push('/admin')}
+                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                            >
+                                ← Back to Dashboard
+                            </button>
+                            <div className="text-sm text-right">
+                                <div className="text-white">
+                                    Welcome, <span className="font-semibold">{user?.fullName || user?.email}</span>
+                                </div>
+                                <div className="flex items-center justify-end mt-1">
+                                    <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
+                                        {user?.designation}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-green-800">
+                {/* Page Header */}
+                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-green-800 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />
-                                    </svg>
-                                </div>
+                            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
+                                <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />
+                                </svg>
                             </div>
                             <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Total Vehicles</h3>
-                                <p className="text-3xl font-bold text-green-800">{vehicles.length}</p>
+                                <h2 className="text-2xl font-bold text-white">Vehicle Management</h2>
+                                <p className="text-gray-200">Manage vehicle registrations and approvals</p>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-green-500">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Approved</h3>
-                                <p className="text-3xl font-bold text-green-500">
-                                    {vehicles.filter(v => v.approval_status === 'approved').length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-yellow-400">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-yellow-400 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Pending</h3>
-                                <p className="text-3xl font-bold text-yellow-600">
-                                    {vehicles.filter(v => v.approval_status === 'pending').length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-red-500">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-red-500 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Rejected</h3>
-                                <p className="text-3xl font-bold text-red-500">
-                                    {vehicles.filter(v => v.approval_status === 'rejected').length}
-                                </p>
-                            </div>
-                        </div>
+                        <button
+                            onClick={() => setShowAddForm(!showAddForm)}
+                            className="px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg"
+                            style={{ backgroundColor: '#FFD700', color: '#355E3B' }}
+                        >
+                            {showAddForm ? 'Cancel' : '+ Add Vehicle'}
+                        </button>
                     </div>
                 </div>
 
@@ -267,89 +245,12 @@ export default function VehicleManagement() {
                     </div>
                 )}
 
-                {/* Search and Filters */}
-                <div className="bg-white rounded-xl shadow-lg mb-8">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-green-800 rounded-t-xl">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-semibold text-white">Search & Filter</h2>
-                                <p className="text-sm text-yellow-400">Find and manage vehicle registrations</p>
-                            </div>
-                            <button
-                                onClick={() => setShowAddForm(!showAddForm)}
-                                className="px-4 py-2 bg-yellow-400 text-green-800 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200"
-                            >
-                                {showAddForm ? 'Cancel' : '+ Add Vehicle'}
-                            </button>
-                        </div>
-                    </div>
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Search Vehicles
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Search by plate, make, model, or owner"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Vehicle Type
-                                </label>
-                                <select
-                                    value={typeFilter}
-                                    onChange={(e) => setTypeFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
-                                >
-                                    <option value="all">All Types</option>
-                                    <option value="2-wheel">2-Wheel</option>
-                                    <option value="4-wheel">4-Wheel</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Status Filter
-                                </label>
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="approved">Approved</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="rejected">Rejected</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Actions
-                                </label>
-                                <button
-                                    onClick={fetchVehicles}
-                                    className="w-full px-4 py-2 bg-green-800 text-white rounded-lg hover:bg-green-900 transition-colors duration-200 flex items-center justify-center space-x-2"
-                                >
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    <span>Refresh</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Add Vehicle Form */}
                 {showAddForm && (
                     <div className="mb-8 bg-white rounded-xl shadow-lg">
-                        <div className="px-6 py-4 border-b border-gray-200 bg-green-800 rounded-t-xl">
+                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
                             <h3 className="text-lg font-semibold text-white">Register New Vehicle</h3>
-                            <p className="text-sm text-yellow-400">Fill in the vehicle details</p>
+                            <p className="text-sm" style={{ color: '#FFD700' }}>Fill in the vehicle details</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-6">
@@ -362,7 +263,8 @@ export default function VehicleManagement() {
                                         id="userId"
                                         name="userId"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.userId}
                                         onChange={handleInputChange}
                                     >
@@ -383,7 +285,8 @@ export default function VehicleManagement() {
                                         id="vehicleType"
                                         name="vehicleType"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.vehicleType}
                                         onChange={handleInputChange}
                                     >
@@ -401,7 +304,8 @@ export default function VehicleManagement() {
                                         id="make"
                                         name="make"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Toyota, Honda, Yamaha"
                                         value={formData.make}
                                         onChange={handleInputChange}
@@ -417,7 +321,8 @@ export default function VehicleManagement() {
                                         id="model"
                                         name="model"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Vios, Civic, Mio"
                                         value={formData.model}
                                         onChange={handleInputChange}
@@ -433,7 +338,8 @@ export default function VehicleManagement() {
                                         id="color"
                                         name="color"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Red, Blue, Black"
                                         value={formData.color}
                                         onChange={handleInputChange}
@@ -449,7 +355,8 @@ export default function VehicleManagement() {
                                         id="plateNumber"
                                         name="plateNumber"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., ABC-1234"
                                         value={formData.plateNumber}
                                         onChange={handleInputChange}
@@ -467,7 +374,8 @@ export default function VehicleManagement() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-green-800 text-white rounded-lg font-medium hover:bg-green-900 transition-colors duration-200"
+                                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg"
+                                    style={{ backgroundColor: '#355E3B' }}
                                 >
                                     Register Vehicle
                                 </button>
@@ -476,11 +384,11 @@ export default function VehicleManagement() {
                     </div>
                 )}
 
-                {/* Vehicles Table */}
+                {/* Vehicles List */}
                 <div className="bg-white rounded-xl shadow-lg">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-green-800 rounded-t-xl">
-                        <h3 className="text-lg font-semibold text-white">Vehicle Registrations</h3>
-                        <p className="text-sm text-yellow-400">Manage vehicle registrations and approvals</p>
+                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                        <h3 className="text-lg font-semibold text-white">Registered Vehicles</h3>
+                        <p className="text-sm" style={{ color: '#FFD700' }}>Manage vehicle registrations and approvals</p>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -490,15 +398,14 @@ export default function VehicleManagement() {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plate Number</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredVehicles.length > 0 ? (
-                                    filteredVehicles.map((vehicle) => (
-                                        <tr key={vehicle.id} className="hover:bg-gray-50">
+                                {vehicles.length > 0 ? (
+                                    vehicles.map((vehicle) => (
+                                        <tr key={vehicle.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div>
                                                     <div className="text-sm font-medium text-gray-900">{vehicle.owner_name}</div>
@@ -508,19 +415,11 @@ export default function VehicleManagement() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div>
                                                     <div className="text-sm font-medium text-gray-900">{vehicle.make} {vehicle.model}</div>
-                                                    <div className="text-sm text-gray-500">{vehicle.color}</div>
+                                                    <div className="text-sm text-gray-500">{vehicle.vehicle_type} • {vehicle.color}</div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                 {vehicle.plate_number}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${vehicle.vehicle_type === '2-wheel'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : 'bg-purple-100 text-purple-800'
-                                                    }`}>
-                                                    {vehicle.vehicle_type}
-                                                </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${vehicle.approval_status === 'approved'
@@ -532,9 +431,9 @@ export default function VehicleManagement() {
                                                     {vehicle.approval_status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                {vehicle.approval_status === 'pending' ? (
-                                                    <div className="space-x-2">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                {vehicle.approval_status === 'pending' && (
+                                                    <>
                                                         <button
                                                             onClick={() => handleApproval(vehicle.id, 'approved')}
                                                             className="text-green-600 hover:text-green-900"
@@ -547,30 +446,15 @@ export default function VehicleManagement() {
                                                         >
                                                             Reject
                                                         </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-x-2">
-                                                        <button className="text-blue-600 hover:text-blue-900">
-                                                            View
-                                                        </button>
-                                                        <button className="text-gray-600 hover:text-gray-900">
-                                                            Edit
-                                                        </button>
-                                                    </div>
+                                                    </>
                                                 )}
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                            <div className="flex flex-col items-center">
-                                                <svg className="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />
-                                                </svg>
-                                                <p className="text-lg font-medium">No vehicles found</p>
-                                                <p className="text-sm">Try adjusting your search criteria or add a new vehicle</p>
-                                            </div>
+                                        <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                                            No vehicles registered yet
                                         </td>
                                     </tr>
                                 )}
