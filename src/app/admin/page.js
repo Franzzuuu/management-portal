@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import ViolationHistoryWidget from '@/components/ViolationHistoryWidget';
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -217,8 +216,8 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* UPDATED: Recent Activity, Latest Registrations & Violation History Widget */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                {/* Recent Activity & Latest Registrations */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     {/* Recent Activity */}
                     <div className="bg-white rounded-xl shadow-lg">
                         <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
@@ -285,9 +284,6 @@ export default function AdminDashboard() {
                             )}
                         </div>
                     </div>
-
-                    {/* NEW: Violation History Widget */}
-                    <ViolationHistoryWidget />
                 </div>
 
                 {/* Quick Actions */}
