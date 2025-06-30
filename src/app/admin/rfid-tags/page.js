@@ -2,15 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import PageHeader from '@/components/PageHeader';
 
-export default function RfidTagsPage() {
+export default function RFIDTagManagement() {
     const [user, setUser] = useState(null);
+    const [rfidTags, setRfidTags] = useState([]);
+    const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [tags, setTags] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [showAddModal, setShowAddModal] = useState(false);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [showAssignForm, setShowAssignForm] = useState(false);
+    const [selectedTag, setSelectedTag] = useState(null);
+    const [formData, setFormData] = useState({
+        tagUid: '',
+        description: ''
+    });
+    const [assignData, setAssignData] = useState({
+        tagId: '',
+        vehicleId: ''
+    });
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const router = useRouter();
 
     useEffect(() => {
@@ -22,13 +32,10 @@ export default function RfidTagsPage() {
             const response = await fetch('/api/auth/me');
             const data = await response.json();
 
-            if (data.success) {
-                if (data.user.designation !== 'Admin') {
-                    router.push('/login');
-                    return;
-                }
+            if (data.success && data.user.designation === 'Admin') {
                 setUser(data.user);
-                await fetchTags();
+                await fetchRFIDTags();
+                await fetchVehicles();
             } else {
                 router.push('/login');
             }
@@ -38,16 +45,141 @@ export default function RfidTagsPage() {
         setLoading(false);
     };
 
-    const fetchTags = async () => {
+    const fetchRFIDTags = async () => {
         try {
             const response = await fetch('/api/rfid-tags');
             const data = await response.json();
             if (data.success) {
-                setTags(data.tags || []);
+                setRfidTags(data.tags);
             }
         } catch (error) {
             console.error('Failed to fetch RFID tags:', error);
         }
+    };
+
+    const fetchVehicles = async () => {
+        try {
+            const response = await fetch('/api/vehicles');
+            const data = await response.json();
+            if (data.success) {
+                // Only show approved vehicles without tags
+                const untaggedVehicles = data.vehicles.filter(v =>
+                    v.approval_status === 'approved' && !v.rfid_tag_id
+                );
+                setVehicles(untaggedVehicles);
+            }
+        } catch (error) {
+            console.error('Failed to fetch vehicles:', error);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        try {
+            const response = await fetch('/api/rfid-tags/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setSuccess('RFID tag created successfully!');
+                setFormData({ tagUid: '', description: '' });
+                setShowAddForm(false);
+                await fetchRFIDTags();
+            } else {
+                setError(data.error || 'Failed to create RFID tag');
+            }
+        } catch (error) {
+            setError('Network error. Please try again.');
+        }
+    };
+
+    const handleAssign = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        try {
+            const response = await fetch('/api/rfid-tags/assign', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(assignData),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setSuccess('RFID tag assigned successfully!');
+                setAssignData({ tagId: '', vehicleId: '' });
+                setShowAssignForm(false);
+                await fetchRFIDTags();
+                await fetchVehicles();
+            } else {
+                setError(data.error || 'Failed to assign RFID tag');
+            }
+        } catch (error) {
+            setError('Network error. Please try again.');
+        }
+    };
+
+    const handleUnassign = async (tagId) => {
+        if (!confirm('Are you sure you want to unassign this RFID tag?')) return;
+
+        try {
+            const response = await fetch('/api/rfid-tags/unassign', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ tagId }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setSuccess('RFID tag unassigned successfully!');
+                await fetchRFIDTags();
+                await fetchVehicles();
+            } else {
+                setError(data.error || 'Failed to unassign RFID tag');
+            }
+        } catch (error) {
+            setError('Network error. Please try again.');
+        }
+    };
+
+    const generateRandomUID = () => {
+        // Generate a random 12-character hexadecimal UID
+        const chars = '0123456789ABCDEF';
+        let uid = '';
+        for (let i = 0; i < 12; i++) {
+            uid += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setFormData({ ...formData, tagUid: uid });
+    };
+
+    const handleInputChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const handleAssignInputChange = (e) => {
+        setAssignData({
+            ...assignData,
+            [e.target.name]: e.target.value
+        });
     };
 
     const handleLogout = async () => {
@@ -59,19 +191,15 @@ export default function RfidTagsPage() {
         }
     };
 
-    const filteredTags = tags.filter(tag => {
-        const matchesSearch = tag.tag_uid?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            tag.plate_number?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || tag.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-800"></div>
-                    <span className="text-gray-600">Loading RFID tags...</span>
+                    <svg className="animate-spin h-5 w-5" style={{ color: '#355E3B' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-gray-600">Loading...</span>
                 </div>
             </div>
         );
@@ -79,234 +207,307 @@ export default function RfidTagsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <PageHeader
-                title="RFID Tags Management"
-                user={user}
-                onLogout={handleLogout}
-            />
+            {/* Header */}
+            <header className="shadow-lg border-b-2" style={{ backgroundColor: '#355E3B', borderBottomColor: '#FFD700' }}>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center py-4">
+                        <div className="flex items-center">
+                            <div>
+                                <img src="/images/usclogo.png" alt="Logo" className="mx-auto h-32 w-auto" />
+                            </div>
+                            <div className="ml-3">
+                                <h1 className="text-xl font-bold text-white">
+                                    RFID Vehicle Management Portal
+                                </h1>
+                                <p className="text-sm" style={{ color: '#FFD700' }}>
+                                    University of San Carlos - Talamban Campus
+                                </p>
+                            </div>
+                        </div>
 
+                        <div className="flex items-center space-x-4">
+                            <button
+                                onClick={() => router.push('/admin')}
+                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                            >
+                                ← Back to Dashboard
+                            </button>
+                            <div className="text-sm text-right">
+                                <div className="text-white">
+                                    Welcome, <span className="font-semibold">{user?.fullName || user?.email}</span>
+                                </div>
+                                <div className="flex items-center justify-end mt-1">
+                                    <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
+                                        {user?.designation}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-green-800">
+                {/* Page Header */}
+                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-green-800 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                    </svg>
-                                </div>
+                            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
+                                <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
                             </div>
                             <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Total Tags</h3>
-                                <p className="text-3xl font-bold text-green-800">{tags.length}</p>
+                                <h2 className="text-2xl font-bold text-white">RFID Sticker Management</h2>
+                                <p className="text-gray-200">Manage RFID stickers and vehicle assignments</p>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-green-500">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Active Tags</h3>
-                                <p className="text-3xl font-bold text-green-500">
-                                    {tags.filter(tag => tag.status === 'active').length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-yellow-400">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-yellow-400 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Unassigned</h3>
-                                <p className="text-3xl font-bold text-yellow-600">
-                                    {tags.filter(tag => tag.status === 'unassigned').length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-red-500">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-red-500 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Inactive</h3>
-                                <p className="text-3xl font-bold text-red-500">
-                                    {tags.filter(tag => tag.status === 'inactive').length}
-                                </p>
-                            </div>
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => setShowAddForm(!showAddForm)}
+                                className="px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg"
+                                style={{ backgroundColor: '#FFD700', color: '#355E3B' }}
+                            >
+                                {showAddForm ? 'Cancel' : '+ Register Sticker'}
+                            </button>
+                            <button
+                                onClick={() => setShowAssignForm(!showAssignForm)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:bg-blue-700"
+                            >
+                                {showAssignForm ? 'Cancel' : 'Assign Sticker'}
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Search and Filters */}
-                <div className="bg-white rounded-xl shadow-lg mb-8">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-green-800 rounded-t-xl">
-                        <h2 className="text-xl font-semibold text-white">Search & Filter</h2>
-                        <p className="text-sm text-yellow-400">Find and manage RFID tags</p>
+                {/* Success/Error Messages */}
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-600">{error}</p>
                     </div>
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Search Tags
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Search by Tag UID or Plate Number"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Status Filter
-                                </label>
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                    <option value="unassigned">Unassigned</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Actions
-                                </label>
-                                <button
-                                    onClick={() => setShowAddModal(true)}
-                                    className="w-full px-4 py-2 bg-green-800 text-white rounded-lg hover:bg-green-900 transition-colors duration-200 flex items-center justify-center space-x-2"
-                                >
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                    <span>Add New Tag</span>
-                                </button>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Bulk Actions
-                                </label>
-                                <button
-                                    onClick={fetchTags}
-                                    className="w-full px-4 py-2 bg-yellow-400 text-green-800 rounded-lg hover:bg-yellow-500 transition-colors duration-200 flex items-center justify-center space-x-2"
-                                >
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    <span>Refresh</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                )}
 
-                {/* RFID Tags Table */}
+                {success && (
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-600">{success}</p>
+                    </div>
+                )}
+
+                {/* Add RFID Tag Form */}
+                {showAddForm && (
+                    <div className="mb-8 bg-white rounded-xl shadow-lg">
+                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                            <h3 className="text-lg font-semibold text-white">Register RFID Sticker</h3>
+                            <p className="text-sm" style={{ color: '#FFD700' }}>Add a physical RFID sticker to the system inventory</p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label htmlFor="tagUid" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Tag UID *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="tagUid"
+                                        name="tagUid"
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        placeholder="Enter manufacturer UID (e.g., E200001C02701234)"
+                                        value={formData.tagUid}
+                                        onChange={handleInputChange}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Enter the unique ID printed on the RFID sticker
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Description/Notes
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="description"
+                                        name="description"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        placeholder="Optional notes (e.g., Batch #, Location found)"
+                                        value={formData.description}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddForm(false)}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg"
+                                    style={{ backgroundColor: '#355E3B' }}
+                                >
+                                    Register Sticker
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                {/* Assign Tag Form */}
+                {showAssignForm && (
+                    <div className="mb-8 bg-white rounded-xl shadow-lg">
+                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl bg-blue-600">
+                            <h3 className="text-lg font-semibold text-white">Assign RFID Sticker to Vehicle</h3>
+                            <p className="text-sm text-blue-100">Link an RFID sticker to an approved vehicle</p>
+                        </div>
+
+                        <form onSubmit={handleAssign} className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label htmlFor="tagId" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Available RFID Sticker *
+                                    </label>
+                                    <select
+                                        id="tagId"
+                                        name="tagId"
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        value={assignData.tagId}
+                                        onChange={handleAssignInputChange}
+                                    >
+                                        <option value="">Select RFID sticker</option>
+                                        {rfidTags.filter(tag => tag.status === 'unassigned').map((tag) => (
+                                            <option key={tag.id} value={tag.id}>
+                                                {tag.tag_uid} {tag.description && `- ${tag.description}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Vehicle *
+                                    </label>
+                                    <select
+                                        id="vehicleId"
+                                        name="vehicleId"
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        value={assignData.vehicleId}
+                                        onChange={handleAssignInputChange}
+                                    >
+                                        <option value="">Select vehicle</option>
+                                        {vehicles.map((vehicle) => (
+                                            <option key={vehicle.id} value={vehicle.id}>
+                                                {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.owner_name})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAssignForm(false)}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:bg-blue-700"
+                                >
+                                    Assign Sticker
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                {/* RFID Tags List */}
                 <div className="bg-white rounded-xl shadow-lg">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-green-800 rounded-t-xl">
-                        <h3 className="text-lg font-semibold text-white">RFID Tags</h3>
-                        <p className="text-sm text-yellow-400">Manage and assign RFID tags to vehicles</p>
+                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                        <h3 className="text-lg font-semibold text-white">RFID Stickers Inventory</h3>
+                        <p className="text-sm" style={{ color: '#FFD700' }}>Manage all RFID stickers and vehicle assignments</p>
                     </div>
+
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Tag UID
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Vehicle
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Owner
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Assigned Date
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sticker UID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Vehicle</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredTags.length > 0 ? (
-                                    filteredTags.map((tag) => (
-                                        <tr key={tag.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                                                {tag.tag_uid}
-                                            </td>
+                                {rfidTags.length > 0 ? (
+                                    rfidTags.map((tag) => (
+                                        <tr key={tag.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {tag.plate_number || 'Unassigned'}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {tag.vehicle_make} {tag.vehicle_model}
+                                                <div className="flex items-center">
+                                                    <div className="h-2 w-2 rounded-full mr-3" style={{ backgroundColor: tag.status === 'active' ? '#10B981' : tag.status === 'unassigned' ? '#F59E0B' : '#EF4444' }}></div>
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">{tag.tag_uid}</div>
+                                                        {tag.description && <div className="text-sm text-gray-500">{tag.description}</div>}
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {tag.owner_name || 'N/A'}
-                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${tag.status === 'active'
+                                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tag.status === 'active'
                                                     ? 'bg-green-100 text-green-800'
-                                                    : tag.status === 'inactive'
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : 'bg-yellow-100 text-yellow-800'
+                                                    : tag.status === 'unassigned'
+                                                        ? 'bg-yellow-100 text-yellow-800'
+                                                        : 'bg-red-100 text-red-800'
                                                     }`}>
-                                                    {tag.status?.charAt(0).toUpperCase() + tag.status?.slice(1)}
+                                                    {tag.status}
                                                 </span>
                                             </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {tag.vehicle_plate ? `${tag.vehicle_plate} (${tag.vehicle_make} ${tag.vehicle_model})` : '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {tag.owner_name || '-'}
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {tag.assigned_date ? new Date(tag.assigned_date).toLocaleDateString() : 'N/A'}
+                                                {new Date(tag.created_at).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <button className="text-green-600 hover:text-green-900 mr-3">
-                                                    Edit
-                                                </button>
-                                                <button className="text-red-600 hover:text-red-900">
-                                                    Deactivate
-                                                </button>
+                                                {tag.status === 'active' && (
+                                                    <button
+                                                        onClick={() => handleUnassign(tag.id)}
+                                                        className="text-red-600 hover:text-red-900"
+                                                    >
+                                                        Unassign
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                            <div className="flex flex-col items-center">
-                                                <svg className="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                                </svg>
-                                                <p className="text-lg font-medium">No RFID tags found</p>
-                                                <p className="text-sm">Try adjusting your search criteria</p>
-                                            </div>
+                                        <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                                            No RFID stickers registered yet
                                         </td>
                                     </tr>
                                 )}
