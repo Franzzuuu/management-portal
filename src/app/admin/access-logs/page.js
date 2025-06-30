@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import PageHeader from '@/components/PageHeader';
 
 export default function AccessLogsPage() {
     const [user, setUser] = useState(null);
@@ -130,7 +131,7 @@ export default function AccessLogsPage() {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#355E3B' }}></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-800"></div>
                     <span className="text-gray-600">Loading access logs...</span>
                 </div>
             </div>
@@ -139,77 +140,21 @@ export default function AccessLogsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="shadow-lg border-b-2" style={{ backgroundColor: '#355E3B', borderBottomColor: '#FFD700' }}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center">
-                            <div>
-                                <img src="/images/usclogo.png" alt="Logo" className="mx-auto h-32 w-auto" />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="text-xl font-bold text-white">
-                                    RFID Vehicle Management Portal
-                                </h1>
-                                <p className="text-sm" style={{ color: '#FFD700' }}>
-                                    University of San Carlos - Talamban Campus
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => router.push('/admin')}
-                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                            >
-                                ← Back to Dashboard
-                            </button>
-                            <div className="text-sm text-right">
-                                <div className="text-white">
-                                    Welcome, <span className="font-semibold">{user?.fullName || user?.email}</span>
-                                </div>
-                                <div className="flex items-center justify-end mt-1">
-                                    <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
-                                        {user?.designation}
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Clean Header Component */}
+            <PageHeader
+                title="Access Logs Management"
+                user={user}
+                onLogout={handleLogout}
+            />
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                {/* Page Header */}
-                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <h2 className="text-2xl font-bold text-white">Access Logs Management</h2>
-                                <p className="text-gray-200">Monitor and track vehicle entry and exit logs</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Quick Statistics */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderLeftColor: '#355E3B' }}>
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-green-800">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                <div className="h-12 w-12 bg-green-800 rounded-lg flex items-center justify-center">
                                     <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
@@ -217,7 +162,7 @@ export default function AccessLogsPage() {
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Total Logs</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>{filteredLogs.length}</p>
+                                <p className="text-3xl font-bold text-green-800">{filteredLogs.length}</p>
                             </div>
                         </div>
                     </div>
@@ -258,18 +203,18 @@ export default function AccessLogsPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderLeftColor: '#FFD700' }}>
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-yellow-400">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                    <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="h-12 w-12 bg-yellow-400 rounded-lg flex items-center justify-center">
+                                    <svg className="h-6 w-6 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                 </div>
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Unique Vehicles</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#FFD700' }}>
+                                <p className="text-3xl font-bold text-yellow-600">
                                     {new Set(filteredLogs.map(log => log.plate_number)).size}
                                 </p>
                             </div>
@@ -277,11 +222,11 @@ export default function AccessLogsPage() {
                     </div>
                 </div>
 
-                {/* Quick Actions - Filters */}
+                {/* Filters Section */}
                 <div className="bg-white rounded-xl shadow-lg mb-8">
-                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h2 className="text-xl font-semibold text-white">Quick Filters</h2>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>Search and filter vehicle access records</p>
+                    <div className="px-6 py-4 border-b border-gray-200 bg-green-800 rounded-t-xl">
+                        <h2 className="text-xl font-semibold text-white">Search & Filter</h2>
+                        <p className="text-sm text-yellow-400">Find specific access records</p>
                     </div>
                     <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -295,8 +240,7 @@ export default function AccessLogsPage() {
                                     placeholder="Search by plate, name, or tag UID"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
                                 />
                             </div>
 
@@ -308,8 +252,7 @@ export default function AccessLogsPage() {
                                 <select
                                     value={selectedFilter}
                                     onChange={(e) => setSelectedFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
                                 >
                                     <option value="all">All Types</option>
                                     <option value="entry">Entry Only</option>
@@ -325,8 +268,7 @@ export default function AccessLogsPage() {
                                 <select
                                     value={dateFilter}
                                     onChange={(e) => setDateFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
                                 >
                                     <option value="all">All Time</option>
                                     <option value="today">Today</option>
@@ -342,8 +284,7 @@ export default function AccessLogsPage() {
                                 </label>
                                 <button
                                     onClick={fetchAccessLogs}
-                                    className="w-full px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:opacity-90"
-                                    style={{ backgroundColor: '#355E3B' }}
+                                    className="w-full px-4 py-2 bg-green-800 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:bg-green-900"
                                 >
                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -357,9 +298,9 @@ export default function AccessLogsPage() {
 
                 {/* Access Logs Table */}
                 <div className="bg-white rounded-xl shadow-lg">
-                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                    <div className="px-6 py-4 border-b border-gray-200 bg-green-800 rounded-t-xl">
                         <h3 className="text-lg font-semibold text-white">Vehicle Access Records</h3>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>Real-time entry and exit monitoring</p>
+                        <p className="text-sm text-yellow-400">Real-time entry and exit monitoring</p>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -462,10 +403,9 @@ export default function AccessLogsPage() {
                                             key={page}
                                             onClick={() => setCurrentPage(page)}
                                             className={`px-3 py-2 text-sm font-medium rounded-lg ${currentPage === page
-                                                ? 'text-white border-transparent'
+                                                ? 'bg-green-800 text-white border-transparent'
                                                 : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
                                                 }`}
-                                            style={currentPage === page ? { backgroundColor: '#355E3B' } : {}}
                                         >
                                             {page}
                                         </button>
