@@ -32,14 +32,15 @@ export default function LoginPage() {
             const data = await response.json();
 
             if (data.success) {
-                // Redirect based on user role
+                // ✅ FIXED: Redirect based on user role with correct routing
                 const role = data.user.designation;
                 if (role === 'Admin') {
                     router.push('/admin');
-                } else if (role === 'Staff') {
+                } else if (role === 'Security') {
                     router.push('/security');
                 } else {
-                    router.push('/student');
+                    // Students, Faculty, and other normal users
+                    router.push('/carolinian');
                 }
             } else {
                 setError(data.error || 'Login failed');
@@ -171,7 +172,9 @@ export default function LoginPage() {
                         <p className="text-sm text-white">
                             <span style={{ color: '#FFD700' }}>Test Credentials:</span><br />
                             <span className="font-mono">admin@test.com</span><br />
-                            <span className="font-mono">Admin123!</span>
+                            <span className="font-mono">Admin123!</span><br />
+                            <span className="font-mono">security@test.com</span><br />
+                            <span className="font-mono">Security123!</span>
                         </p>
                     </div>
                 </div>

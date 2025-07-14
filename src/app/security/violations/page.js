@@ -2,44 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-    ChevronDownIcon,
-    ChevronUpIcon,
-    MagnifyingGlassIcon,
-    FunnelIcon,
-    ExclamationTriangleIcon,
-    EyeIcon,
-    PencilIcon,
-    TrashIcon,
-    CheckCircleIcon,
-    XCircleIcon,
-    ClockIcon,
-    DocumentTextIcon,
-    ChartBarIcon,
-    UserGroupIcon,
-    TruckIcon,
-    CalendarIcon,
-    BellIcon,
-    CameraIcon,
-    PlusIcon
-} from '@heroicons/react/24/outline';
+import { Search, Filter, Calendar, AlertCircle, Plus, Eye, Edit, Trash2, FileText, TrendingUp, BarChart3, Users, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
-export default function SecurityViolationsPage() {
+const SecurityViolationsPage = () => {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('manage');
 
-    // State Management
+    // Data states
     const [violations, setViolations] = useState([]);
     const [filteredViolations, setFilteredViolations] = useState([]);
     const [vehicles, setVehicles] = useState([]);
     const [violationTypes, setViolationTypes] = useState([]);
     const [notifications, setNotifications] = useState([]);
 
-    // Active Tab State
-    const [activeTab, setActiveTab] = useState('manage');
-
-    // Filters and Search
+    // Filter states
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
@@ -47,27 +25,24 @@ export default function SecurityViolationsPage() {
     const [vehicleTypeFilter, setVehicleTypeFilter] = useState('all');
     const [dateFilter, setDateFilter] = useState('all');
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
-    const [sortBy, setSortBy] = useState('created_at');
-    const [sortOrder, setSortOrder] = useState('desc');
 
-    // Statistics State
-    const [statistics, setStatistics] = useState({});
-    const [statsDateRange, setStatsDateRange] = useState('last_30_days');
-
-    // Modal States
-    const [showFilters, setShowFilters] = useState(false);
-    const [selectedViolation, setSelectedViolation] = useState(null);
-    const [showViolationModal, setShowViolationModal] = useState(false);
-    const [showNewViolationModal, setShowNewViolationModal] = useState(false);
-
-    // Form States
-    const [newViolation, setNewViolation] = useState({
-        vehicle_id: '',
-        violation_type_id: '',
-        location: '',
-        description: '',
-        evidence_image: null
+    // Statistics states
+    const [statistics, setStatistics] = useState({
+        totalViolations: 0,
+        pendingViolations: 0,
+        resolvedViolations: 0,
+        contestedViolations: 0,
+        monthlyData: [],
+        typeDistribution: [],
+        designationBreakdown: []
     });
+    const [statsDateRange, setStatsDateRange] = useState('last30days');
+
+    // Modal states
+    const [showAddViolation, setShowAddViolation] = useState(false);
+    const [showViewViolation, setShowViewViolation] = useState(false);
+    const [showEditViolation, setShowEditViolation] = useState(false);
+    const [selectedViolation, setSelectedViolation] = useState(null);
 
     useEffect(() => {
         checkAuth();
@@ -91,7 +66,7 @@ export default function SecurityViolationsPage() {
             if (data.success && data.user.designation === 'Security') {
                 setUser(data.user);
                 await Promise.all([
-                    fetchSecurityViolations(),
+                    fetchViolations(),
                     fetchVehicles(),
                     fetchViolationTypes(),
                     fetchNotifications()
@@ -105,16 +80,16 @@ export default function SecurityViolationsPage() {
         setLoading(false);
     };
 
-    const fetchSecurityViolations = async () => {
+    const fetchViolations = async () => {
         try {
-            const response = await fetch('/api/violations?security=true');
+            const response = await fetch('/api/violations?securityFilter=true');
             const data = await response.json();
             if (data.success) {
                 setViolations(data.violations);
                 setFilteredViolations(data.violations);
             }
         } catch (error) {
-            console.error('Failed to fetch security violations:', error);
+            console.error('Failed to fetch violations:', error);
         }
     };
 
@@ -174,7 +149,7 @@ export default function SecurityViolationsPage() {
 
         // Type filter
         if (typeFilter !== 'all') {
-            filtered = filtered.filter(violation => violation.violation_type_id === parseInt(typeFilter));
+            filtered = filtered.filter(violation => violation.violation_type === typeFilter);
         }
 
         // Designation filter
@@ -190,210 +165,160 @@ export default function SecurityViolationsPage() {
         // Date filter
         if (dateFilter !== 'all') {
             const now = new Date();
-            let startDate;
+            const startDate = new Date();
 
             switch (dateFilter) {
                 case 'today':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    startDate.setHours(0, 0, 0, 0);
                     break;
                 case 'week':
-                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    startDate.setDate(now.getDate() - 7);
                     break;
                 case 'month':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    startDate.setMonth(now.getMonth() - 1);
+                    break;
+                case 'quarter':
+                    startDate.setMonth(now.getMonth() - 3);
                     break;
                 case 'custom':
                     if (customDateRange.start && customDateRange.end) {
-                        const start = new Date(customDateRange.start);
-                        const end = new Date(customDateRange.end);
-                        end.setHours(23, 59, 59, 999);
+                        const customStart = new Date(customDateRange.start);
+                        const customEnd = new Date(customDateRange.end);
                         filtered = filtered.filter(violation => {
                             const violationDate = new Date(violation.created_at);
-                            return violationDate >= start && violationDate <= end;
+                            return violationDate >= customStart && violationDate <= customEnd;
                         });
                     }
                     break;
-                default:
-                    break;
             }
 
-            if (dateFilter !== 'custom' && startDate) {
-                filtered = filtered.filter(violation => new Date(violation.created_at) >= startDate);
+            if (dateFilter !== 'custom') {
+                filtered = filtered.filter(violation => {
+                    const violationDate = new Date(violation.created_at);
+                    return violationDate >= startDate;
+                });
             }
         }
-
-        // Sort
-        filtered.sort((a, b) => {
-            let aVal = a[sortBy];
-            let bVal = b[sortBy];
-
-            if (sortBy === 'created_at') {
-                aVal = new Date(aVal);
-                bVal = new Date(bVal);
-            }
-
-            if (sortOrder === 'asc') {
-                return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-            } else {
-                return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-            }
-        });
 
         setFilteredViolations(filtered);
     };
 
     const generateStatistics = () => {
-        if (!violations.length) return;
-
         const now = new Date();
-        let dateRange;
+        let startDate = new Date();
 
         switch (statsDateRange) {
-            case 'last_7_days':
-                dateRange = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            case 'last7days':
+                startDate.setDate(now.getDate() - 7);
                 break;
-            case 'last_30_days':
-                dateRange = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            case 'last30days':
+                startDate.setDate(now.getDate() - 30);
                 break;
-            case 'last_3_months':
-                dateRange = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+            case 'last90days':
+                startDate.setDate(now.getDate() - 90);
                 break;
-            case 'last_year':
-                dateRange = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+            case 'last6months':
+                startDate.setMonth(now.getMonth() - 6);
+                break;
+            case 'lastyear':
+                startDate.setFullYear(now.getFullYear() - 1);
                 break;
             default:
-                dateRange = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                startDate.setDate(now.getDate() - 30);
         }
 
-        const rangeViolations = violations.filter(v => new Date(v.created_at) >= dateRange);
-
-        // Basic stats
-        const totalViolations = rangeViolations.length;
-        const pendingViolations = rangeViolations.filter(v => v.status === 'pending').length;
-        const resolvedViolations = rangeViolations.filter(v => v.status === 'resolved').length;
-        const contestedViolations = rangeViolations.filter(v => v.status === 'contested').length;
-
-        // Violation types breakdown
-        const typeBreakdown = {};
-        rangeViolations.forEach(v => {
-            typeBreakdown[v.violation_type] = (typeBreakdown[v.violation_type] || 0) + 1;
+        const filteredData = violations.filter(violation => {
+            const violationDate = new Date(violation.created_at);
+            return violationDate >= startDate;
         });
 
-        // Monthly trend (last 6 months for the selected range)
-        const monthlyData = {};
-        for (let i = 5; i >= 0; i--) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthKey = date.toISOString().slice(0, 7);
-            monthlyData[monthKey] = 0;
+        // Calculate basic statistics
+        const totalViolations = filteredData.length;
+        const pendingViolations = filteredData.filter(v => v.status === 'pending').length;
+        const resolvedViolations = filteredData.filter(v => v.status === 'resolved').length;
+        const contestedViolations = filteredData.filter(v => v.status === 'contested').length;
+
+        // Monthly data for charts
+        const monthlyData = [];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        for (let i = 0; i < 12; i++) {
+            const month = new Date(now.getFullYear(), i, 1);
+            const monthName = months[i];
+            const monthViolations = filteredData.filter(violation => {
+                const violationDate = new Date(violation.created_at);
+                return violationDate.getMonth() === i && violationDate.getFullYear() === now.getFullYear();
+            });
+
+            monthlyData.push({
+                month: monthName,
+                violations: monthViolations.length,
+                pending: monthViolations.filter(v => v.status === 'pending').length,
+                resolved: monthViolations.filter(v => v.status === 'resolved').length,
+                contested: monthViolations.filter(v => v.status === 'contested').length
+            });
         }
 
-        rangeViolations.forEach(v => {
-            const monthKey = v.created_at.slice(0, 7);
-            if (monthlyData.hasOwnProperty(monthKey)) {
-                monthlyData[monthKey]++;
-            }
+        // Type distribution
+        const typeDistribution = {};
+        filteredData.forEach(violation => {
+            const type = violation.violation_type || 'Unknown';
+            typeDistribution[type] = (typeDistribution[type] || 0) + 1;
         });
 
-        // User designation breakdown
+        const typeDistributionArray = Object.entries(typeDistribution).map(([type, count]) => ({
+            type,
+            count,
+            percentage: ((count / totalViolations) * 100).toFixed(1)
+        }));
+
+        // Designation breakdown
         const designationBreakdown = {};
-        rangeViolations.forEach(v => {
-            designationBreakdown[v.owner_designation] = (designationBreakdown[v.owner_designation] || 0) + 1;
+        filteredData.forEach(violation => {
+            const designation = violation.owner_designation || 'Unknown';
+            designationBreakdown[designation] = (designationBreakdown[designation] || 0) + 1;
         });
+
+        const designationBreakdownArray = Object.entries(designationBreakdown).map(([designation, count]) => ({
+            designation,
+            count,
+            percentage: ((count / totalViolations) * 100).toFixed(1)
+        }));
 
         setStatistics({
-            total: totalViolations,
-            pending: pendingViolations,
-            resolved: resolvedViolations,
-            contested: contestedViolations,
-            typeBreakdown,
+            totalViolations,
+            pendingViolations,
+            resolvedViolations,
+            contestedViolations,
             monthlyData,
-            designationBreakdown
+            typeDistribution: typeDistributionArray,
+            designationBreakdown: designationBreakdownArray
         });
     };
 
-    const handleSort = (field) => {
-        if (sortBy === field) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortBy(field);
-            setSortOrder('desc');
-        }
-    };
-
-    const handleStatusUpdate = async (violationId, newStatus) => {
+    const handleUpdateStatus = async (violationId, newStatus) => {
         try {
-            const response = await fetch('/api/violations', {
+            const response = await fetch('/api/violations/update-status', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({
-                    action: 'update_status',
                     violationId,
                     status: newStatus
                 })
             });
 
-            const data = await response.json();
-            if (data.success) {
-                await fetchSecurityViolations();
-                await fetchNotifications();
+            if (response.ok) {
+                await fetchViolations();
+                alert('Violation status updated successfully');
+            } else {
+                alert('Failed to update violation status');
             }
         } catch (error) {
-            console.error('Failed to update violation status:', error);
+            console.error('Error updating status:', error);
+            alert('Error updating violation status');
         }
-    };
-
-    const handleNewViolation = async (e) => {
-        e.preventDefault();
-
-        try {
-            const formData = new FormData();
-            formData.append('vehicle_id', newViolation.vehicle_id);
-            formData.append('violation_type_id', newViolation.violation_type_id);
-            formData.append('location', newViolation.location);
-            formData.append('description', newViolation.description);
-
-            if (newViolation.evidence_image) {
-                formData.append('evidence_image', newViolation.evidence_image);
-            }
-
-            const response = await fetch('/api/violations/create', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                setShowNewViolationModal(false);
-                setNewViolation({
-                    vehicle_id: '',
-                    violation_type_id: '',
-                    location: '',
-                    description: '',
-                    evidence_image: null
-                });
-                await fetchSecurityViolations();
-            }
-        } catch (error) {
-            console.error('Failed to create violation:', error);
-        }
-    };
-
-    const getStatusBadge = (status) => {
-        const statusConfig = {
-            pending: { color: 'bg-yellow-100 text-yellow-800', icon: ClockIcon, text: 'Pending' },
-            resolved: { color: 'bg-green-100 text-green-800', icon: CheckCircleIcon, text: 'Resolved' },
-            contested: { color: 'bg-blue-100 text-blue-800', icon: ExclamationTriangleIcon, text: 'Contested' }
-        };
-
-        const config = statusConfig[status] || statusConfig.pending;
-        const Icon = config.icon;
-
-        return (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
-                <Icon className="w-3 h-3 mr-1" />
-                {config.text}
-            </span>
-        );
     };
 
     const handleLogout = async () => {
@@ -401,64 +326,85 @@ export default function SecurityViolationsPage() {
             await fetch('/api/auth/logout', { method: 'POST' });
             router.push('/login');
         } catch (error) {
-            console.error('Logout failed:', error);
+            console.error('Logout error:', error);
+        }
+    };
+
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-800';
+            case 'resolved': return 'bg-green-100 text-green-800';
+            case 'contested': return 'bg-red-100 text-red-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'pending': return <Clock className="w-4 h-4" />;
+            case 'resolved': return <CheckCircle className="w-4 h-4" />;
+            case 'contested': return <XCircle className="w-4 h-4" />;
+            default: return <AlertTriangle className="w-4 h-4" />;
         }
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f8f9fa' }}>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 mx-auto mb-4" style={{ borderColor: '#355E3B' }}></div>
-                    <h2 className="text-xl font-semibold" style={{ color: '#355E3B' }}>Loading Security Dashboard...</h2>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#355E3B' }}></div>
+                    <p className="text-gray-600">Loading security violations...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="shadow-lg border-b-4" style={{ backgroundColor: '#355E3B', borderColor: '#FFD700' }}>
+            <header className="bg-white shadow-sm border-b-2" style={{ borderColor: '#355E3B' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
+                    <div className="flex justify-between items-center py-6">
                         <div className="flex items-center">
-                            <h1 className="text-2xl font-bold text-white">Security Portal</h1>
-                            <span className="ml-4 px-3 py-1 text-sm font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
-                                Violations Management
-                            </span>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            {/* Notifications */}
-                            <div className="relative">
-                                <button className="p-2 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-colors duration-200">
-                                    <BellIcon className="w-6 h-6" />
-                                    {notifications.length > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                            {notifications.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* User Info */}
-                            <div className="flex items-center space-x-3">
-                                <div className="text-right">
-                                    <p className="text-white font-medium">{user?.fullName}</p>
-                                    <div className="flex items-center justify-end mt-1">
-                                        <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
-                                            {user?.designation}
-                                        </span>
-                                    </div>
+                            <div className="flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold" style={{ backgroundColor: '#355E3B' }}>
+                                    S
                                 </div>
-                                <button
-                                    onClick={handleLogout}
-                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
-                                >
-                                    Logout
-                                </button>
                             </div>
+                            <div className="ml-4">
+                                <h1 className="text-2xl font-bold" style={{ color: '#355E3B' }}>
+                                    Security Portal
+                                </h1>
+                                <p className="text-sm text-gray-600">RFID Vehicle Access Management</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                                <div className="text-sm font-medium text-gray-900">
+                                    {user?.first_name} {user?.last_name}
+                                </div>
+                                <div className="flex items-center justify-end mt-1">
+                                    <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
+                                        {user?.designation}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                            >
+                                Logout
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -470,8 +416,8 @@ export default function SecurityViolationsPage() {
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                         <div className="mb-4 lg:mb-0">
-                            <h2 className="text-3xl font-bold text-white mb-2">My Violations</h2>
-                            <p className="text-green-100">Manage violations you've issued and track their progress</p>
+                            <h2 className="text-3xl font-bold text-white mb-2">Security Violations</h2>
+                            <p className="text-green-100">Monitor and manage violations youve reported</p>
                         </div>
 
                         {/* Tab Navigation */}
@@ -510,159 +456,546 @@ export default function SecurityViolationsPage() {
                     </div>
                 </div>
 
+                {/* Quick Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderColor: '#355E3B' }}>
+                        <div className="flex items-center">
+                            <div className="p-3 rounded-full" style={{ backgroundColor: '#355E3B' }}>
+                                <FileText className="w-8 h-8 text-white" />
+                            </div>
+                            <div className="ml-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Total Violations</h3>
+                                <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>{violations.length}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
+                        <div className="flex items-center">
+                            <div className="p-3 rounded-full bg-yellow-500">
+                                <Clock className="w-8 h-8 text-white" />
+                            </div>
+                            <div className="ml-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Pending</h3>
+                                <p className="text-3xl font-bold text-yellow-600">
+                                    {violations.filter(v => v.status === 'pending').length}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+                        <div className="flex items-center">
+                            <div className="p-3 rounded-full bg-green-500">
+                                <CheckCircle className="w-8 h-8 text-white" />
+                            </div>
+                            <div className="ml-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Resolved</h3>
+                                <p className="text-3xl font-bold text-green-600">
+                                    {violations.filter(v => v.status === 'resolved').length}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+                        <div className="flex items-center">
+                            <div className="p-3 rounded-full bg-red-500">
+                                <AlertCircle className="w-8 h-8 text-white" />
+                            </div>
+                            <div className="ml-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Contested</h3>
+                                <p className="text-3xl font-bold text-red-600">
+                                    {violations.filter(v => v.status === 'contested').length}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Manage Tab */}
                 {activeTab === 'manage' && (
                     <div className="space-y-6">
-                        {/* Quick Actions and Filters */}
+                        {/* Filters and Search */}
                         <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                <div className="flex items-center space-x-4">
-                                    <button
-                                        onClick={() => setShowNewViolationModal(true)}
-                                        className="text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
-                                        style={{ backgroundColor: '#355E3B' }}
-                                    >
-                                        <PlusIcon className="w-5 h-5" />
-                                        <span>Issue New Violation</span>
-                                    </button>
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+                                <h3 className="text-lg font-semibold mb-4 lg:mb-0" style={{ color: '#355E3B' }}>
+                                    Filter and Search Violations
+                                </h3>
+                                <button
+                                    onClick={() => setShowAddViolation(true)}
+                                    className="inline-flex items-center px-4 py-2 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                                    style={{ backgroundColor: '#355E3B' }}
+                                >
+                                    <Plus className="w-5 h-5 mr-2" />
+                                    Report New Violation
+                                </button>
+                            </div>
 
-                                    <div className="flex items-center text-gray-600">
-                                        <span className="text-sm font-medium">Total: {filteredViolations.length}</span>
-                                        <span className="mx-2">|</span>
-                                        <span className="text-sm">Pending: {filteredViolations.filter(v => v.status === 'pending').length}</span>
-                                    </div>
+                            {/* Search Bar */}
+                            <div className="mb-6">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name, plate number, violation type, or location..."
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                        style={{ focusRingColor: '#355E3B' }}
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Filter Row */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                                {/* Status Filter */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                        style={{ focusRingColor: '#355E3B' }}
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                    >
+                                        <option value="all">All Status</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="contested">Contested</option>
+                                    </select>
                                 </div>
 
-                                <div className="flex items-center space-x-3">
-                                    {/* Search */}
-                                    <div className="relative">
-                                        <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search violations..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent text-sm w-64"
-                                            style={{ focusRingColor: '#355E3B' }}
-                                        />
-                                    </div>
-
-                                    {/* Filters Toggle */}
-                                    <button
-                                        onClick={() => setShowFilters(!showFilters)}
-                                        className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                {/* Type Filter */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Violation Type</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                        style={{ focusRingColor: '#355E3B' }}
+                                        value={typeFilter}
+                                        onChange={(e) => setTypeFilter(e.target.value)}
                                     >
-                                        <FunnelIcon className="w-5 h-5" />
-                                        <span>Filters</span>
-                                        {showFilters ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+                                        <option value="all">All Types</option>
+                                        {violationTypes.map(type => (
+                                            <option key={type.id} value={type.name}>{type.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Designation Filter */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">User Type</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                        style={{ focusRingColor: '#355E3B' }}
+                                        value={designationFilter}
+                                        onChange={(e) => setDesignationFilter(e.target.value)}
+                                    >
+                                        <option value="all">All Users</option>
+                                        <option value="Student">Students</option>
+                                        <option value="Faculty">Faculty</option>
+                                        <option value="Staff">Staff</option>
+                                    </select>
+                                </div>
+
+                                {/* Vehicle Type Filter */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                        style={{ focusRingColor: '#355E3B' }}
+                                        value={vehicleTypeFilter}
+                                        onChange={(e) => setVehicleTypeFilter(e.target.value)}
+                                    >
+                                        <option value="all">All Vehicles</option>
+                                        <option value="Car">Car</option>
+                                        <option value="Motorcycle">Motorcycle</option>
+                                        <option value="Truck">Truck</option>
+                                        <option value="Van">Van</option>
+                                    </select>
+                                </div>
+
+                                {/* Date Filter */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                        style={{ focusRingColor: '#355E3B' }}
+                                        value={dateFilter}
+                                        onChange={(e) => setDateFilter(e.target.value)}
+                                    >
+                                        <option value="all">All Time</option>
+                                        <option value="today">Today</option>
+                                        <option value="week">Last Week</option>
+                                        <option value="month">Last Month</option>
+                                        <option value="quarter">Last Quarter</option>
+                                        <option value="custom">Custom Range</option>
+                                    </select>
+                                </div>
+
+                                {/* Clear Filters Button */}
+                                <div className="flex items-end">
+                                    <button
+                                        onClick={() => {
+                                            setSearchTerm('');
+                                            setStatusFilter('all');
+                                            setTypeFilter('all');
+                                            setDesignationFilter('all');
+                                            setVehicleTypeFilter('all');
+                                            setDateFilter('all');
+                                            setCustomDateRange({ start: '', end: '' });
+                                        }}
+                                        className="w-full px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                    >
+                                        Clear Filters
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Expanded Filters */}
-                            {showFilters && (
-                                <div className="mt-6 pt-6 border-t border-gray-200">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                                        {/* Status Filter */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                            <select
-                                                value={statusFilter}
-                                                onChange={(e) => setStatusFilter(e.target.value)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-transparent"
-                                                style={{ focusRingColor: '#355E3B' }}
-                                            >
-                                                <option value="all">All Statuses</option>
-                                                <option value="pending">Pending</option>
-                                                <option value="resolved">Resolved</option>
-                                                <option value="contested">Contested</option>
-                                            </select>
+                            {/* Custom Date Range */}
+                            {dateFilter === 'custom' && (
+                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                                        <input
+                                            type="date"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                            style={{ focusRingColor: '#355E3B' }}
+                                            value={customDateRange.start}
+                                            onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                                        <input
+                                            type="date"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                            style={{ focusRingColor: '#355E3B' }}
+                                            value={customDateRange.end}
+                                            onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Violations Table */}
+                        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-200">
+                                <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
+                                    Violations Ive Reported ({filteredViolations.length})
+                                </h3>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Violation Details
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Vehicle & Owner
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Date Reported
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {filteredViolations.map((violation) => (
+                                            <tr key={violation.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {violation.violation_type}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        Location: {violation.location}
+                                                    </div>
+                                                    {violation.description && (
+                                                        <div className="text-sm text-gray-500 mt-1">
+                                                            {violation.description}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {violation.owner_name}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {violation.vehicle_plate} • {violation.vehicle_type}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {violation.owner_designation}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(violation.status)}`}>
+                                                        {getStatusIcon(violation.status)}
+                                                        <span className="ml-1 capitalize">{violation.status}</span>
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {formatDate(violation.created_at)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <div className="flex space-x-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedViolation(violation);
+                                                                setShowViewViolation(true);
+                                                            }}
+                                                            className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                                            title="View Details"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedViolation(violation);
+                                                                setShowEditViolation(true);
+                                                            }}
+                                                            className="text-green-600 hover:text-green-900 transition-colors duration-200"
+                                                            title="Edit Violation"
+                                                        >
+                                                            <Edit className="w-4 h-4" />
+                                                        </button>
+                                                        {violation.status === 'pending' && (
+                                                            <button
+                                                                onClick={() => handleUpdateStatus(violation.id, 'resolved')}
+                                                                className="text-green-600 hover:text-green-900 transition-colors duration-200"
+                                                                title="Mark as Resolved"
+                                                            >
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {filteredViolations.length === 0 && (
+                                <div className="text-center py-12">
+                                    <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No violations found</h3>
+                                    <p className="text-gray-500">
+                                        {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || designationFilter !== 'all' || vehicleTypeFilter !== 'all' || dateFilter !== 'all'
+                                            ? 'Try adjusting your filters or search criteria.'
+                                            : 'Get started by reporting a new violation.'
+                                        }
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* History Tab */}
+                {activeTab === 'history' && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <h3 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
+                                My Violation History
+                            </h3>
+                            <p className="text-gray-600 mb-6">
+                                Complete history of all violations youve reported with audit trail and status changes.
+                            </p>
+
+                            {/* History Timeline */}
+                            <div className="space-y-4">
+                                {violations.map((violation) => (
+                                    <div key={violation.id} className="border border-gray-200 rounded-lg p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex-1">
+                                                <h4 className="font-medium text-gray-900">{violation.violation_type}</h4>
+                                                <p className="text-sm text-gray-500">
+                                                    {violation.owner_name} • {violation.vehicle_plate} • {violation.location}
+                                                </p>
+                                            </div>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(violation.status)}`}>
+                                                {getStatusIcon(violation.status)}
+                                                <span className="ml-1 capitalize">{violation.status}</span>
+                                            </span>
                                         </div>
 
-                                        {/* Type Filter */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Violation Type</label>
-                                            <select
-                                                value={typeFilter}
-                                                onChange={(e) => setTypeFilter(e.target.value)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-transparent"
-                                                style={{ focusRingColor: '#355E3B' }}
-                                            >
-                                                <option value="all">All Types</option>
-                                                {violationTypes.map(type => (
-                                                    <option key={type.id} value={type.id}>{type.name}</option>
-                                                ))}
-                                            </select>
+                                        <div className="text-xs text-gray-500">
+                                            Reported on {formatDate(violation.created_at)}
                                         </div>
 
-                                        {/* Designation Filter */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">User Type</label>
-                                            <select
-                                                value={designationFilter}
-                                                onChange={(e) => setDesignationFilter(e.target.value)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-transparent"
-                                                style={{ focusRingColor: '#355E3B' }}
-                                            >
-                                                <option value="all">All Users</option>
-                                                <option value="Student">Students</option>
-                                                <option value="Faculty">Faculty</option>
-                                                <option value="Staff">Staff</option>
-                                            </select>
-                                        </div>
+                                        {violation.description && (
+                                            <div className="mt-2 text-sm text-gray-600">
+                                                {violation.description}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
 
-                                        {/* Vehicle Type Filter */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
-                                            <select
-                                                value={vehicleTypeFilter}
-                                                onChange={(e) => setVehicleTypeFilter(e.target.value)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-transparent"
-                                                style={{ focusRingColor: '#355E3B' }}
-                                            >
-                                                <option value="all">All Vehicles</option>
-                                                <option value="Car">Cars</option>
-                                                <option value="Motorcycle">Motorcycles</option>
-                                                <option value="SUV">SUVs</option>
-                                                <option value="Truck">Trucks</option>
-                                            </select>
-                                        </div>
+                            {violations.length === 0 && (
+                                <div className="text-center py-8">
+                                    <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No violation history found</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
-                                        {/* Date Filter */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                                            <select
-                                                value={dateFilter}
-                                                onChange={(e) => setDateFilter(e.target.value)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-transparent"
-                                                style={{ focusRingColor: '#355E3B' }}
-                                            >
-                                                <option value="all">All Time</option>
-                                                <option value="today">Today</option>
-                                                <option value="week">This Week</option>
-                                                <option value="month">This Month</option>
-                                                <option value="custom">Custom Range</option>
-                                            </select>
+                {/* Statistics Tab */}
+                {activeTab === 'stats' && (
+                    <div className="space-y-6">
+                        {/* Statistics Header */}
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#355E3B' }}>
+                                        My Violation Statistics
+                                    </h3>
+                                    <p className="text-gray-600">
+                                        Analytics and insights for violations youve reported
+                                    </p>
+                                </div>
+                                <div className="mt-4 lg:mt-0">
+                                    <select
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                                        style={{ focusRingColor: '#355E3B' }}
+                                        value={statsDateRange}
+                                        onChange={(e) => setStatsDateRange(e.target.value)}
+                                    >
+                                        <option value="last7days">Last 7 Days</option>
+                                        <option value="last30days">Last 30 Days</option>
+                                        <option value="last90days">Last 90 Days</option>
+                                        <option value="last6months">Last 6 Months</option>
+                                        <option value="lastyear">Last Year</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Statistics Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-medium text-gray-600">Total Violations</h4>
+                                    <FileText className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <p className="text-2xl font-bold" style={{ color: '#355E3B' }}>
+                                    {statistics.totalViolations}
+                                </p>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-medium text-gray-600">Pending</h4>
+                                    <Clock className="w-5 h-5 text-yellow-500" />
+                                </div>
+                                <p className="text-2xl font-bold text-yellow-600">
+                                    {statistics.pendingViolations}
+                                </p>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-medium text-gray-600">Resolved</h4>
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                </div>
+                                <p className="text-2xl font-bold text-green-600">
+                                    {statistics.resolvedViolations}
+                                </p>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-medium text-gray-600">Contested</h4>
+                                    <AlertCircle className="w-5 h-5 text-red-500" />
+                                </div>
+                                <p className="text-2xl font-bold text-red-600">
+                                    {statistics.contestedViolations}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Charts */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Monthly Trend Chart */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h4 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
+                                    Monthly Violation Trend
+                                </h4>
+                                <div className="h-64 flex items-center justify-center text-gray-500">
+                                    <div className="text-center">
+                                        <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                                        <p>Monthly trend visualization</p>
+                                        <p className="text-sm">(Chart implementation needed)</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Violation Type Distribution */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h4 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
+                                    Violation Type Distribution
+                                </h4>
+                                <div className="space-y-3">
+                                    {statistics.typeDistribution.map((type, index) => (
+                                        <div key={index} className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-sm font-medium text-gray-700 truncate">
+                                                        {type.type}
+                                                    </span>
+                                                    <span className="text-sm text-gray-500">
+                                                        {type.count} ({type.percentage}%)
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                    <div
+                                                        className="h-2 rounded-full transition-all duration-300"
+                                                        style={{
+                                                            width: `${type.percentage}%`,
+                                                            backgroundColor: '#355E3B'
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* User Type Breakdown */}
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <h4 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
+                                Violations by User Type
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {statistics.designationBreakdown.map((designation, index) => (
+                                    <div key={index} className="text-center p-4 border border-gray-200 rounded-lg">
+                                        <div className="text-2xl font-bold mb-1" style={{ color: '#355E3B' }}>
+                                            {designation.count}
+                                        </div>
+                                        <div className="text-sm text-gray-600">{designation.designation}</div>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            {designation.percentage}% of total
                                         </div>
                                     </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
 
-                                    {/* Custom Date Range */}
-                                    {dateFilter === 'custom' && (
-                                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                                                <input
-                                                    type="date"
-                                                    value={customDateRange.start}
-                                                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-transparent"
-                                                    style={{ focusRingColor: '#355E3B' }}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                                                <input
-                                                    type="date"
-                                                    value={customDateRange.end}
-                                                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-transparent"
+export default SecurityViolationsPage;

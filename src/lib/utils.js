@@ -116,7 +116,7 @@ export function generateRandomString(length = 32) {
 export function hasPermission(userRole, requiredRole) {
     const roleHierarchy = {
         'Admin': 4,
-        'Staff': 3,
+        'Security': 3,
         'Faculty': 2,
         'Student': 1
     };
@@ -128,7 +128,7 @@ export function hasPermission(userRole, requiredRole) {
 export function getRoleName(role) {
     const roleNames = {
         'Admin': 'Administrator',
-        'Staff': 'Staff Member',
+        'Security': 'Security Personnel',
         'Faculty': 'Faculty Member',
         'Student': 'Student'
     };

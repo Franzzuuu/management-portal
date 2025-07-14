@@ -398,7 +398,7 @@ export default function AddNewUser() {
                                     >
                                         <option value="Student">Student</option>
                                         <option value="Faculty">Faculty</option>
-                                        <option value="Staff">Staff</option>
+                                        <option value="Security">Security</option>
                                         <option value="Admin">Admin</option>
                                     </select>
                                 </div>
