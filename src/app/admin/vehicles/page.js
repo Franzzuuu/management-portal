@@ -263,7 +263,7 @@ export default function VehicleManagement() {
                                         id="userId"
                                         name="userId"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.userId}
                                         onChange={handleInputChange}
@@ -285,7 +285,7 @@ export default function VehicleManagement() {
                                         id="vehicleType"
                                         name="vehicleType"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.vehicleType}
                                         onChange={handleInputChange}
@@ -304,7 +304,7 @@ export default function VehicleManagement() {
                                         id="make"
                                         name="make"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Toyota, Honda, Yamaha"
                                         value={formData.make}
@@ -321,7 +321,7 @@ export default function VehicleManagement() {
                                         id="model"
                                         name="model"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Vios, Civic, Mio"
                                         value={formData.model}
@@ -338,7 +338,7 @@ export default function VehicleManagement() {
                                         id="color"
                                         name="color"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Red, Blue, Black"
                                         value={formData.color}
@@ -355,7 +355,7 @@ export default function VehicleManagement() {
                                         id="plateNumber"
                                         name="plateNumber"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., ABC-1234"
                                         value={formData.plateNumber}

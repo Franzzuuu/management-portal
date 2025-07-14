@@ -319,7 +319,7 @@ export default function RFIDTagManagement() {
                                         id="tagUid"
                                         name="tagUid"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter manufacturer UID (e.g., E200001C02701234)"
                                         value={formData.tagUid}
@@ -338,7 +338,7 @@ export default function RFIDTagManagement() {
                                         type="text"
                                         id="description"
                                         name="description"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Optional notes (e.g., Batch #, Location found)"
                                         value={formData.description}
@@ -385,7 +385,7 @@ export default function RFIDTagManagement() {
                                         id="tagId"
                                         name="tagId"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={assignData.tagId}
                                         onChange={handleAssignInputChange}
@@ -407,7 +407,7 @@ export default function RFIDTagManagement() {
                                         id="vehicleId"
                                         name="vehicleId"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={assignData.vehicleId}
                                         onChange={handleAssignInputChange}

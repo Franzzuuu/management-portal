@@ -323,7 +323,7 @@ export default function AddNewUser() {
                                         id="fullName"
                                         name="fullName"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter full name"
                                         value={formData.fullName}
@@ -340,7 +340,7 @@ export default function AddNewUser() {
                                         id="email"
                                         name="email"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter email address"
                                         value={formData.email}
@@ -356,7 +356,7 @@ export default function AddNewUser() {
                                         type="tel"
                                         id="phoneNumber"
                                         name="phoneNumber"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter phone number"
                                         value={formData.phoneNumber}
@@ -371,7 +371,7 @@ export default function AddNewUser() {
                                     <select
                                         id="gender"
                                         name="gender"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.gender}
                                         onChange={handleInputChange}
@@ -391,7 +391,7 @@ export default function AddNewUser() {
                                         id="designation"
                                         name="designation"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.designation}
                                         onChange={handleInputChange}
@@ -414,7 +414,7 @@ export default function AddNewUser() {
                                                 id="password"
                                                 name="password"
                                                 required
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                                 style={{ '--tw-ring-color': '#355E3B' }}
                                                 placeholder="Enter password"
                                                 value={formData.password}
@@ -434,7 +434,7 @@ export default function AddNewUser() {
                                                 id="confirmPassword"
                                                 name="confirmPassword"
                                                 required
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
                                                 style={{ '--tw-ring-color': '#355E3B' }}
                                                 placeholder="Confirm password"
                                                 value={formData.confirmPassword}

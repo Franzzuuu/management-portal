@@ -506,7 +506,7 @@ export default function ViolationsManagement() {
                                 onClick={() => setActiveTab('manage')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'manage'
                                     ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
                                     }`}
                                 style={activeTab === 'manage' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -516,7 +516,7 @@ export default function ViolationsManagement() {
                                 onClick={() => setActiveTab('history')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'history'
                                     ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
                                     }`}
                                 style={activeTab === 'history' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -526,7 +526,7 @@ export default function ViolationsManagement() {
                                 onClick={() => setActiveTab('stats')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'stats'
                                     ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
                                     }`}
                                 style={activeTab === 'stats' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -568,7 +568,7 @@ export default function ViolationsManagement() {
                                         placeholder="Name, plate, type, description..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400"
                                         style={{ focusRingColor: '#355E3B' }}
                                     />
                                 </div>
@@ -579,13 +579,13 @@ export default function ViolationsManagement() {
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ focusRingColor: '#355E3B' }}
                                     >
-                                        <option value="all">All Statuses</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="resolved">Resolved</option>
-                                        <option value="contested">Contested</option>
+                                        <option value="all" className="text-gray-400">All Statuses</option>
+                                        <option value="pending" className="text-gray-400">Pending</option>
+                                        <option value="resolved" className="text-gray-400">Resolved</option>
+                                        <option value="contested" className="text-gray-400">Contested</option>
                                     </select>
                                 </div>
 
@@ -595,7 +595,7 @@ export default function ViolationsManagement() {
                                     <select
                                         value={typeFilter}
                                         onChange={(e) => setTypeFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ focusRingColor: '#355E3B' }}
                                     >
                                         <option value="all">All Types</option>
@@ -611,7 +611,7 @@ export default function ViolationsManagement() {
                                     <select
                                         value={designationFilter}
                                         onChange={(e) => setDesignationFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ focusRingColor: '#355E3B' }}
                                     >
                                         <option value="all">All Users</option>
@@ -628,7 +628,7 @@ export default function ViolationsManagement() {
                                     <select
                                         value={vehicleTypeFilter}
                                         onChange={(e) => setVehicleTypeFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ focusRingColor: '#355E3B' }}
                                     >
                                         <option value="all">All Vehicles</option>
@@ -643,7 +643,7 @@ export default function ViolationsManagement() {
                                     <select
                                         value={dateFilter}
                                         onChange={(e) => setDateFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ focusRingColor: '#355E3B' }}
                                     >
                                         <option value="all">All Time</option>
