@@ -80,9 +80,6 @@ const SecurityDashboard = () => {
                 console.error('Violations API returned error:', violationsData.error);
             }
 
-            // ✅ REMOVED: Activity API call since it doesn't exist yet
-            // We'll add this later when you implement the activity endpoint
-
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
             // ✅ ADDED: Set empty states if API fails
@@ -197,7 +194,7 @@ const SecurityDashboard = () => {
                             </div>
                             <div className="ml-4">
                                 <h2 className="text-2xl font-bold text-white">
-                                    Welcome back, {user?.first_name}!
+                                    Welcome back, Test Security{user?.first_name}!
                                 </h2>
                                 <p className="text-gray-200">Monitor campus security and manage traffic violations</p>
                             </div>
