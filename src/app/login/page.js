@@ -174,7 +174,9 @@ export default function LoginPage() {
                             <span className="font-mono">admin@test.com</span><br />
                             <span className="font-mono">Admin123!</span><br />
                             <span className="font-mono">security@test.com</span><br />
-                            <span className="font-mono">Security123!</span>
+                            <span className="font-mono">Security123!</span><br />
+                            <span className="font-mono">user@test.com</span><br />
+                            <span className="font-mono">User123!</span>
                         </p>
                     </div>
                 </div>
