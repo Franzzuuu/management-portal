@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, AlertCircle, CheckCircle, Clock, Users, Car, BarChart3, Shield, Plus, Eye, TrendingUp, Calendar, MapPin } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Clock, BarChart3, Shield, Plus, Calendar, RefreshCcw } from 'lucide-react';
 
 const SecurityDashboard = () => {
     const router = useRouter();
@@ -19,29 +19,9 @@ const SecurityDashboard = () => {
     });
     const [recentViolations, setRecentViolations] = useState([]);
     const [todayActivity, setTodayActivity] = useState([]);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
-    useEffect(() => {
-        checkAuth();
-    }, []);
-
-    const checkAuth = async () => {
-        try {
-            const response = await fetch('/api/auth/me');
-            const data = await response.json();
-
-            if (data.success && data.user.designation === 'Security') {
-                setUser(data.user);
-                await fetchDashboardData();
-            } else {
-                router.push('/login');
-            }
-        } catch (error) {
-            router.push('/login');
-        }
-        setLoading(false);
-    };
-
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         try {
             // ✅ FIXED: Only fetch violations data (activity API doesn't exist yet)
             const violationsResponse = await fetch('/api/violations?securityFilter=true');
@@ -94,8 +74,40 @@ const SecurityDashboard = () => {
             });
             setRecentViolations([]);
             setTodayActivity([]);
+        } finally {
+            setLastUpdated(new Date());
         }
-    };
+    }, []);
+
+    const checkAuth = useCallback(async () => {
+        try {
+            const response = await fetch('/api/auth/me');
+            const data = await response.json();
+
+            if (data.success && data.user.designation === 'Security') {
+                setUser(data.user);
+                await fetchDashboardData();
+            } else {
+                router.push('/login');
+            }
+        } catch (error) {
+            router.push('/login');
+        }
+        setLoading(false);
+    }, [fetchDashboardData, router]);
+
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
+
+    useEffect(() => {
+        if (user) {
+            const interval = setInterval(() => {
+                fetchDashboardData();
+            }, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [user, fetchDashboardData]);
 
     const handleLogout = async () => {
         try {
@@ -171,7 +183,18 @@ const SecurityDashboard = () => {
                                         {user?.designation}
                                     </span>
                                 </div>
+                                <div className="text-xs text-gray-200 mt-1">
+                                    Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Never'}
+                                </div>
                             </div>
+                            <button
+                                onClick={fetchDashboardData}
+                                className="bg-white hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg flex items-center"
+                                style={{ color: '#355E3B' }}
+                            >
+                                <RefreshCcw className="h-4 w-4 mr-1" />
+                                Refresh
+                            </button>
                             <button
                                 onClick={handleLogout}
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
