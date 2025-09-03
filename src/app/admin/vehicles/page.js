@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import SearchableUserSelect from '../../components/SearchableUserSelect';
 
 export default function VehicleManagement() {
     const [vehicles, setVehicles] = useState([]);
@@ -259,22 +260,11 @@ export default function VehicleManagement() {
                                     <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
                                         Vehicle Owner *
                                     </label>
-                                    <select
-                                        id="userId"
-                                        name="userId"
-                                        required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
-                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                    <SearchableUserSelect
                                         value={formData.userId}
-                                        onChange={handleInputChange}
-                                    >
-                                        <option value="">Select user</option>
-                                        {users.map((user) => (
-                                            <option key={user.id} value={user.id}>
-                                                {user.full_name} ({user.email}) - {user.designation}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(userId) => setFormData(prev => ({ ...prev, userId }))}
+                                        className="w-full"
+                                    />
                                 </div>
 
                                 <div>
