@@ -73,7 +73,7 @@ export default function SearchableUserSelect({ value, onChange, className = '' }
     const handleKeyDown = (e) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setHighlightedIndex(prev => 
+            setHighlightedIndex(prev =>
                 prev < users.length - 1 ? prev + 1 : prev
             );
         } else if (e.key === 'ArrowUp') {
@@ -161,11 +161,10 @@ export default function SearchableUserSelect({ value, onChange, className = '' }
                                 aria-selected={index === highlightedIndex}
                                 onClick={() => handleSelect(user)}
                                 onMouseEnter={() => setHighlightedIndex(index)}
-                                className={`px-4 py-2 text-sm cursor-pointer ${
-                                    index === highlightedIndex
+                                className={`px-4 py-2 text-sm cursor-pointer ${index === highlightedIndex
                                         ? 'bg-green-50 text-green-900'
                                         : 'text-gray-900 hover:bg-gray-50'
-                                }`}
+                                    }`}
                             >
                                 {user.full_name} ({user.email}) - {user.designation}
                             </li>
