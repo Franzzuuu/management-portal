@@ -140,12 +140,15 @@ export default function ViolationsManagement() {
 
         // Search filter
         if (searchTerm) {
-            filtered = filtered.filter(violation =>
-                violation.owner_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                violation.plate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                violation.violation_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                violation.description.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            filtered = filtered.filter(violation => {
+                const searchLower = searchTerm.toLowerCase();
+                return (
+                    (violation.owner_name || '').toLowerCase().includes(searchLower) ||
+                    (violation.plate_number || '').toLowerCase().includes(searchLower) ||
+                    (violation.violation_type || '').toLowerCase().includes(searchLower) ||
+                    (violation.description || '').toLowerCase().includes(searchLower)
+                );
+            });
         }
 
         // Status filter
@@ -165,10 +168,7 @@ export default function ViolationsManagement() {
 
         // Vehicle type filter
         if (vehicleTypeFilter !== 'all') {
-            filtered = filtered.filter(violation => {
-                const vehicle = vehicles.find(v => v.plate_number === violation.plate_number);
-                return vehicle && vehicle.vehicle_type === vehicleTypeFilter;
-            });
+            filtered = filtered.filter(violation => violation.vehicle_type === vehicleTypeFilter);
         }
 
         // Date filter
@@ -224,8 +224,8 @@ export default function ViolationsManagement() {
                     bValue = b.status.toLowerCase();
                     break;
                 case 'plate_number':
-                    aValue = a.plate_number.toLowerCase();
-                    bValue = b.plate_number.toLowerCase();
+                    aValue = (a.plate_number || '').toLowerCase();
+                    bValue = (b.plate_number || '').toLowerCase();
                     break;
                 default:
                     aValue = a[sortField];
@@ -283,8 +283,10 @@ export default function ViolationsManagement() {
         // Top violators
         const violatorCounts = {};
         dataToAnalyze.forEach(violation => {
-            const key = `${violation.owner_name} (${violation.plate_number})`;
-            violatorCounts[key] = (violatorCounts[key] || 0) + 1;
+            if (violation.owner_name && violation.plate_number) {
+                const key = `${violation.owner_name} • ${violation.plate_number}`;
+                violatorCounts[key] = (violatorCounts[key] || 0) + 1;
+            }
         });
 
         const topViolators = Object.entries(violatorCounts)
@@ -715,13 +717,13 @@ export default function ViolationsManagement() {
 
                         {/* Violations Table */}
                         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
+                            <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
+                                <table className="min-w-full divide-y divide-gray-200 table-fixed">
                                     <thead style={{ backgroundColor: '#355E3B' }}>
                                         <tr>
                                             <th
                                                 onClick={() => handleSort('owner_name')}
-                                                className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
+                                                className="w-[15%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
                                             >
                                                 <div className="flex items-center space-x-1">
                                                     <span>Owner</span>
@@ -730,7 +732,7 @@ export default function ViolationsManagement() {
                                             </th>
                                             <th
                                                 onClick={() => handleSort('plate_number')}
-                                                className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
+                                                className="w-[15%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
                                             >
                                                 <div className="flex items-center space-x-1">
                                                     <span>Vehicle</span>
@@ -739,19 +741,19 @@ export default function ViolationsManagement() {
                                             </th>
                                             <th
                                                 onClick={() => handleSort('violation_type')}
-                                                className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
+                                                className="w-[15%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
                                             >
                                                 <div className="flex items-center space-x-1">
                                                     <span>Violation Type</span>
                                                     {getSortIcon('violation_type')}
                                                 </div>
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                            <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                                                 Description
                                             </th>
                                             <th
                                                 onClick={() => handleSort('status')}
-                                                className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
+                                                className="w-[8%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
                                             >
                                                 <div className="flex items-center space-x-1">
                                                     <span>Status</span>
@@ -760,14 +762,17 @@ export default function ViolationsManagement() {
                                             </th>
                                             <th
                                                 onClick={() => handleSort('created_at')}
-                                                className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
+                                                className="w-[8%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
                                             >
                                                 <div className="flex items-center space-x-1">
                                                     <span>Date</span>
                                                     {getSortIcon('created_at')}
                                                 </div>
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                            <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                                                Supporting Image
+                                            </th>
+                                            <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                                                 Actions
                                             </th>
                                         </tr>
@@ -789,11 +794,14 @@ export default function ViolationsManagement() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
-                                                        <div className="text-sm font-medium text-gray-900">
-                                                            {violation.plate_number}
+                                                        <div className="text-base font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg inline-block">
+                                                            {violation.vehicle_plate || 'No Plate'}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">
-                                                            {violation.vehicle_make} {violation.vehicle_model}
+                                                        <div className="text-sm text-gray-600 mt-1 font-medium flex items-center">
+                                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                            </svg>
+                                                            {violation.brand} {violation.model}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -813,28 +821,48 @@ export default function ViolationsManagement() {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {new Date(violation.created_at).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                                                     {violation.has_image && (
                                                         <button
-                                                            onClick={() => {
-                                                                setSelectedImage(`/api/violations/${violation.id}/image`);
-                                                                setShowImageModal(true);
-                                                            }}
-                                                            className="text-blue-600 hover:text-blue-900 font-medium"
+                                                            onClick={() => handleViewImage(violation.id)}
+                                                            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200 mx-auto"
                                                         >
-                                                            View Image
+                                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            View
                                                         </button>
                                                     )}
-                                                    <select
-                                                        value={violation.status}
-                                                        onChange={(e) => updateViolationStatus(violation.id, e.target.value)}
-                                                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:border-transparent focus:outline-none"
-                                                        style={{ focusRingColor: '#355E3B' }}
-                                                    >
-                                                        <option value="pending">Pending</option>
-                                                        <option value="resolved">Resolved</option>
-                                                        <option value="contested">Contested</option>
-                                                    </select>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                                    <div className="inline-block w-44 relative">
+                                                        <select
+                                                            value={violation.status}
+                                                            onChange={(e) => updateViolationStatus(violation.id, e.target.value)}
+                                                            className="appearance-none w-full text-sm font-medium border-2 border-gray-300 rounded-lg pl-3 pr-10 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-400 transition-colors duration-200 cursor-pointer shadow-sm"
+                                                            style={{
+                                                                backgroundColor: violation.status === 'pending' ? '#FEF9C3' :
+                                                                    violation.status === 'resolved' ? '#DCFCE7' :
+                                                                        violation.status === 'contested' ? '#FEE2E2' : 'white',
+                                                                color: violation.status === 'pending' ? '#854D0E' :
+                                                                    violation.status === 'resolved' ? '#166534' :
+                                                                        violation.status === 'contested' ? '#991B1B' : 'black'
+                                                            }}
+                                                        >
+                                                            <option value="pending" className="bg-yellow-50 text-yellow-800 font-medium">⏳ Pending</option>
+                                                            <option value="resolved" className="bg-green-50 text-green-800 font-medium">✓ Resolved</option>
+                                                            <option value="contested" className="bg-red-50 text-red-800 font-medium">⚠ Contested</option>
+                                                        </select>
+                                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                                                            <svg className="w-5 h-5" style={{
+                                                                color: violation.status === 'pending' ? '#854D0E' :
+                                                                    violation.status === 'resolved' ? '#166534' :
+                                                                        violation.status === 'contested' ? '#991B1B' : '#6B7280'
+                                                            }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -1116,26 +1144,53 @@ export default function ViolationsManagement() {
                             </div>
 
                             {/* Top Violators */}
-                            <div className="bg-white rounded-xl shadow-lg p-6">
-                                <h4 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
-                                    Top Violators
-                                </h4>
-                                <div className="space-y-3">
+                            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                                <div className="p-6 border-b border-gray-100">
+                                    <h4 className="text-lg font-semibold flex items-center" style={{ color: '#355E3B' }}>
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                        </svg>
+                                        Top Violators
+                                    </h4>
+                                </div>
+                                <div className="divide-y divide-gray-50">
                                     {statsData.topViolators.slice(0, 8).map((violator, index) => (
-                                        <div key={index} className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-3">
+                                        <div
+                                            key={index}
+                                            className={`flex items-center justify-between p-4 ${index < 3 ? 'bg-green-50/30' : ''
+                                                } hover:bg-gray-50 transition-colors duration-200`}
+                                        >
+                                            <div className="flex items-center space-x-4">
                                                 <div className="flex-shrink-0">
-                                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                                                        style={{ backgroundColor: index < 3 ? '#FFD700' : '#355E3B', color: index < 3 ? '#355E3B' : 'white' }}>
-                                                        {index + 1}
+                                                    {index < 3 ? (
+                                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                                                            style={{
+                                                                backgroundColor: '#FFD700',
+                                                                color: '#355E3B',
+                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                                            }}>
+                                                            <span className="text-sm font-bold">#{index + 1}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-600">
+                                                            <span className="text-sm">{index + 1}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {violator.name || 'Unknown User'}
                                                     </div>
                                                 </div>
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {violator.name}
-                                                </div>
                                             </div>
-                                            <div className="text-sm font-bold" style={{ color: '#355E3B' }}>
-                                                {violator.count} violations
+                                            <div className="flex items-center">
+                                                <span className="px-3 py-1 text-sm font-medium rounded-full"
+                                                    style={{
+                                                        backgroundColor: index < 3 ? '#355E3B' : '#E5E7EB',
+                                                        color: index < 3 ? 'white' : '#374151'
+                                                    }}>
+                                                    {violator.count || 0} violations
+                                                </span>
                                             </div>
                                         </div>
                                     ))}
