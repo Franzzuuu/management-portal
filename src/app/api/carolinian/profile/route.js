@@ -21,7 +21,7 @@ export async function GET() {
                 up.full_name,
                 u.email,
                 up.phone_number as phone,
-                '' as department,
+                u.department,
                 '' as student_id,
                 '' as employee_id,
                 u.email as username,
@@ -135,12 +135,18 @@ export async function PUT(request) {
                 userId
             ]);
 
-            // Update email in users table
+            // Update email and department in users table
             await executeQuery(`
                 UPDATE users 
-                SET email = ?
+                SET 
+                    email = ?,
+                    department = ?
                 WHERE id = ?
-            `, [profileData.email.trim(), userId]);
+            `, [
+                profileData.email.trim(),
+                profileData.department?.trim() || null,
+                userId
+            ]);
         } else {
             // Create new profile (using correct column names)
             await executeQuery(`
@@ -156,12 +162,18 @@ export async function PUT(request) {
                 profileData.phone?.trim() || null
             ]);
 
-            // Update email in users table
+            // Update email and department in users table
             await executeQuery(`
                 UPDATE users 
-                SET email = ?
+                SET 
+                    email = ?,
+                    department = ?
                 WHERE id = ?
-            `, [profileData.email.trim(), userId]);
+            `, [
+                profileData.email.trim(),
+                profileData.department?.trim() || null,
+                userId
+            ]);
         }
 
         return Response.json({

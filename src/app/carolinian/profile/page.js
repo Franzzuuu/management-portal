@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function CarolinianProfile() {
     const [user, setUser] = useState(null);
@@ -17,14 +18,22 @@ export default function CarolinianProfile() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [profilePicture, setProfilePicture] = useState(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const router = useRouter();
 
+    // Auto-clear message after 5 seconds
     useEffect(() => {
-        fetchUserData();
-        fetchProfile();
-    }, []);
+        if (message.text) {
+            const timer = setTimeout(() => {
+                setMessage({ type: '', text: '' });
+            }, 5000);
 
-    const fetchUserData = async () => {
+            return () => clearTimeout(timer);
+        }
+    }, [message.text]);
+
+    const fetchUserData = useCallback(async () => {
         try {
             const response = await fetch('/api/auth/session');
             if (response.ok) {
@@ -37,9 +46,9 @@ export default function CarolinianProfile() {
             console.error('Failed to fetch user data:', error);
             router.push('/login');
         }
-    };
+    }, [router]);
 
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch('/api/carolinian/profile');
@@ -54,7 +63,30 @@ export default function CarolinianProfile() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    const fetchProfilePicture = useCallback(async () => {
+        try {
+            const response = await fetch('/api/carolinian/profile-picture');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setProfilePicture(`data:${data.image_type};base64,${data.image_data}`);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch profile picture:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        const init = async () => {
+            await fetchUserData();
+            await fetchProfile();
+            await fetchProfilePicture();
+        };
+        init();
+    }, [fetchUserData, fetchProfile, fetchProfilePicture]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -102,6 +134,58 @@ export default function CarolinianProfile() {
     const handleReset = () => {
         setProfile(originalProfile);
         setMessage({ type: '', text: '' });
+    };
+
+
+
+    const handleProfilePictureChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setMessage({ type: 'error', text: 'Please select an image file' });
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            setMessage({ type: 'error', text: 'Image size should be less than 5MB' });
+            return;
+        }
+
+        try {
+            setUploadingImage(true);
+            const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+
+            const response = await fetch('/api/carolinian/profile-picture', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image_data: base64,
+                    image_type: file.type
+                })
+            });
+
+            if (response.ok) {
+                setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+                setProfilePicture(URL.createObjectURL(file));
+            } else {
+                const error = await response.json();
+                setMessage({ type: 'error', text: error.message || 'Failed to update profile picture' });
+            }
+        } catch (error) {
+            console.error('Profile picture update error:', error);
+            setMessage({ type: 'error', text: 'Failed to update profile picture' });
+        } finally {
+            setUploadingImage(false);
+        }
     };
 
     const handleLogout = async () => {
@@ -200,6 +284,45 @@ export default function CarolinianProfile() {
                     </div>
 
                     <form onSubmit={handleSave} className="p-6">
+                        {/* Profile Picture Section */}
+                        <div className="mb-8 flex flex-col items-center">
+                            <div className="relative">
+                                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-lg">
+                                    {profilePicture ? (
+                                        <Image
+                                            src={profilePicture}
+                                            alt="Profile"
+                                            width={128}
+                                            height={128}
+                                            className="w-full h-full object-cover"
+                                            unoptimized={true}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                                <label className="absolute bottom-0 right-0 bg-green-600 rounded-full w-8 h-8 flex items-center justify-center cursor-pointer shadow-lg hover:bg-green-700 transition-colors duration-200">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleProfilePictureChange}
+                                        className="hidden"
+                                    />
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                </label>
+                            </div>
+                            <div className="mt-2 text-center">
+                                <p className="text-sm text-gray-600">Upload a profile picture</p>
+                                <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                            </div>
+                        </div>
+
                         {/* Message Display */}
                         {message.text && (
                             <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
@@ -232,7 +355,7 @@ export default function CarolinianProfile() {
                                     name="full_name"
                                     value={profile.full_name || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                                     required
                                 />
                             </div>
@@ -248,7 +371,7 @@ export default function CarolinianProfile() {
                                     name="email"
                                     value={profile.email || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                                     required
                                 />
                             </div>
@@ -264,14 +387,14 @@ export default function CarolinianProfile() {
                                     name="phone"
                                     value={profile.phone || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                                 />
                             </div>
 
                             {/* Department */}
                             <div>
                                 <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Department/College
+                                    Department
                                 </label>
                                 <input
                                     type="text"
@@ -279,7 +402,7 @@ export default function CarolinianProfile() {
                                     name="department"
                                     value={profile.department || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                                 />
                             </div>
 
@@ -295,7 +418,7 @@ export default function CarolinianProfile() {
                                         name="student_id"
                                         value={profile.student_id || ''}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                                     />
                                 </div>
                             ) : (
@@ -309,7 +432,7 @@ export default function CarolinianProfile() {
                                         name="employee_id"
                                         value={profile.employee_id || ''}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                                     />
                                 </div>
                             )}
@@ -322,7 +445,7 @@ export default function CarolinianProfile() {
                                 <input
                                     type="text"
                                     value={user?.designation || ''}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                                     disabled
                                 />
                             </div>
