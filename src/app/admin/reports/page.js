@@ -215,7 +215,7 @@ export default function ReportsPage() {
                         <div className="flex space-x-2">
                             <button
                                 onClick={() => exportReport('csv')}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 hover:cursor-pointer"
                             >
                                 Export CSV
                             </button>
