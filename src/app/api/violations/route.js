@@ -151,7 +151,11 @@ async function getAllViolations(dateFrom, dateTo) {
             up.full_name as owner_name,
             reporter.id as reporter_id,
             reporter_profile.full_name as reporter_name,
-            reporter.designation as reporter_designation
+            reporter.designation as reporter_designation,
+            updater.id as updated_by_id,
+            updater_profile.full_name as updated_by_name,
+            updater.designation as updated_by_designation,
+            v.updated_at as last_updated
         FROM violations v
         JOIN violation_types vt ON v.violation_type_id = vt.id
         JOIN vehicles vh ON v.vehicle_id = vh.id
@@ -159,6 +163,8 @@ async function getAllViolations(dateFrom, dateTo) {
         JOIN user_profiles up ON u.id = up.user_id
         LEFT JOIN users reporter ON v.reported_by = reporter.id
         LEFT JOIN user_profiles reporter_profile ON reporter.id = reporter_profile.user_id
+        LEFT JOIN users updater ON v.updated_by = updater.id
+        LEFT JOIN user_profiles updater_profile ON updater.id = updater_profile.user_id
         WHERE 1=1 ${dateCondition}
         ORDER BY v.created_at DESC
     `;
@@ -343,52 +349,59 @@ export async function POST(request) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // ✅ ENHANCED: Both Admin and Security can create violations
+        // Both Admin and Security can create violations
         if (!['Admin', 'Security'].includes(session.userRole)) {
             return Response.json({ error: 'Insufficient permissions' }, { status: 403 });
         }
 
         const data = await request.json();
-        const { vehicle_id, violation_type, description, location, image_data, image_filename, image_mime_type } = data;
+        const { vehicle_id, violation_type, description, image_data, image_filename, image_mime_type } = data;
 
         // Validate required fields
-        if (!vehicle_id || !violation_type || !location) {
+        if (!vehicle_id || !violation_type) {
             return Response.json({
-                error: 'Vehicle ID, violation type, and location are required'
+                error: 'Vehicle ID and violation type ID are required'
             }, { status: 400 });
         }
 
         // Insert violation
-        const insertQuery = `
+        const query = `
             INSERT INTO violations (
                 vehicle_id, 
-                violation_type, 
+                violation_type_id, 
                 description, 
-                location, 
                 reported_by, 
                 status,
-                has_image,
                 image_data,
                 image_filename,
                 image_mime_type,
                 created_at
-            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, NOW())
+            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, NOW())
         `;
 
-        const hasImage = image_data ? 1 : 0;
+        // Convert base64 image to buffer if it exists
         const imageBuffer = image_data ? Buffer.from(image_data, 'base64') : null;
 
-        const result = await executeQuery(insertQuery, [
+        const result = await executeQuery(query, [
             vehicle_id,
             violation_type,
             description || null,
-            location,
             session.userId,
-            hasImage,
             imageBuffer,
             image_filename || null,
             image_mime_type || null
         ]);
+
+        if (!result || !result.insertId) {
+            return Response.json({ error: 'Failed to create violation' }, { status: 500 });
+        }
+
+        // Return success with the new violation ID
+        return Response.json({
+            success: true,
+            message: 'Violation created successfully',
+            violationId: result.insertId
+        });
 
         // Log the status change
         await executeQuery(`

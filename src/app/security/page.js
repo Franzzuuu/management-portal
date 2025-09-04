@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, AlertCircle, CheckCircle, Clock, Users, Car, BarChart3, Shield, Plus, Eye, TrendingUp, Calendar, MapPin } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Clock, Users, Car, BarChart3, Shield, Plus, Eye, TrendingUp, Calendar, MapPin, Zap } from 'lucide-react';
 
 const SecurityDashboard = () => {
     const router = useRouter();
@@ -188,113 +188,76 @@ const SecurityDashboard = () => {
                 {/* Welcome Section */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <Shield className="h-6 w-6" style={{ color: '#355E3B' }} />
-                            </div>
-                            <div className="ml-4">
-                                <h2 className="text-2xl font-bold text-white">
-                                    Welcome back, Test Security{user?.first_name}!
-                                </h2>
-                                <p className="text-gray-200">Monitor campus security and manage traffic violations</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-white text-sm opacity-90">
-                                {new Date().toLocaleDateString('en-US', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
-                            </div>
+                        <div>
+                            <h2 className="text-3xl font-bold text-white mb-2">Security Dashboard</h2>
+                            <p className="text-green-100">Monitor and manage campus security and traffic violations</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Quick Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">Total Violations</p>
-                                    <p className="text-2xl font-bold" style={{ color: '#355E3B' }}>
-                                        {stats.totalViolations}
-                                    </p>
-                                </div>
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
-                                    <FileText className="h-6 w-6 text-white" />
-                                </div>
+                {/* Statistics Summary */}
+                <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">Total Violations</p>
+                                <h3 className="text-2xl font-bold mt-1" style={{ color: '#355E3B' }}>{stats.totalViolations}</h3>
+                            </div>
+                            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                <FileText className="h-6 w-6 text-white" />
                             </div>
                         </div>
-                        <div className="px-6 py-3 bg-white">
-                            <div className="text-xs text-gray-500">
-                                {stats.monthlyViolations} this month
-                            </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                            <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+                            <span>{stats.monthlyViolations} this month</span>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">Pending</p>
-                                    <p className="text-2xl font-bold text-yellow-600">
-                                        {stats.pendingViolations}
-                                    </p>
-                                </div>
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-yellow-500">
-                                    <Clock className="h-6 w-6 text-white" />
-                                </div>
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">Pending Review</p>
+                                <h3 className="text-2xl font-bold mt-1 text-yellow-600">{stats.pendingViolations}</h3>
+                            </div>
+                            <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-yellow-100">
+                                <Clock className="h-6 w-6 text-yellow-600" />
                             </div>
                         </div>
-                        <div className="px-6 py-3 bg-white">
-                            <div className="text-xs text-gray-500">
-                                {stats.todayViolations} reported today
-                            </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="h-4 w-4 mr-1 text-yellow-500" />
+                            <span>{stats.todayViolations} reported today</span>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">Resolved</p>
-                                    <p className="text-2xl font-bold text-green-600">
-                                        {stats.resolvedViolations}
-                                    </p>
-                                </div>
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-green-500">
-                                    <CheckCircle className="h-6 w-6 text-white" />
-                                </div>
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">Resolved Cases</p>
+                                <h3 className="text-2xl font-bold mt-1 text-green-600">{stats.resolvedViolations}</h3>
+                            </div>
+                            <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-green-100">
+                                <CheckCircle className="h-6 w-6 text-green-600" />
                             </div>
                         </div>
-                        <div className="px-6 py-3 bg-white">
-                            <div className="text-xs text-gray-500">
-                                {stats.weeklyViolations} this week
-                            </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="h-4 w-4 mr-1 text-green-500" />
+                            <span>{stats.weeklyViolations} this week</span>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">Contested</p>
-                                    <p className="text-2xl font-bold text-red-600">
-                                        {stats.contestedViolations}
-                                    </p>
-                                </div>
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-red-500">
-                                    <AlertCircle className="h-6 w-6 text-white" />
-                                </div>
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">Contested</p>
+                                <h3 className="text-2xl font-bold mt-1 text-red-600">{stats.contestedViolations}</h3>
+                            </div>
+                            <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-red-100">
+                                <AlertCircle className="h-6 w-6 text-red-600" />
                             </div>
                         </div>
-                        <div className="px-6 py-3 bg-white">
-                            <div className="text-xs text-gray-500">
-                                Require attention
-                            </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                            <Shield className="h-4 w-4 mr-1 text-red-500" />
+                            <span>Require attention</span>
                         </div>
                     </div>
                 </div>
@@ -302,74 +265,38 @@ const SecurityDashboard = () => {
                 {/* Quick Actions */}
                 <div className="mb-8">
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
-                                Quick Actions
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">Manage violations and generate reports</p>
-                        </div>
                         <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <button
-                                    onClick={() => router.push('/security/violations')}
-                                    className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-200 text-left group"
-                                >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
-                                            <FileText className="h-6 w-6 text-white" />
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-2xl font-bold" style={{ color: '#355E3B' }}>
-                                                {stats.totalViolations}
-                                            </div>
-                                            <div className="text-xs text-gray-500">Total</div>
-                                        </div>
-                                    </div>
-                                    <h4 className="font-semibold text-gray-900 mb-2">Manage Violations</h4>
-                                    <p className="text-sm text-gray-600">
-                                        View, edit, and track all traffic violations youve reported
-                                    </p>
-                                </button>
-
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
+                                        Quick Actions
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">Manage violations and generate reports</p>
+                                </div>
+                                <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(53,94,59,0.1)' }}>
+                                    <Zap className="h-5 w-5" style={{ color: '#355E3B' }} />
+                                </div>
+                            </div>
+                            <div className="flex justify-center">
                                 <button
                                     onClick={() => router.push('/security/violations?tab=add')}
-                                    className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-200 text-left group"
+                                    className="group w-full max-w-md bg-white rounded-xl p-6 transition-all duration-200 hover:shadow-md"
+                                    style={{ backgroundColor: 'rgba(53,94,59,0.03)' }}
                                 >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center transition-all duration-200 group-hover:scale-110" style={{ backgroundColor: '#FFD700' }}>
                                             <Plus className="h-6 w-6" style={{ color: '#355E3B' }} />
                                         </div>
                                         <div className="text-right">
                                             <div className="text-2xl font-bold" style={{ color: '#355E3B' }}>
                                                 {stats.todayViolations}
                                             </div>
-                                            <div className="text-xs text-gray-500">Today</div>
+                                            <div className="text-xs text-gray-500">Reported Today</div>
                                         </div>
                                     </div>
                                     <h4 className="font-semibold text-gray-900 mb-2">Report New Violation</h4>
                                     <p className="text-sm text-gray-600">
-                                        Issue a new traffic violation with evidence capture
-                                    </p>
-                                </button>
-
-                                <button
-                                    onClick={() => router.push('/security/violations?tab=stats')}
-                                    className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-200 text-left group"
-                                >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 bg-blue-500">
-                                            <BarChart3 className="h-6 w-6 text-white" />
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-2xl font-bold" style={{ color: '#355E3B' }}>
-                                                {stats.weeklyViolations}
-                                            </div>
-                                            <div className="text-xs text-gray-500">This week</div>
-                                        </div>
-                                    </div>
-                                    <h4 className="font-semibold text-gray-900 mb-2">View Statistics</h4>
-                                    <p className="text-sm text-gray-600">
-                                        Analyze violation trends and performance metrics
+                                        Issue a new traffic violation with evidence and details
                                     </p>
                                 </button>
                             </div>
@@ -377,53 +304,71 @@ const SecurityDashboard = () => {
                     </div>
                 </div>
 
-                {/* Recent Activity */}
+                {/* Recent Activity and Today's Activity */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Recent Violations */}
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <div className="flex items-center justify-between">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
                                         Recent Violations
                                     </h3>
-                                    <p className="text-sm text-gray-600 mt-1">Latest violations youve reported</p>
+                                    <p className="text-sm text-gray-600 mt-1">Latest reported violations</p>
                                 </div>
                                 <button
                                     onClick={() => router.push('/security/violations')}
-                                    className="text-sm font-medium hover:underline px-3 py-1 rounded transition-colors"
-                                    style={{ color: '#355E3B' }}
+                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                                    style={{ color: '#355E3B', backgroundColor: 'rgba(53,94,59,0.1)' }}
                                 >
                                     View All
+                                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </button>
                             </div>
-                        </div>
-                        <div className="p-6">
                             <div className="space-y-4">
                                 {recentViolations.length > 0 ? (
                                     recentViolations.map((violation) => (
-                                        <div key={violation.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="font-medium text-gray-900">{violation.violation_type}</h4>
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(violation.status)}`}>
-                                                        {getStatusIcon(violation.status)}
-                                                        <span className="ml-1 capitalize">{violation.status}</span>
-                                                    </span>
+                                        <div key={violation.id}
+                                            className="relative p-4 rounded-lg transition-all duration-200 hover:shadow-md"
+                                            style={{
+                                                backgroundColor: 'rgba(53,94,59,0.03)',
+                                                borderLeft: '4px solid',
+                                                borderLeftColor: violation.status === 'pending' ? '#F59E0B' :
+                                                    violation.status === 'resolved' ? '#10B981' : '#EF4444'
+                                            }}
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="font-medium text-gray-900">{violation.violation_type}</h4>
+                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(violation.status)}`}>
+                                                            {getStatusIcon(violation.status)}
+                                                            <span className="ml-1 capitalize">{violation.status}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center text-sm text-gray-600 mt-1">
+                                                        <Users className="w-4 h-4 mr-1" />
+                                                        <span>{violation.owner_name}</span>
+                                                        <span className="mx-2">•</span>
+                                                        <Car className="w-4 h-4 mr-1" />
+                                                        <span>{violation.vehicle_plate || 'No Plate'}</span>
+                                                    </div>
+                                                    <div className="flex items-center text-xs text-gray-500 mt-2">
+                                                        <Calendar className="w-3 h-3 mr-1" />
+                                                        <span>{formatDate(violation.created_at)}</span>
+                                                    </div>
                                                 </div>
-                                                <p className="text-sm text-gray-600">
-                                                    {violation.owner_name} • {violation.vehicle_plate}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {formatDate(violation.created_at)}
-                                                </p>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                                        <p>No violations reported yet</p>
+                                    <div className="text-center py-8">
+                                        <div className="h-12 w-12 rounded-lg mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(53,94,59,0.1)' }}>
+                                            <FileText className="h-6 w-6" style={{ color: '#355E3B' }} />
+                                        </div>
+                                        <p className="text-gray-600">No violations reported yet</p>
                                     </div>
                                 )}
                             </div>
@@ -432,49 +377,53 @@ const SecurityDashboard = () => {
 
                     {/* Today's Activity */}
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <div className="flex items-center justify-between">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
-                                        Todays Activity
+                                        Today&apos;s Activity
                                     </h3>
-                                    <p className="text-sm text-gray-600 mt-1">Violations reported today</p>
+                                    <p className="text-sm text-gray-600 mt-1">Activity for {new Date().toLocaleDateString()}</p>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <Calendar className="w-4 h-4 text-gray-400" />
-                                    <span className="text-sm text-gray-600">
-                                        {new Date().toLocaleDateString()}
-                                    </span>
+                                <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(53,94,59,0.1)' }}>
+                                    <Calendar className="h-5 w-5" style={{ color: '#355E3B' }} />
                                 </div>
                             </div>
-                        </div>
-                        <div className="p-6">
                             <div className="space-y-4">
                                 {todayActivity.length > 0 ? (
                                     todayActivity.map((activity) => (
-                                        <div key={activity.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                            <div className="flex-shrink-0">
-                                                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
-                                                    <AlertCircle className="w-4 h-4 text-white" />
+                                        <div key={activity.id}
+                                            className="flex items-center p-4 rounded-lg transition-all duration-200 hover:shadow-md"
+                                            style={{ backgroundColor: 'rgba(53,94,59,0.03)' }}
+                                        >
+                                            <div className="flex-shrink-0 mr-4">
+                                                <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                                    <MapPin className="h-5 w-5 text-white" />
                                                 </div>
                                             </div>
                                             <div className="flex-1">
-                                                <p className="text-sm font-medium text-gray-900">
-                                                    {activity.violation_type}
-                                                </p>
-                                                <p className="text-xs text-gray-600">
-                                                    {activity.location} • {activity.vehicle_plate}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {new Date(activity.created_at).toLocaleTimeString()}
-                                                </p>
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-sm font-medium text-gray-900">{activity.violation_type}</h4>
+                                                    <span className="text-xs text-gray-500">
+                                                        {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center text-xs text-gray-600 mt-1">
+                                                    <MapPin className="w-3 h-3 mr-1" />
+                                                    <span>{activity.location || 'No location'}</span>
+                                                    <span className="mx-2">•</span>
+                                                    <Car className="w-3 h-3 mr-1" />
+                                                    <span>{activity.vehicle_plate || 'No Plate'}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <Clock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                                        <p>No activity today</p>
+                                    <div className="text-center py-8">
+                                        <div className="h-12 w-12 rounded-lg mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(53,94,59,0.1)' }}>
+                                            <Clock className="h-6 w-6" style={{ color: '#355E3B' }} />
+                                        </div>
+                                        <p className="text-gray-600">No activity recorded today</p>
                                     </div>
                                 )}
                             </div>

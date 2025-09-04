@@ -3,10 +3,17 @@ import { getSession } from '@/lib/utils';
 
 export async function POST(request) {
     try {
-        // Check if user is authenticated and is admin
+        // Check if user is authenticated and has proper role
         const session = await getSession();
-        if (!session || session.userRole !== 'Admin') {
+        console.log('Update status session:', session);
+
+        if (!session) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Allow both Admin and Security roles to update status
+        if (!['Admin', 'Security'].includes(session.userRole)) {
+            return Response.json({ error: 'Insufficient permissions' }, { status: 403 });
         }
 
         const { violationId, status } = await request.json();
@@ -27,14 +34,31 @@ export async function POST(request) {
             );
         }
 
-        // Update violation status
+        console.log('Updating violation:', { violationId, status });
+
+        // Verify violation exists and user has permission
+        const checkQuery = `
+            SELECT id, reported_by 
+            FROM violations 
+            WHERE id = ?
+        `;
+        const violation = await executeQuery(checkQuery, [violationId]);
+
+        if (!violation || violation.length === 0) {
+            return Response.json({ error: 'Violation not found' }, { status: 404 });
+        }
+
+        // Update violation status and track who made the change
         const updateQuery = `
             UPDATE violations 
-            SET status = ?, updated_at = NOW() 
+            SET status = ?, 
+                updated_at = NOW(),
+                updated_by = ?
             WHERE id = ?
         `;
 
-        await executeQuery(updateQuery, [status, violationId]);
+        await executeQuery(updateQuery, [status, session.userId, violationId]);
+        console.log('Status updated successfully');
 
         return Response.json({
             success: true,

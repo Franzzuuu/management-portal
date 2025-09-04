@@ -219,13 +219,6 @@ export default function ReportsPage() {
                             >
                                 Export CSV
                             </button>
-                            <button
-                                onClick={() => exportReport('pdf')}
-                                className="px-4 py-2 rounded-lg text-white transition-colors duration-200"
-                                style={{ backgroundColor: '#355E3B' }}
-                            >
-                                Export PDF
-                            </button>
                         </div>
                     </div>
                 </div>
