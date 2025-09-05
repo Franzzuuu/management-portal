@@ -148,7 +148,7 @@ export default function CarolinianVehicles() {
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={() => router.push('/carolinian')}
-                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:cursor-pointer"
                             >
                                 ← Back to Dashboard
                             </button>
@@ -164,7 +164,7 @@ export default function CarolinianVehicles() {
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg hover:cursor-pointer"
                             >
                                 Logout
                             </button>
@@ -187,7 +187,7 @@ export default function CarolinianVehicles() {
                         <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
                             <button
                                 onClick={() => setActiveTab('vehicles')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'vehicles'
+                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'vehicles'
                                     ? 'text-white shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
                                     }`}
@@ -197,7 +197,7 @@ export default function CarolinianVehicles() {
                             </button>
                             <button
                                 onClick={() => setActiveTab('logs')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'logs'
+                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'logs'
                                     ? 'text-white shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
                                     }`}

@@ -169,7 +169,7 @@ export default function VehicleManagement() {
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={() => router.push('/admin')}
-                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                                className="text-white hover:text-yellow-300 hover:cursor-pointer px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                             >
                                 ← Back to Dashboard
                             </button>
@@ -185,7 +185,7 @@ export default function VehicleManagement() {
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                                className="bg-red-600 hover:bg-red-700 hover:cursor-pointer text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
                             >
                                 Logout
                             </button>
@@ -212,7 +212,7 @@ export default function VehicleManagement() {
                         </div>
                         <button
                             onClick={() => setShowAddForm(!showAddForm)}
-                            className="px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg"
+                            className="px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer"
                             style={{ backgroundColor: '#FFD700', color: '#355E3B' }}
                         >
                             {showAddForm ? 'Cancel' : '+ Add Vehicle'}
@@ -262,7 +262,7 @@ export default function VehicleManagement() {
                                         id="vehicleType"
                                         name="vehicleType"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 hover:cursor-pointer rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.vehicleType}
                                         onChange={handleInputChange}
@@ -345,13 +345,13 @@ export default function VehicleManagement() {
                                 <button
                                     type="button"
                                     onClick={() => setShowAddForm(false)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg"
+                                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer"
                                     style={{ backgroundColor: '#355E3B' }}
                                 >
                                     Register Vehicle
@@ -413,13 +413,13 @@ export default function VehicleManagement() {
                                                     <>
                                                         <button
                                                             onClick={() => handleApproval(vehicle.id, 'approved')}
-                                                            className="text-green-600 hover:text-green-900"
+                                                            className="text-green-600 hover:text-green-900 hover:cursor-pointer"
                                                         >
                                                             Approve
                                                         </button>
                                                         <button
                                                             onClick={() => handleApproval(vehicle.id, 'rejected')}
-                                                            className="text-red-600 hover:text-red-900"
+                                                            className="text-red-600 hover:text-red-900 hover:cursor-pointer"
                                                         >
                                                             Reject
                                                         </button>

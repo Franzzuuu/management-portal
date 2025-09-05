@@ -165,7 +165,7 @@ export default function CarolinianViolations() {
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={() => router.push('/carolinian')}
-                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:cursor-pointer"
                             >
                                 ← Back to Dashboard
                             </button>
@@ -181,7 +181,7 @@ export default function CarolinianViolations() {
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg hover:cursor-pointer"
                             >
                                 Logout
                             </button>
@@ -204,7 +204,7 @@ export default function CarolinianViolations() {
                         <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
                             <button
                                 onClick={() => setActiveTab('current')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'current'
+                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'current'
                                     ? 'text-white shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
                                     }`}
@@ -214,7 +214,7 @@ export default function CarolinianViolations() {
                             </button>
                             <button
                                 onClick={() => setActiveTab('history')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'history'
+                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'history'
                                     ? 'text-white shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
                                     }`}
@@ -224,7 +224,7 @@ export default function CarolinianViolations() {
                             </button>
                             <button
                                 onClick={() => setActiveTab('appeals')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'appeals'
+                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'appeals'
                                     ? 'text-white shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
                                     }`}
@@ -328,7 +328,7 @@ export default function CarolinianViolations() {
                                                         {violation.has_image && (
                                                             <button
                                                                 onClick={() => window.open(`/api/violations/view-image/${violation.id}`, '_blank')}
-                                                                className="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors duration-200"
+                                                                className="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors duration-200 hover:cursor-pointer"
                                                             >
                                                                 View Evidence
                                                             </button>
@@ -336,7 +336,7 @@ export default function CarolinianViolations() {
                                                         {violation.status === 'pending' && !violation.contest_status && (
                                                             <button
                                                                 onClick={() => openContestModal(violation)}
-                                                                className="text-white px-3 py-1 rounded-md transition-colors duration-200 hover:opacity-90"
+                                                                className="text-white px-3 py-1 rounded-md transition-colors duration-200 hover:opacity-90 hover:cursor-pointer"
                                                                 style={{ backgroundColor: '#355E3B' }}
                                                             >
                                                                 Contest
@@ -379,7 +379,7 @@ export default function CarolinianViolations() {
                                 <h3 className="text-lg font-semibold text-gray-900">Contest Violation</h3>
                                 <button
                                     onClick={closeContestModal}
-                                    className="text-gray-400 hover:text-gray-600"
+                                    className="text-gray-400 hover:text-gray-600 hover:cursor-pointer"
                                 >
                                     <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -471,7 +471,7 @@ export default function CarolinianViolations() {
                             <div className="flex justify-end space-x-3 mt-6">
                                 <button
                                     onClick={closeContestModal}
-                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer"
                                     disabled={submitting}
                                 >
                                     Cancel
@@ -479,7 +479,7 @@ export default function CarolinianViolations() {
                                 <button
                                     onClick={submitContest}
                                     disabled={submitting || !contestForm.explanation.trim()}
-                                    className="px-4 py-2 text-white rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 text-white rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
                                     style={{ backgroundColor: '#355E3B' }}
                                 >
                                     {submitting ? 'Submitting...' : 'Submit Appeal'}

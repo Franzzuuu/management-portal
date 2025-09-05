@@ -221,7 +221,7 @@ export default function AddNewUser() {
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={() => router.push('/admin')}
-                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 hover:cursor-pointer"
                             >
                                 ← Back to Dashboard
                             </button>
@@ -237,7 +237,7 @@ export default function AddNewUser() {
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg hover:cursor-pointer"
                             >
                                 Logout
                             </button>
@@ -271,7 +271,7 @@ export default function AddNewUser() {
                                     setError('');
                                     setSuccess('');
                                 }}
-                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'create'
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors hover:cursor-pointer ${activeTab === 'create'
                                     ? 'text-white'
                                     : 'text-gray-300 hover:text-white'
                                     }`}
@@ -288,7 +288,7 @@ export default function AddNewUser() {
                                     setError('');
                                     setSuccess('');
                                 }}
-                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'manage'
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors hover:cursor-pointer ${activeTab === 'manage'
                                     ? 'text-white'
                                     : 'text-gray-300 hover:text-white'
                                     }`}
@@ -463,7 +463,7 @@ export default function AddNewUser() {
                                 <button
                                     type="button"
                                     onClick={() => router.push('/admin')}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer"
                                 >
                                     Cancel
                                 </button>
@@ -471,7 +471,7 @@ export default function AddNewUser() {
                                     type="button"
                                     onClick={handleSubmit}
                                     disabled={loading}
-                                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
+                                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:cursor-pointer"
                                     style={{ backgroundColor: '#355E3B' }}
                                 >
                                     {loading ? 'Creating User...' : 'Create User'}
@@ -541,7 +541,7 @@ export default function AddNewUser() {
                                                             setSelectedUser(userData);
                                                             setShowStatusModal(true);
                                                         }}
-                                                        className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors"
+                                                        className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors hover:cursor-pointer"
                                                     >
                                                         Update Status
                                                     </button>
@@ -551,7 +551,7 @@ export default function AddNewUser() {
                                                                 setSelectedUser(userData);
                                                                 setShowDeleteModal(true);
                                                             }}
-                                                            className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors"
+                                                            className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors hover:cursor-pointer"
                                                         >
                                                             Delete
                                                         </button>
@@ -581,21 +581,21 @@ export default function AddNewUser() {
                             <button
                                 onClick={() => handleUpdateStatus(selectedUser.id, 'active')}
                                 disabled={loading}
-                                className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors"
+                                className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
                             >
                                 Activate
                             </button>
                             <button
                                 onClick={() => handleUpdateStatus(selectedUser.id, 'inactive')}
                                 disabled={loading}
-                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors"
+                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
                             >
                                 Deactivate
                             </button>
                         </div>
                         <button
                             onClick={() => setShowStatusModal(false)}
-                            className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors hover:cursor-pointer"
                         >
                             Cancel
                         </button>
@@ -623,13 +623,13 @@ export default function AddNewUser() {
                             <button
                                 onClick={() => handleDeleteUser(selectedUser.id)}
                                 disabled={loading}
-                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors"
+                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
                             >
                                 {loading ? 'Deleting...' : 'Delete User'}
                             </button>
                             <button
                                 onClick={() => setShowDeleteModal(false)}
-                                className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg  hover:cursor-pointer hover:bg-gray-50 transition-colors"
                             >
                                 Cancel
                             </button>

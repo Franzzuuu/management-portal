@@ -119,7 +119,7 @@ export default function CarolinianDashboard() {
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg hover:cursor-pointer"
                             >
                                 Logout
                             </button>
@@ -248,7 +248,7 @@ export default function CarolinianDashboard() {
                                 {/* My Vehicles */}
                                 <button
                                     onClick={() => router.push('/carolinian/vehicles')}
-                                    className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                    className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                                 >
                                     <div className="flex-shrink-0">
                                         <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
@@ -266,7 +266,7 @@ export default function CarolinianDashboard() {
                                 {/* My Violations */}
                                 <button
                                     onClick={() => router.push('/carolinian/violations')}
-                                    className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                    className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                                 >
                                     <div className="flex-shrink-0">
                                         <div className="h-12 w-12 bg-red-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
@@ -284,7 +284,7 @@ export default function CarolinianDashboard() {
                                 {/* Profile Management */}
                                 <button
                                     onClick={() => router.push('/carolinian/profile')}
-                                    className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                    className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                                 >
                                     <div className="flex-shrink-0">
                                         <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
