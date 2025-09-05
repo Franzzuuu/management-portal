@@ -5,7 +5,7 @@ export async function addDepartmentColumn() {
         ALTER TABLE users 
         ADD COLUMN department VARCHAR(100);
     `;
-    
+
     try {
         await executeQuery(query);
         console.log('Successfully added department column to users table');
