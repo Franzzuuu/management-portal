@@ -327,7 +327,7 @@ export default function CarolinianViolations() {
                                                     <div className="flex space-x-2">
                                                         {violation.has_image && (
                                                             <button
-                                                                onClick={() => window.open(`/api/violations/${violation.id}/image`, '_blank')}
+                                                                onClick={() => window.open(`/api/violations/view-image/${violation.id}`, '_blank')}
                                                                 className="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors duration-200"
                                                             >
                                                                 View Evidence

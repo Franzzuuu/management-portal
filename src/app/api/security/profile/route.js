@@ -8,21 +8,20 @@ export async function GET() {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Ensure this is a Student or Faculty user
-        if (!['Student', 'Faculty'].includes(session.userRole)) {
-            return Response.json({ error: 'Access denied. Students and Faculty only.' }, { status: 403 });
+        // Ensure this is a Security user
+        if (session.userRole !== 'Security') {
+            return Response.json({ error: 'Access denied. Security only.' }, { status: 403 });
         }
 
         const userId = session.userId;
 
-        // Get user profile information (using correct column names)
+        // Get user profile information
         const profile = await queryOne(`
             SELECT 
                 up.full_name,
                 u.email,
                 up.phone_number as phone,
                 u.department,
-                up.usc_id as student_id,
                 up.usc_id as employee_id,
                 u.email as username,
                 u.designation,
@@ -36,11 +35,11 @@ export async function GET() {
             // Create default profile if none exists
             await executeQuery(`
                 INSERT INTO user_profiles (
-                    user_id, 
+                    user_id,
                     full_name,
                     created_at
                 ) VALUES (?, ?, NOW())
-            `, [userId, session.userEmail || 'User']);
+            `, [userId, session.userEmail || 'Security User']);
 
             // Fetch the newly created profile
             const newProfile = await queryOne(`
@@ -48,9 +47,8 @@ export async function GET() {
                     up.full_name,
                     u.email,
                     up.phone_number as phone,
-                    '' as department,
-                    '' as student_id,
-                    '' as employee_id,
+                    u.department,
+                    up.usc_id as employee_id,
                     u.email as username,
                     u.designation,
                     u.created_at
@@ -61,19 +59,28 @@ export async function GET() {
 
             return Response.json({
                 success: true,
-                profile: newProfile || {}
+                profile: newProfile || {
+                    full_name: session.userEmail || 'Security User',
+                    email: session.userEmail || '',
+                    phone: '',
+                    department: '',
+                    employee_id: '',
+                    username: session.userEmail || '',
+                    designation: 'Security',
+                    created_at: new Date().toISOString()
+                }
             });
         }
 
         return Response.json({
             success: true,
-            profile: profile
+            profile
         });
 
     } catch (error) {
-        console.error('Carolinian profile GET API error:', error);
+        console.error('Security profile GET API error:', error);
         return Response.json(
-            { error: 'Failed to fetch profile' },
+            { error: 'Failed to fetch profile data' },
             { status: 500 }
         );
     }
@@ -86,9 +93,9 @@ export async function PUT(request) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Ensure this is a Student or Faculty user
-        if (!['Student', 'Faculty'].includes(session.userRole)) {
-            return Response.json({ error: 'Access denied. Students and Faculty only.' }, { status: 403 });
+        // Ensure this is a Security user
+        if (session.userRole !== 'Security') {
+            return Response.json({ error: 'Access denied. Security only.' }, { status: 403 });
         }
 
         const userId = session.userId;
@@ -121,7 +128,7 @@ export async function PUT(request) {
         `, [userId]);
 
         if (existingProfile) {
-            // Update existing profile (using correct column names)
+            // Update existing profile
             await executeQuery(`
                 UPDATE user_profiles 
                 SET 
@@ -133,7 +140,7 @@ export async function PUT(request) {
             `, [
                 profileData.full_name.trim(),
                 profileData.phone?.trim() || null,
-                profileData.student_id?.trim() || profileData.employee_id?.trim() || null,
+                profileData.employee_id?.trim() || null,
                 userId
             ]);
 
@@ -150,7 +157,7 @@ export async function PUT(request) {
                 userId
             ]);
         } else {
-            // Create new profile (using correct column names)
+            // Create new profile
             await executeQuery(`
                 INSERT INTO user_profiles (
                     user_id,
@@ -163,7 +170,7 @@ export async function PUT(request) {
                 userId,
                 profileData.full_name.trim(),
                 profileData.phone?.trim() || null,
-                profileData.student_id?.trim() || profileData.employee_id?.trim() || null
+                profileData.employee_id?.trim() || null
             ]);
 
             // Update email and department in users table
@@ -186,7 +193,7 @@ export async function PUT(request) {
         });
 
     } catch (error) {
-        console.error('Carolinian profile PUT API error:', error);
+        console.error('Security profile PUT API error:', error);
         return Response.json(
             { error: 'Failed to update profile' },
             { status: 500 }

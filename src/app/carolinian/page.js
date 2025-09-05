@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function CarolinianDashboard() {
     const [user, setUser] = useState(null);
@@ -12,11 +13,13 @@ export default function CarolinianDashboard() {
         recentActivity: []
     });
     const [loading, setLoading] = useState(true);
+    const [profilePicture, setProfilePicture] = useState(null);
     const router = useRouter();
 
     useEffect(() => {
         fetchUserData();
         fetchPersonalStats();
+        fetchProfilePicture();
     }, []);
 
     const fetchUserData = async () => {
@@ -45,6 +48,20 @@ export default function CarolinianDashboard() {
             console.error('Failed to fetch personal stats:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchProfilePicture = async () => {
+        try {
+            const response = await fetch('/api/carolinian/profile-picture');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setProfilePicture(`data:${data.image_type};base64,${data.image_data}`);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch profile picture:', error);
         }
     };
 
@@ -125,10 +142,23 @@ export default function CarolinianDashboard() {
                             </p>
                         </div>
                         <div className="hidden md:block">
-                            <div className="h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <svg className="h-8 w-8" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
+                            <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-lg">
+                                {profilePicture ? (
+                                    <Image
+                                        src={profilePicture}
+                                        alt="Profile"
+                                        width={64}
+                                        height={64}
+                                        className="w-full h-full object-cover"
+                                        unoptimized={true}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
+                                        <svg className="h-8 w-8" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

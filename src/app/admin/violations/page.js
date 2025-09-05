@@ -405,6 +405,42 @@ export default function ViolationsManagement() {
         }
     };
 
+    const handleViewImage = async (violationId) => {
+        try {
+            // Use the new direct blob-to-image endpoint
+            const response = await fetch(`/api/violations/view-image/${violationId}`);
+
+            if (response.ok) {
+                // Get the image as a blob
+                const blob = await response.blob();
+
+                if (blob.size > 0) {
+                    // Create object URL from blob
+                    const imageUrl = URL.createObjectURL(blob);
+                    setSelectedImage(imageUrl);
+                    setShowImageModal(true);
+                } else {
+                    setError('No image data available');
+                }
+            } else {
+                const errorText = await response.text();
+                setError(`Failed to load image: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Error fetching violation image:', error);
+            setError('Failed to load violation image');
+        }
+    };
+
+    const handleCloseImageModal = () => {
+        // Clean up blob URL to prevent memory leaks
+        if (selectedImage && selectedImage.startsWith('blob:')) {
+            URL.revokeObjectURL(selectedImage);
+        }
+        setSelectedImage('');
+        setShowImageModal(false);
+    };
+
     const handleLogout = async () => {
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
@@ -1328,10 +1364,16 @@ export default function ViolationsManagement() {
 
                 {/* Image Modal */}
                 {showImageModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-                        <div className="relative max-w-4xl max-h-full">
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
+                        onClick={handleCloseImageModal}
+                    >
+                        <div
+                            className="relative max-w-4xl max-h-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <button
-                                onClick={() => setShowImageModal(false)}
+                                onClick={handleCloseImageModal}
                                 className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200 z-10"
                             >
                                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

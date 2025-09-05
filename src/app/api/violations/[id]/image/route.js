@@ -9,8 +9,8 @@ export async function GET(request, context) {
             return new Response('Unauthorized', { status: 401 });
         }
 
-        const params = await context.params;
-        const violationId = params.id;
+        const resolvedParams = await context.params;
+        const violationId = resolvedParams.id;
 
         // Check if user has permission to view this image
         const violation = await queryMany(`
@@ -46,8 +46,23 @@ export async function GET(request, context) {
             return new Response('No image found', { status: 404 });
         }
 
+        console.log('Image data type:', typeof violationData.image_data);
+        console.log('Is Buffer:', Buffer.isBuffer(violationData.image_data));
+        console.log('Image data length:', violationData.image_data?.length);
+
         // Convert Buffer to Base64 and serve the image
-        const base64Image = violationData.image_data.toString('base64');
+        let base64Image;
+        if (Buffer.isBuffer(violationData.image_data)) {
+            base64Image = violationData.image_data.toString('base64');
+        } else {
+            // Handle case where image_data might be a different format
+            console.log('Converting non-buffer data to buffer');
+            base64Image = Buffer.from(violationData.image_data).toString('base64');
+        }
+
+        console.log('Base64 output length:', base64Image.length);
+        console.log('Base64 starts with:', base64Image.substring(0, 50));
+
         return new Response(base64Image, {
             headers: {
                 'Content-Type': 'text/plain', // Send as base64 text

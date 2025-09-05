@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -15,10 +16,12 @@ export default function AdminDashboard() {
     const [recentActivity, setRecentActivity] = useState([]);
     const [latestRegistrations, setLatestRegistrations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [profilePicture, setProfilePicture] = useState(null);
     const router = useRouter();
 
     useEffect(() => {
         checkAuth();
+        fetchProfilePicture();
     }, []);
 
     const checkAuth = async () => {
@@ -54,6 +57,20 @@ export default function AdminDashboard() {
             }
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
+        }
+    };
+
+    const fetchProfilePicture = async () => {
+        try {
+            const response = await fetch('/api/admin/profile-picture');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setProfilePicture(`data:${data.image_type};base64,${data.image_data}`);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch profile picture:', error);
         }
     };
 
@@ -111,9 +128,29 @@ export default function AdminDashboard() {
                                     </span>
                                 </div>
                             </div>
+                            <div className="hidden md:block">
+                                <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-lg">
+                                    {profilePicture ? (
+                                        <Image
+                                            src={profilePicture}
+                                            alt="Profile"
+                                            width={48}
+                                            height={48}
+                                            className="w-full h-full object-cover"
+                                            unoptimized={true}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
+                                            <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <button
                                 onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg hover:cursor-pointer"
                             >
                                 Logout
                             </button>
@@ -298,7 +335,7 @@ export default function AdminDashboard() {
                             {/* Add New User */}
                             <button
                                 onClick={() => router.push('/admin/users/new')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                             >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
@@ -316,7 +353,7 @@ export default function AdminDashboard() {
                             {/* Vehicle Management */}
                             <button
                                 onClick={() => router.push('/admin/vehicles')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                             >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
@@ -334,7 +371,7 @@ export default function AdminDashboard() {
                             {/* View Reports */}
                             <button
                                 onClick={() => router.push('/admin/reports')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                             >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
@@ -352,7 +389,7 @@ export default function AdminDashboard() {
                             {/* RFID Tag Management */}
                             <button
                                 onClick={() => router.push('/admin/rfid-tags')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                             >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
@@ -370,7 +407,7 @@ export default function AdminDashboard() {
                             {/* Access Logs */}
                             <button
                                 onClick={() => router.push('/admin/access-logs')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                             >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
@@ -388,7 +425,7 @@ export default function AdminDashboard() {
                             {/* Violation Management */}
                             <button
                                 onClick={() => router.push('/admin/violations')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300"
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
                             >
                                 <div className="flex-shrink-0">
                                     <div className="h-12 w-12 bg-red-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
@@ -400,6 +437,24 @@ export default function AdminDashboard() {
                                 <div className="ml-4 text-left">
                                     <p className="text-lg font-semibold text-gray-900">Violation Management</p>
                                     <p className="text-sm text-gray-600">Handle parking violations and penalties</p>
+                                </div>
+                            </button>
+
+                            {/* My Profile */}
+                            <button
+                                onClick={() => router.push('/admin/profile')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
+                            >
+                                <div className="flex-shrink-0">
+                                    <div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="ml-4 text-left">
+                                    <p className="text-lg font-semibold text-gray-900">My Profile</p>
+                                    <p className="text-sm text-gray-600">Update personal information and settings</p>
                                 </div>
                             </button>
 
