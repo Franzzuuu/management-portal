@@ -15,7 +15,7 @@ export async function GET() {
 
         const userId = session.userId;
 
-        // Get user's vehicles with RFID tag information (using correct column names)
+        // Get user's vehicles with RFID tag information (using approval_status for consistency)
         const vehicles = await queryMany(`
             SELECT 
                 v.id,
@@ -24,7 +24,7 @@ export async function GET() {
                 v.model,
                 v.color,
                 v.registration_date,
-                v.sticker_status as registration_status,
+                v.approval_status as registration_status,
                 v.created_at,
                 rt.tag_uid as rfid_tag_uid,
                 rt.status as rfid_status

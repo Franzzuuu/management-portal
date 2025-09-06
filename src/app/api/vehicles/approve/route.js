@@ -19,10 +19,14 @@ export async function POST(request) {
             );
         }
 
-        // Update vehicle approval status
+        // Update vehicle approval status and sticker status
+        // When approved, set sticker_status to 'renewed' 
+        // When rejected, keep sticker_status as 'pending'
+        const stickerStatus = status === 'approved' ? 'renewed' : 'pending';
+
         await executeQuery(
-            'UPDATE vehicles SET approval_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [status, vehicleId]
+            'UPDATE vehicles SET approval_status = ?, sticker_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [status, stickerStatus, vehicleId]
         );
 
         return Response.json({
