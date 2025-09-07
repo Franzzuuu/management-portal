@@ -229,7 +229,7 @@ export default function CarolinianDashboard() {
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Account Status</h3>
                                 <p className="text-lg font-bold text-green-500">Active</p>
-                                <p className="text-sm text-gray-500">All systems operational</p>
+                                <p className="text-sm text-gray-500">Registration and Enrollment is up to date</p>
                             </div>
                         </div>
                     </div>
