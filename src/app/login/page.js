@@ -12,7 +12,6 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const router = useRouter();
 
-    // Base64 encoded background image - replace with your image
     const backgroundImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojNzA5MGE2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0Yjc2ODg7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNncmFkaWVudCkiIC8+Cjwvc3ZnPgo=";
 
     const handleSubmit = async (e) => {
@@ -32,14 +31,12 @@ export default function LoginPage() {
             const data = await response.json();
 
             if (data.success) {
-                // ✅ FIXED: Redirect based on user role with correct routing
                 const role = data.user.designation;
                 if (role === 'Admin') {
                     router.push('/admin');
                 } else if (role === 'Security') {
                     router.push('/security');
                 } else {
-                    // Students, Faculty, and other normal users
                     router.push('/carolinian');
                 }
             } else {
@@ -101,7 +98,9 @@ export default function LoginPage() {
                                     name="email"
                                     type="email"
                                     required
-                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent"
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm 
+                                             text-black placeholder-gray-400 
+                                               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                     style={{
                                         focusRingColor: '#355E3B',
                                         '--tw-ring-color': '#355E3B'
@@ -121,7 +120,9 @@ export default function LoginPage() {
                                     name="password"
                                     type="password"
                                     required
-                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent"
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm 
+                                             text-black placeholder-gray-400 
+                                               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                     style={{
                                         focusRingColor: '#355E3B',
                                         '--tw-ring-color': '#355E3B'
