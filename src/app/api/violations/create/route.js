@@ -5,8 +5,15 @@ export async function POST(request) {
     try {
         // Check if user is authenticated and is admin
         const session = await getSession();
+        console.log('Session:', session);
+
         if (!session || session.userRole !== 'Admin') {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!session.uscId) {
+            console.error('Missing uscId in session');
+            return Response.json({ error: 'Invalid session' }, { status: 401 });
         }
 
         const formData = await request.formData();
@@ -52,6 +59,17 @@ export async function POST(request) {
             }
         }
 
+        // Log all values before insertion
+        console.log('Inserting violation with values:', {
+            vehicleId,
+            violationTypeId,
+            description,
+            hasImageData: !!imageData,
+            imageFilename,
+            imageMimeType,
+            uscId: session.uscId
+        });
+
         // Insert violation record with image data
         const insertQuery = `
             INSERT INTO violations (
@@ -67,15 +85,21 @@ export async function POST(request) {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
         `;
 
-        await executeQuery(insertQuery, [
+        // Ensure null is used for optional parameters instead of undefined
+        const params = [
             vehicleId,
             violationTypeId,
-            description,
-            imageData,
-            imageFilename,
-            imageMimeType,
-            session.userId
-        ]);
+            description || '',
+            imageData || null,
+            imageFilename || null,
+            imageMimeType || null,
+            session.uscId
+        ];
+
+        console.log('Query parameters:', params.map(p => p === null ? 'null' : typeof p));
+
+        // Execute the query with the parameters
+        await executeQuery(insertQuery, params);
 
         return Response.json({
             success: true,

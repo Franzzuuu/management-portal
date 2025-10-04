@@ -412,13 +412,13 @@ export default function VehicleManagement() {
                                                 {vehicle.approval_status === 'pending' && (
                                                     <>
                                                         <button
-                                                            onClick={() => handleApproval(vehicle.id, 'approved')}
+                                                            onClick={() => handleApproval(vehicle.vehicle_id, 'approved')}
                                                             className="text-green-600 hover:text-green-900 hover:cursor-pointer"
                                                         >
                                                             Approve
                                                         </button>
                                                         <button
-                                                            onClick={() => handleApproval(vehicle.id, 'rejected')}
+                                                            onClick={() => handleApproval(vehicle.vehicle_id, 'rejected')}
                                                             className="text-red-600 hover:text-red-900 hover:cursor-pointer"
                                                         >
                                                             Reject

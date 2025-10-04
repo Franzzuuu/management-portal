@@ -23,7 +23,7 @@ export async function GET() {
         }
 
         // Return user data (without sensitive info)
-        const { id, email, designation, full_name, phone_number, gender, status } = user;
+        const { id, email, designation, full_name, phone_number, gender, status, usc_id } = user;
 
         return Response.json({
             success: true,
@@ -34,7 +34,8 @@ export async function GET() {
                 fullName: full_name,
                 phoneNumber: phone_number,
                 gender,
-                status
+                status,
+                uscId: usc_id  // Add USC ID to the response
             }
         });
 

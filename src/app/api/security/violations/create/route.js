@@ -13,6 +13,7 @@ export async function POST(request) {
         const vehicleId = formData.get('vehicleId');
         const violationTypeId = formData.get('violationTypeId');
         const description = formData.get('description') || '';
+        const location = formData.get('location') || 'Campus';
         const imageFile = formData.get('image');
 
         // Validate required fields
@@ -57,24 +58,49 @@ export async function POST(request) {
             INSERT INTO violations (
                 vehicle_id, 
                 violation_type_id, 
-                description, 
+                description,
+                location,
                 image_data,
                 image_filename,
                 image_mime_type,
                 reported_by, 
                 status, 
                 created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
         `;
 
-        await executeQuery(insertQuery, [
+        // Log the values for debugging
+        console.log('Creating violation with:', {
             vehicleId,
             violationTypeId,
             description,
+            location,
+            imageFilename,
+            imageMimeType,
+            reportedBy: session.uscId
+        });
+
+        const result = await executeQuery(insertQuery, [
+            vehicleId,
+            violationTypeId,
+            description,
+            location,
             imageData,
             imageFilename,
             imageMimeType,
-            session.userId
+            session.uscId
+        ]);
+
+        // Add entry to violation status history
+        const historyQuery = `
+            INSERT INTO violation_status_history (
+                violation_id, old_status, new_status, changed_by, created_at
+            ) VALUES (?, 'pending', 'pending', ?, NOW())
+        `;
+
+        await executeQuery(historyQuery, [
+            result.insertId,
+            session.uscId
         ]);
 
         return Response.json({

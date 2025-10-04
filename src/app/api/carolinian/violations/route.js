@@ -56,9 +56,10 @@ export async function GET(request) {
                 ve.model as vehicle_model,
                 ve.color as vehicle_color
             FROM violations v
-            JOIN vehicles ve ON v.vehicle_id = ve.id
+            JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN violation_types vt ON v.violation_type_id = vt.id
-            WHERE ve.user_id = ?
+            JOIN users u ON ve.usc_id = u.usc_id
+            WHERE u.id = ?
         `;
 
         switch (view) {

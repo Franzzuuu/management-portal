@@ -46,8 +46,14 @@ const SecurityDashboard = () => {
 
     const fetchDashboardData = async () => {
         try {
-            // ✅ FIXED: Only fetch violations data (activity API doesn't exist yet)
-            const violationsResponse = await fetch('/api/violations?securityFilter=true');
+            console.log('Fetching violations with user:', user);
+            // Fetch violations reported by the current security personnel
+            const violationsResponse = await fetch('/api/violations?securityFilter=true', {
+                headers: {
+                    'X-User-Role': 'Security',
+                    'X-User-Id': user?.uscId?.toString() || ''
+                }
+            });
 
             // ✅ FIXED: Check if the response is OK before parsing JSON
             if (!violationsResponse.ok) {

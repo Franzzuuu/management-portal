@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -56,11 +56,44 @@ export default function ViolationsManagement() {
     }, []);
 
     // Refetch violations when user changes
+    // Move fetchViolations definition before its usage
+    const fetchViolations = useCallback(async () => {
+        try {
+            if (!user) {
+                console.log('No user data available yet');
+                return;
+            }
+            console.log('Fetching violations for user:', user?.uscId);
+            console.log('Full user object:', user);
+            const response = await fetch(`/api/violations?securityFilter=true`, {
+                headers: {
+                    'X-User-Role': 'Security',
+                    'X-User-Id': user?.uscId?.toString() || ''
+                }
+            });
+            const data = await response.json();
+            console.log('Violations response:', data);
+
+            if (data.success) {
+                console.log('Violations data:', data.violations);
+                setViolations(data.violations);
+                setFilteredViolations(data.violations);
+            } else {
+                console.error('Failed to fetch violations:', data.error);
+                setError(data.error || 'Failed to fetch violations');
+            }
+        } catch (error) {
+            console.error('Failed to fetch violations:', error);
+            setError('Failed to fetch violations: ' + error.message);
+        }
+    }, [user, setViolations, setFilteredViolations, setError]);
+
     useEffect(() => {
-        if (user) {
+        if (user?.uscId) {
+            console.log('User data available, fetching violations...');
             fetchViolations();
         }
-    }, [user]);
+    }, [user?.uscId, fetchViolations]);
 
     useEffect(() => {
         filterViolations();
@@ -96,40 +129,6 @@ export default function ViolationsManagement() {
             router.push('/login');
         }
         setLoading(false);
-    };
-
-    const fetchViolations = async () => {
-        try {
-            console.log('Fetching violations for user:', user?.id);
-            const response = await fetch(`/api/violations?securityFilter=true`, {
-                headers: {
-                    'X-User-Role': 'Security',
-                    'X-User-Id': user?.id?.toString() || ''
-                }
-            });
-            const data = await response.json();
-            console.log('Violations response:', data);
-
-            if (data.success) {
-                // Filter violations to only show those created by the current user
-                const userViolations = data.violations.filter(violation => {
-                    const isCreator = violation.reported_by === user?.id || violation.created_by === user?.id;
-                    if (isCreator) {
-                        console.log('Found user violation:', violation);
-                    }
-                    return isCreator;
-                });
-                console.log('Filtered violations:', userViolations);
-                setViolations(userViolations);
-                setFilteredViolations(userViolations);
-            } else {
-                console.error('Failed to fetch violations:', data.error);
-                setError(data.error || 'Failed to fetch violations');
-            }
-        } catch (error) {
-            console.error('Failed to fetch violations:', error);
-            setError('Failed to fetch violations: ' + error.message);
-        }
     };
 
     const fetchVehicles = async () => {
@@ -393,7 +392,7 @@ export default function ViolationsManagement() {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-User-Role': 'Security',
-                    'X-User-Id': user?.id?.toString() || ''
+                    'X-User-Id': user?.uscId?.toString() || ''
                 },
                 body: JSON.stringify({
                     vehicle_id: formData.vehicleId,
@@ -409,17 +408,19 @@ export default function ViolationsManagement() {
             const data = await response.json();
             console.log('Server response:', data);
 
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            }
+
             if (data.success) {
+                console.log('Violation created successfully, refetching list...');
+                // Refetch violations immediately
+                await fetchViolations();
                 setSuccess('Violation reported successfully!');
                 setFormData({ vehicleId: '', violationTypeId: '', description: '', imageFile: null });
                 setShowAddForm(false);
-                // Wait a moment before refreshing the list
-                setTimeout(() => {
-                    fetchViolations();
-                }, 500);
             } else {
-                console.error('Error response:', data);
-                setError(data.error || 'Failed to create violation');
+                throw new Error(data.error || 'Failed to create violation');
             }
         } catch (error) {
             console.error('Submission error:', error);
@@ -631,7 +632,7 @@ export default function ViolationsManagement() {
                             <button
                                 onClick={() => setShowAddForm(true)}
                                 className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                                style={{ backgroundColor: '#355E3B' }}
+                                style={{ backgroundColor: '#355E3B', color: '#FFFFFF' }}
                             >
                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1344,7 +1345,7 @@ export default function ViolationsManagement() {
                                         >
                                             <option value="">Choose a vehicle...</option>
                                             {vehicles.map(vehicle => (
-                                                <option key={vehicle.id} value={vehicle.id}>
+                                                <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
                                                     {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.owner_name})
                                                 </option>
                                             ))}

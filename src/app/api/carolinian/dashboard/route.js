@@ -18,8 +18,9 @@ export async function GET() {
         // Get user's vehicles count
         const vehiclesResult = await queryMany(`
             SELECT COUNT(*) as count
-            FROM vehicles 
-            WHERE user_id = ?
+            FROM vehicles v
+            JOIN users u ON v.usc_id = u.usc_id
+            WHERE u.id = ?
         `, [userId]);
         const registeredVehicles = vehiclesResult[0]?.count || 0;
 
@@ -27,8 +28,9 @@ export async function GET() {
         const violationsResult = await queryMany(`
             SELECT COUNT(*) as count
             FROM violations v
-            JOIN vehicles ve ON v.vehicle_id = ve.id
-            WHERE ve.user_id = ?
+            JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
+            JOIN users u ON ve.usc_id = u.usc_id
+            WHERE u.id = ?
         `, [userId]);
         const totalViolations = violationsResult[0]?.count || 0;
 
@@ -39,8 +41,9 @@ export async function GET() {
             const appealsResult = await queryMany(`
                 SELECT COUNT(*) as count
                 FROM violations v
-                JOIN vehicles ve ON v.vehicle_id = ve.id
-                WHERE ve.user_id = ? 
+                JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
+                JOIN users u ON ve.usc_id = u.usc_id
+                WHERE u.id = ? 
                 AND v.contest_status = 'pending'
             `, [userId]);
             pendingAppeals = appealsResult[0]?.count || 0;
@@ -57,9 +60,10 @@ export async function GET() {
                 CONCAT('Violation issued: ', vt.name, ' - ', ve.plate_number) as description,
                 v.created_at as timestamp
             FROM violations v
-            JOIN vehicles ve ON v.vehicle_id = ve.id
+            JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN violation_types vt ON v.violation_type_id = vt.id
-            WHERE ve.user_id = ?
+            JOIN users u ON ve.usc_id = u.usc_id
+            WHERE u.id = ?
             ORDER BY v.created_at DESC
             LIMIT 5
         `, [userId]);
@@ -78,8 +82,9 @@ export async function GET() {
                 ) as description,
                 al.timestamp
             FROM access_logs al
-            JOIN vehicles ve ON al.vehicle_id = ve.id
-            WHERE ve.user_id = ?
+            JOIN vehicles ve ON al.vehicle_id = ve.vehicle_id
+            JOIN users u ON ve.usc_id = u.usc_id
+            WHERE u.id = ?
             ORDER BY al.timestamp DESC
             LIMIT 5
         `, [userId]);

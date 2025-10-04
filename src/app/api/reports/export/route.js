@@ -28,7 +28,7 @@ export async function GET(request) {
           up.gender,
           u.created_at
         FROM users u
-        JOIN user_profiles up ON u.id = up.user_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
         ORDER BY u.created_at DESC
       `),
 
@@ -39,8 +39,8 @@ export async function GET(request) {
           up.full_name as owner_name,
           u.email as owner_email
         FROM vehicles v
-        JOIN users u ON v.user_id = u.id
-        JOIN user_profiles up ON u.id = up.user_id
+        JOIN users u ON v.usc_id = u.usc_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
         ORDER BY v.created_at DESC
       `),
 
@@ -56,9 +56,9 @@ export async function GET(request) {
           up.full_name as user_name,
           u.designation
         FROM access_logs al
-        JOIN vehicles v ON al.vehicle_id = v.id
-        JOIN users u ON v.user_id = u.id
-        JOIN user_profiles up ON u.id = up.user_id
+        JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+        JOIN users u ON v.usc_id = u.usc_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
         WHERE DATE(al.timestamp) BETWEEN ? AND ?
         ORDER BY al.timestamp DESC
       `, [startDate, endDate]),
@@ -75,11 +75,11 @@ export async function GET(request) {
           reporter.full_name as reported_by
         FROM violations vi
         JOIN violation_types vt ON vi.violation_type_id = vt.id
-        JOIN vehicles v ON vi.vehicle_id = v.id
-        JOIN users u ON v.user_id = u.id
-        JOIN user_profiles up ON u.id = up.user_id
+        JOIN vehicles v ON vi.vehicle_id = v.vehicle_id
+        JOIN users u ON v.usc_id = u.usc_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
         JOIN users ru ON vi.reported_by = ru.id
-        JOIN user_profiles reporter ON ru.id = reporter.user_id
+        JOIN user_profiles reporter ON ru.usc_id = ru.usc_id
         WHERE DATE(vi.created_at) BETWEEN ? AND ?
         ORDER BY vi.created_at DESC
       `, [startDate, endDate])

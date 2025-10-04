@@ -27,8 +27,23 @@ export async function GET(request) {
         }
 
         if (isSecurity && securityFilter) {
+            // Get the security user's USC ID from headers
+            const headers = request.headers;
+            const securityUscId = headers.get('x-user-id');
+            console.log('Security USC ID from headers:', securityUscId);
+            console.log('All headers:', Object.fromEntries(headers.entries()));
+            console.log('Session:', session);
+
+            // Try to get USC ID from either headers or session
+            const userUscId = securityUscId || session?.uscId;
+
+            if (!userUscId) {
+                console.error('No USC ID found in headers or session');
+                return Response.json({ error: 'User ID not provided' }, { status: 400 });
+            }
+
             // ✅ NEW: Security users can see violations they've reported
-            return getSecurityViolations(session.uscId, dateFrom, dateTo);
+            return getSecurityViolations(userUscId, dateFrom, dateTo);
         }
 
         if (isAdmin) {
@@ -61,9 +76,11 @@ export async function GET(request) {
     }
 }
 
-async function getSecurityViolations(securityUserId, dateFrom, dateTo) {
+async function getSecurityViolations(securityUscId, dateFrom, dateTo) {
+    console.log('Getting violations for security USC ID:', securityUscId);
+
     let dateCondition = '';
-    let params = [securityUserId];
+    let params = [securityUscId];
 
     if (dateFrom && dateTo) {
         dateCondition = 'AND v.created_at BETWEEN ? AND ?';
@@ -89,25 +106,27 @@ async function getSecurityViolations(securityUserId, dateFrom, dateTo) {
             vh.make as brand,
             vh.model,
             vh.color,
-            u.id as owner_id,
+            u.usc_id as owner_id,
             u.email as owner_email,
             u.designation as owner_designation,
             up.full_name as owner_name,
-            reporter.id as reporter_id,
+            reporter.usc_id as reporter_id,
             reporter_profile.full_name as reporter_name,
             reporter.designation as reporter_designation
         FROM violations v
         JOIN violation_types vt ON v.violation_type_id = vt.id
-        JOIN vehicles vh ON v.vehicle_id = vh.id
-        JOIN users u ON vh.user_id = u.id
-        JOIN user_profiles up ON u.id = up.user_id
-        LEFT JOIN users reporter ON v.reported_by = reporter.id
-        LEFT JOIN user_profiles reporter_profile ON reporter.id = reporter_profile.user_id
+        JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
+        JOIN users u ON vh.usc_id = u.usc_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
+        LEFT JOIN users reporter ON v.reported_by = reporter.usc_id
+        LEFT JOIN user_profiles reporter_profile ON reporter.usc_id = reporter_profile.usc_id
         WHERE v.reported_by = ? ${dateCondition}
         ORDER BY v.created_at DESC
     `;
 
+    console.log('Executing query with params:', params);
     const violations = await queryMany(query, params);
+    console.log('Found violations:', violations);
 
     return Response.json({
         success: true,
@@ -145,7 +164,7 @@ async function getAllViolations(dateFrom, dateTo) {
             vh.make as brand,
             vh.model,
             vh.color,
-            u.id as owner_id,
+            u.usc_id as owner_id,
             u.email as owner_email,
             u.designation as owner_designation,
             up.full_name as owner_name,
@@ -179,7 +198,7 @@ async function getAllViolations(dateFrom, dateTo) {
     });
 }
 
-async function getUserViolations(userId) {
+async function getUserViolations(uscId) {
     const query = `
         SELECT 
             v.id,
@@ -199,25 +218,25 @@ async function getUserViolations(userId) {
             vh.make as brand,
             vh.model,
             vh.color,
-            u.id as owner_id,
+            u.usc_id as owner_id,
             u.email as owner_email,
             u.designation as owner_designation,
             up.full_name as owner_name,
-            reporter.id as reporter_id,
+            reporter.usc_id as reporter_id,
             reporter_profile.full_name as reporter_name,
             reporter.designation as reporter_designation
         FROM violations v
         JOIN violation_types vt ON v.violation_type_id = vt.id
-        JOIN vehicles vh ON v.vehicle_id = vh.id
-        JOIN users u ON vh.user_id = u.id
-        JOIN user_profiles up ON u.id = up.user_id
-        LEFT JOIN users reporter ON v.reported_by = reporter.id
-        LEFT JOIN user_profiles reporter_profile ON reporter.id = reporter_profile.user_id
-        WHERE u.id = ?
+        JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
+        JOIN users u ON vh.usc_id = u.usc_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
+        LEFT JOIN users reporter ON v.reported_by = reporter.usc_id
+        LEFT JOIN user_profiles reporter_profile ON reporter.usc_id = reporter_profile.usc_id
+        WHERE u.usc_id = ?
         ORDER BY v.created_at DESC
     `;
 
-    const violations = await queryMany(query, [userId]);
+    const violations = await queryMany(query, [uscId]);
 
     return Response.json({
         success: true,
@@ -238,35 +257,40 @@ async function getViolationHistory(dateFrom, dateTo) {
         SELECT 
             v.id,
             v.vehicle_id,
-            v.violation_type,
+            v.violation_type_id,
+            vt.name as violation_type,
             v.description,
             v.location,
             v.status,
             v.created_at,
             v.updated_at,
             v.reported_by,
-            v.has_image,
+            v.image_data IS NOT NULL as has_image,
             v.image_filename,
             vh.plate_number as vehicle_plate,
             vh.vehicle_type,
-            u.id as owner_id,
-            CONCAT(u.first_name, ' ', u.last_name) as owner_name,
+            u.usc_id as owner_id,
+            up.full_name as owner_name,
             u.designation as owner_designation,
-            reporter.id as reporter_id,
-            CONCAT(reporter.first_name, ' ', reporter.last_name) as reporter_name,
+            reporter.usc_id as reporter_id,
+            reporter_profile.full_name as reporter_name,
             reporter.designation as reporter_designation,
             -- Status history
             vsh.old_status,
             vsh.new_status,
             vsh.changed_at,
             vsh.changed_by,
-            CONCAT(changer.first_name, ' ', changer.last_name) as changed_by_name
+            changer_profile.full_name as changed_by_name
         FROM violations v
-        JOIN vehicles vh ON v.vehicle_id = vh.id
-        JOIN users u ON vh.user_id = u.id
-        LEFT JOIN users reporter ON v.reported_by = reporter.id
+        JOIN violation_types vt ON v.violation_type_id = vt.id
+        JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id 
+        JOIN users u ON vh.usc_id = u.usc_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
+        LEFT JOIN users reporter ON v.reported_by = reporter.usc_id
+        LEFT JOIN user_profiles reporter_profile ON reporter.usc_id = reporter_profile.usc_id
         LEFT JOIN violation_status_history vsh ON v.id = vsh.violation_id
-        LEFT JOIN users changer ON vsh.changed_by = changer.id
+        LEFT JOIN users changer ON vsh.changed_by = changer.usc_id
+        LEFT JOIN user_profiles changer_profile ON changer.usc_id = changer_profile.usc_id
         WHERE 1=1 ${dateCondition}
         ORDER BY v.created_at DESC, vsh.changed_at DESC
     `;
@@ -357,7 +381,7 @@ export async function POST(request) {
         }
 
         const data = await request.json();
-        const { vehicle_id, violation_type, description, image_data, image_filename, image_mime_type } = data;
+        const { vehicle_id, violation_type, description, location, image_data, image_filename, image_mime_type } = data;
 
         // Validate required fields
         if (!vehicle_id || !violation_type) {
@@ -371,14 +395,15 @@ export async function POST(request) {
             INSERT INTO violations (
                 vehicle_id, 
                 violation_type_id, 
-                description, 
+                description,
+                location, 
                 reported_by, 
                 status,
                 image_data,
                 image_filename,
                 image_mime_type,
                 created_at
-            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, NOW())
+            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, NOW())
         `;
 
         // Convert base64 image to buffer if it exists
@@ -388,6 +413,7 @@ export async function POST(request) {
             vehicle_id,
             violation_type,
             description || null,
+            location || 'Campus',
             session.uscId,
             imageBuffer,
             image_filename || null,
@@ -398,28 +424,21 @@ export async function POST(request) {
             return Response.json({ error: 'Failed to create violation' }, { status: 500 });
         }
 
-        // Return success with the new violation ID
-        return Response.json({
-            success: true,
-            message: 'Violation created successfully',
-            violationId: result.insertId
-        });
-
-        // Log the status change
+        // Log the status change - for new violations both statuses start as pending
         await executeQuery(`
             INSERT INTO violation_status_history (
                 violation_id, 
                 old_status, 
                 new_status, 
-                changed_by, 
-                changed_at
-            ) VALUES (?, NULL, 'pending', ?, NOW())
-        `, [result.insertId, session.userId]);
+                changed_by
+            ) VALUES (?, 'pending', 'pending', ?)
+        `, [result.insertId, session.uscId]);
 
+        // Return success with the new violation ID
         return Response.json({
             success: true,
-            message: 'Violation reported successfully',
-            violation_id: result.insertId
+            message: 'Violation created successfully',
+            violationId: result.insertId
         });
 
     } catch (error) {
@@ -465,7 +484,7 @@ export async function PUT(request) {
 
         // ✅ ENHANCED: Admin can update any violation, Security can only update their own
         const canUpdate = session.userRole === 'Admin' ||
-            (session.userRole === 'Security' && violation.reported_by === session.userId);
+            (session.userRole === 'Security' && violation.reported_by === session.uscId);
 
         if (!canUpdate) {
             return Response.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -493,10 +512,9 @@ export async function PUT(request) {
                     violation_id, 
                     old_status, 
                     new_status, 
-                    changed_by, 
-                    changed_at
-                ) VALUES (?, ?, ?, ?, NOW())
-            `, [id, violation.current_status, status, session.userId]);
+                    changed_by
+                ) VALUES (?, ?, ?, ?)
+            `, [id, violation.current_status, status, session.uscId]);
         }
 
         return Response.json({
@@ -544,7 +562,7 @@ export async function DELETE(request) {
 
         // ✅ ENHANCED: Admin can delete any violation, Security can only delete their own
         const canDelete = session.userRole === 'Admin' ||
-            (session.userRole === 'Security' && violation.reported_by === session.userId);
+            (session.userRole === 'Security' && violation.reported_by === session.uscId);
 
         if (!canDelete) {
             return Response.json({ error: 'Insufficient permissions' }, { status: 403 });

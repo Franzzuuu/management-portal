@@ -337,15 +337,16 @@ export default function ViolationsManagement() {
         setError('');
         setSuccess('');
 
-        const submitData = new FormData();
-        submitData.append('vehicleId', formData.vehicleId);
-        submitData.append('violationTypeId', formData.violationTypeId);
-        submitData.append('description', formData.description);
-        if (formData.imageFile) {
-            submitData.append('image', formData.imageFile);
-        }
-
         try {
+            // Convert form data to string values to prevent undefined
+            const submitData = new FormData();
+            submitData.append('vehicleId', formData.vehicleId || '');
+            submitData.append('violationTypeId', formData.violationTypeId || '');
+            submitData.append('description', formData.description || '');
+            if (formData.imageFile) {
+                submitData.append('image', formData.imageFile);
+            }
+
             const response = await fetch('/api/violations/create', {
                 method: 'POST',
                 body: submitData
@@ -1287,7 +1288,7 @@ export default function ViolationsManagement() {
                                         >
                                             <option value="">Choose a vehicle...</option>
                                             {vehicles.map(vehicle => (
-                                                <option key={vehicle.id} value={vehicle.id}>
+                                                <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
                                                     {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.owner_name})
                                                 </option>
                                             ))}
