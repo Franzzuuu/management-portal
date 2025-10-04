@@ -12,15 +12,17 @@ export async function GET() {
         // Get updated user information from database
         const user = await queryOne(`
             SELECT 
-                u.id,
+                u.usc_id,
                 u.email,
                 u.designation,
                 u.created_at,
-                up.full_name
+                up.full_name,
+                up.department,
+                up.profile_picture_type
             FROM users u
-            LEFT JOIN user_profiles up ON u.id = up.user_id
-            WHERE u.id = ?
-        `, [session.userId]);
+            LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+            WHERE u.usc_id = ?
+        `, [session.uscId]);
 
         if (!user) {
             return Response.json({ error: 'User not found' }, { status: 404 });
@@ -29,12 +31,14 @@ export async function GET() {
         return Response.json({
             success: true,
             user: {
-                id: user.id,
+                usc_id: user.usc_id,
                 username: user.email, // Use email as username for compatibility
                 email: user.email,
                 designation: user.designation,
                 full_name: user.full_name || user.email,
-                created_at: user.created_at
+                created_at: user.created_at,
+                department: user.department,
+                hasProfilePicture: user.profile_picture_type ? true : false
             }
         });
 

@@ -25,28 +25,40 @@ export async function POST(request) {
         }
 
         // Create session
-        const sessionToken = await createSession(authResult.user.id, authResult.user.designation);
+        const sessionToken = await createSession(authResult.user.usc_id, authResult.user.designation);
 
-        // Set cookie
+        // Set cookie with 30-day expiration
         const cookieStore = await cookies();
         cookieStore.set('session', sessionToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 // 7 days
+            maxAge: 30 * 24 * 60 * 60 // 30 days for persistent login
         });
 
         // Return user data (without sensitive info)
-        const { id, email: userEmail, designation, full_name, phone_number } = authResult.user;
+        const {
+            usc_id,
+            email: userEmail,
+            designation,
+            full_name,
+            phone_number,
+            department,
+            profile_picture,
+            profile_picture_type
+        } = authResult.user;
 
         return Response.json({
             success: true,
             user: {
-                id,
+                usc_id,
                 email: userEmail,
                 designation,
                 fullName: full_name,
-                phoneNumber: phone_number
+                phoneNumber: phone_number,
+                department,
+                profile_picture: profile_picture ? true : false, // Just indicate presence
+                profile_picture_type
             }
         });
 

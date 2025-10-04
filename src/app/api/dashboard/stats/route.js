@@ -42,9 +42,9 @@ export async function GET() {
         al.timestamp,
         al.entry_type
       FROM access_logs al
-      JOIN vehicles v ON al.vehicle_id = v.id
-      JOIN users u ON v.user_id = u.id
-      JOIN user_profiles up ON u.id = up.user_id
+      JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+      JOIN users u ON v.usc_id = u.usc_id
+      JOIN user_profiles up ON u.usc_id = up.usc_id
       ORDER BY al.timestamp DESC
       LIMIT 5
     `);
@@ -57,8 +57,8 @@ export async function GET() {
         v.vehicle_type,
         v.created_at
       FROM vehicles v
-      JOIN users u ON v.user_id = u.id
-      JOIN user_profiles up ON u.id = up.user_id
+      JOIN users u ON v.usc_id = u.usc_id
+      JOIN user_profiles up ON u.usc_id = up.usc_id
       WHERE v.approval_status = 'pending'
       ORDER BY v.created_at DESC
       LIMIT 3

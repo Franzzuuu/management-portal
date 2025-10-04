@@ -6,53 +6,61 @@ export async function POST(request) {
     try {
         const session = await getSession();
         if (!session) {
-            return new Response('Unauthorized', { status: 401 });
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Ensure this is an Admin user
         if (session.userRole !== 'Admin') {
-            return new Response('Access denied. Admin only.', { status: 403 });
+            return Response.json({ error: 'Access denied. Admin only.' }, { status: 403 });
         }
 
         const data = await request.json();
         const { image_data, image_type } = data;
 
         if (!image_data || !image_type) {
-            return new Response(JSON.stringify({
+            return Response.json({
                 success: false,
                 error: 'Image data and type are required'
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            }, { status: 400 });
         }
 
-        // Convert base64 to buffer
-        const imageBuffer = Buffer.from(image_data, 'base64');
+        try {
+            // Convert base64 to buffer
+            const imageBuffer = Buffer.from(image_data, 'base64');
 
-        // Update admin's profile picture
-        await executeQuery(
-            'UPDATE users SET profile_picture = ?, profile_picture_type = ? WHERE id = ?',
-            [imageBuffer, image_type, session.userId]
-        );
+            // Update admin's profile picture in user_profiles
+            const existing = await queryOne(
+                'SELECT id FROM user_profiles WHERE usc_id = ?',
+                [session.uscId]
+            );
 
-        return new Response(JSON.stringify({
-            success: true,
-            message: 'Profile picture updated successfully'
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+            if (existing) {
+                await executeQuery(
+                    'UPDATE user_profiles SET profile_picture = ?, profile_picture_type = ? WHERE usc_id = ?',
+                    [imageBuffer, image_type, session.uscId]
+                );
+            } else {
+                await executeQuery(
+                    'INSERT INTO user_profiles (usc_id, profile_picture, profile_picture_type) VALUES (?, ?, ?)',
+                    [session.uscId, imageBuffer, image_type]
+                );
+            }
 
+            return Response.json({
+                success: true,
+                message: 'Profile picture updated successfully'
+            }, { status: 200 });
+
+        } catch (dbError) {
+            console.error('Database operation failed:', dbError);
+            throw dbError; // Re-throw to be caught by outer try-catch
+        }
     } catch (error) {
         console.error('Admin profile picture upload error:', error);
-        return new Response(JSON.stringify({
+        return Response.json({
             success: false,
             error: 'Failed to upload profile picture'
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        }, { status: 500 });
     }
 }
 
@@ -61,49 +69,40 @@ export async function GET(request) {
     try {
         const session = await getSession();
         if (!session) {
-            return new Response('Unauthorized', { status: 401 });
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Ensure this is an Admin user
         if (session.userRole !== 'Admin') {
-            return new Response('Access denied. Admin only.', { status: 403 });
+            return Response.json({ error: 'Access denied. Admin only.' }, { status: 403 });
         }
 
-        const user = await queryOne(
-            'SELECT profile_picture, profile_picture_type FROM users WHERE id = ?',
-            [session.userId]
+        const details = await queryOne(
+            'SELECT profile_picture, profile_picture_type FROM user_profiles WHERE usc_id = ?',
+            [session.uscId]
         );
 
-        if (!user || !user.profile_picture) {
-            return new Response(JSON.stringify({
+        if (!details || !details.profile_picture) {
+            return Response.json({
                 success: false,
                 error: 'No profile picture found'
-            }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            }, { status: 404 });
         }
 
         // Convert buffer to base64
-        const base64Image = user.profile_picture.toString('base64');
+        const base64Image = details.profile_picture.toString('base64');
 
-        return new Response(JSON.stringify({
+        return Response.json({
             success: true,
             image_data: base64Image,
-            image_type: user.profile_picture_type || 'image/jpeg'
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+            image_type: details.profile_picture_type || 'image/jpeg'
+        }, { status: 200 });
 
     } catch (error) {
         console.error('Admin profile picture fetch error:', error);
-        return new Response(JSON.stringify({
+        return Response.json({
             success: false,
             error: 'Failed to fetch profile picture'
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        }, { status: 500 });
     }
 }

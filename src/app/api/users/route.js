@@ -29,7 +29,7 @@ export async function GET(request) {
                 u.designation,
                 up.full_name
             FROM users u
-            JOIN user_profiles up ON u.id = up.user_id
+            JOIN user_profiles up ON u.usc_id = up.usc_id
             WHERE u.status = 'active'
         `;
 

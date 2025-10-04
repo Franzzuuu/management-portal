@@ -10,8 +10,17 @@ export async function GET(request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const startDate = searchParams.get('startDate') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const endDate = searchParams.get('endDate') || new Date().toISOString().split('T')[0];
+        const page = parseInt(searchParams.get('page')) || 1;
+        const limit = parseInt(searchParams.get('limit')) || 20;
+        const offset = (page - 1) * limit;
+
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
+
+        const dateFilter = startDate && endDate
+            ? 'WHERE DATE(al.timestamp) BETWEEN ? AND ?'
+            : '';
+        const dateParams = startDate && endDate ? [startDate, endDate] : [];
 
         // Get user statistics
         const [totalUsers, studentCount, facultyCount, staffCount, newUsersThisMonth] = await Promise.all([
@@ -31,9 +40,9 @@ export async function GET(request) {
         ]);
 
         // Get access log statistics
-        const [totalAccessLogs, accessLogsInRange] = await Promise.all([
-            queryOne('SELECT COUNT(*) as count FROM access_logs WHERE DATE(timestamp) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)'),
-            queryOne('SELECT COUNT(*) as count FROM access_logs WHERE DATE(timestamp) BETWEEN ? AND ?', [startDate, endDate])
+        const [totalAccessLogs, accessLogsCount] = await Promise.all([
+            queryOne('SELECT COUNT(*) as count FROM access_logs'),
+            queryOne(`SELECT COUNT(*) as count FROM access_logs al ${dateFilter}`, dateParams)
         ]);
 
         // Get violation statistics
@@ -42,7 +51,10 @@ export async function GET(request) {
             queryOne('SELECT COUNT(*) as count FROM violations WHERE status = "pending"')
         ]);
 
-        // Get recent logs
+        // Build query parameters array
+        const queryParams = [...dateParams];
+
+        // Get recent logs with pagination
         const recentLogs = await queryMany(`
       SELECT 
         al.timestamp,
@@ -50,13 +62,13 @@ export async function GET(request) {
         v.plate_number,
         up.full_name as user_name
       FROM access_logs al
-      JOIN vehicles v ON al.vehicle_id = v.id
-      JOIN users u ON v.user_id = u.id
-      JOIN user_profiles up ON u.id = up.user_id
-      WHERE DATE(al.timestamp) BETWEEN ? AND ?
+      JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+      JOIN users u ON v.usc_id = u.usc_id
+      JOIN user_profiles up ON u.usc_id = up.usc_id
+      ${dateFilter}
       ORDER BY al.timestamp DESC
-      LIMIT 20
-    `, [startDate, endDate]);
+      LIMIT ${limit} OFFSET ${offset}
+    `, queryParams);
 
         const reportData = {
             userStats: {
@@ -74,7 +86,7 @@ export async function GET(request) {
             },
             accessStats: {
                 total: totalAccessLogs?.count || 0,
-                inRange: accessLogsInRange?.count || 0
+                inRange: accessLogsCount?.count || 0
             },
             violationStats: {
                 total: totalViolations?.count || 0,
@@ -85,7 +97,11 @@ export async function GET(request) {
 
         return Response.json({
             success: true,
-            reportData
+            reportData,
+            totalEntries: accessLogsCount?.count || 0,
+            currentPage: page,
+            entriesPerPage: limit,
+            totalPages: Math.ceil((accessLogsCount?.count || 0) / limit)
         });
 
     } catch (error) {

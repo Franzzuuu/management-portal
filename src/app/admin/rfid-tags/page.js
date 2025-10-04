@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import SearchableVehicleSelect from '../../components/SearchableVehicleSelect';
 
 export default function RFIDTagManagement() {
     const [user, setUser] = useState(null);
@@ -319,7 +320,7 @@ export default function RFIDTagManagement() {
                                         id="tagUid"
                                         name="tagUid"
                                         required
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter manufacturer UID (e.g., E200001C02701234)"
                                         value={formData.tagUid}
@@ -338,7 +339,7 @@ export default function RFIDTagManagement() {
                                         type="text"
                                         id="description"
                                         name="description"
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Optional notes (e.g., Batch #, Location found)"
                                         value={formData.description}
@@ -385,7 +386,7 @@ export default function RFIDTagManagement() {
                                         id="tagId"
                                         name="tagId"
                                         required
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={assignData.tagId}
                                         onChange={handleAssignInputChange}
@@ -403,22 +404,11 @@ export default function RFIDTagManagement() {
                                     <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-1">
                                         Vehicle *
                                     </label>
-                                    <select
-                                        id="vehicleId"
-                                        name="vehicleId"
-                                        required
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-400"
-                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                    <SearchableVehicleSelect
                                         value={assignData.vehicleId}
-                                        onChange={handleAssignInputChange}
-                                    >
-                                        <option value="">Select vehicle</option>
-                                        {vehicles.map((vehicle) => (
-                                            <option key={vehicle.id} value={vehicle.id}>
-                                                {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.owner_name})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(value) => setAssignData({ ...assignData, vehicleId: value })}
+                                        className="w-full"
+                                    />
                                 </div>
                             </div>
 

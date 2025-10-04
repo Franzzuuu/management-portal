@@ -18,7 +18,7 @@ export async function GET(request, context) {
                 v.image_data,
                 v.image_mime_type,
                 v.image_filename,
-                ve.user_id as vehicle_owner_id,
+                ve.usc_id as vehicle_owner_usc_id,
                 u.email as updated_by_email,
                 u.designation as updated_by_designation
             FROM violations v

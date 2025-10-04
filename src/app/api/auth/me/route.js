@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/utils';
-import { findUserById } from '@/lib/auth';
+import { findUserByUscId } from '@/lib/auth';
 
 export async function GET() {
     try {
@@ -13,7 +13,7 @@ export async function GET() {
         }
 
         // Get user details
-        const user = await findUserById(session.userId);
+        const user = await findUserByUscId(session.uscId);
 
         if (!user) {
             return Response.json(

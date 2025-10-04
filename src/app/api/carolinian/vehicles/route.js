@@ -18,26 +18,25 @@ export async function GET() {
         // Get user's vehicles with RFID tag information (using approval_status for consistency)
         const vehicles = await queryMany(`
             SELECT 
-                v.id,
+                v.vehicle_id,
                 v.plate_number,
                 v.make,
                 v.model,
                 v.color,
-                v.registration_date,
+                v.vehicle_type,
                 v.approval_status as registration_status,
                 v.created_at,
                 rt.tag_uid as rfid_tag_uid,
                 rt.status as rfid_status
             FROM vehicles v
-            LEFT JOIN rfid_tags rt ON v.id = rt.vehicle_id
-            WHERE v.user_id = ?
+            LEFT JOIN rfid_tags rt ON v.vehicle_id = rt.vehicle_id
+            WHERE v.usc_id = ?
             ORDER BY v.created_at DESC
         `, [userId]);
 
         // Format the response
         const formattedVehicles = vehicles.map(vehicle => ({
             ...vehicle,
-            year: new Date(vehicle.registration_date).getFullYear(), // Extract year from registration_date
             registration_status: vehicle.registration_status || 'pending'
         }));
 

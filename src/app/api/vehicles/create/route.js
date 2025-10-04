@@ -11,18 +11,55 @@ export async function POST(request) {
 
         const vehicleData = await request.json();
 
+        // Log received data for debugging
+        console.log('Received vehicle data:', vehicleData);
+
         // Validate required fields
-        const { userId, vehicleType, make, model, color, plateNumber, registrationDate } = vehicleData;
-        if (!userId || !vehicleType || !make || !model || !color || !plateNumber) {
+        const { vehicleType, make, model, color, plateNumber, registrationDate, userId } = vehicleData;
+
+        // Log extracted fields for debugging
+        console.log('Extracted fields:', {
+            vehicleType, make, model, color, plateNumber, registrationDate, userId
+        });
+
+        // Get the vehicle owner's user ID
+        const ownerUserId = userId || session.userId;
+
+        // Get the USC ID for the user
+        const userInfo = await executeQuery(
+            'SELECT usc_id FROM users WHERE id = ?',
+            [ownerUserId]
+        );
+
+        if (userInfo.length === 0) {
             return Response.json(
-                { error: 'All vehicle fields are required' },
+                { error: 'Invalid vehicle owner' },
+                { status: 400 }
+            );
+        }
+
+        const ownerUscId = userInfo[0].usc_id;
+
+        if (!vehicleType || !make || !model || !color || !plateNumber) {
+            // Log which fields are missing
+            const missingFields = [];
+            if (!vehicleType) missingFields.push('vehicleType');
+            if (!make) missingFields.push('make');
+            if (!model) missingFields.push('model');
+            if (!color) missingFields.push('color');
+            if (!plateNumber) missingFields.push('plateNumber');
+
+            console.log('Missing fields:', missingFields);
+
+            return Response.json(
+                { error: `Missing required fields: ${missingFields.join(', ')}` },
                 { status: 400 }
             );
         }
 
         // Check if plate number already exists
         const existingVehicle = await executeQuery(
-            'SELECT id FROM vehicles WHERE plate_number = ?',
+            'SELECT vehicle_id FROM vehicles WHERE plate_number = ?',
             [plateNumber]
         );
 
@@ -36,15 +73,16 @@ export async function POST(request) {
         // Insert vehicle
         const result = await executeQuery(
             `INSERT INTO vehicles 
-       (user_id, vehicle_type, make, model, color, plate_number, registration_date, approval_status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, vehicleType, make, model, color, plateNumber, registrationDate || new Date().toISOString().split('T')[0], 'pending']
+       (usc_id, vehicle_type, make, model, color, plate_number, registration_date, created_at, approval_status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+            [ownerUscId, vehicleType, make, model, color, plateNumber, registrationDate, 'pending']
         );
 
         return Response.json({
             success: true,
             message: 'Vehicle registered successfully',
-            vehicleId: result.insertId
+            vehicleId: result.insertId,
+            userId: ownerUserId
         });
 
     } catch (error) {

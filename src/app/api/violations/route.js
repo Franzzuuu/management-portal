@@ -23,12 +23,12 @@ export async function GET(request) {
         // ✅ ENHANCED: Handle different user types
         if (isNormalUser && !userId) {
             // Normal users can only see their own violations
-            return getUserViolations(session.userId);
+            return getUserViolations(session.uscId);
         }
 
         if (isSecurity && securityFilter) {
             // ✅ NEW: Security users can see violations they've reported
-            return getSecurityViolations(session.userId, dateFrom, dateTo);
+            return getSecurityViolations(session.uscId, dateFrom, dateTo);
         }
 
         if (isAdmin) {
@@ -149,22 +149,24 @@ async function getAllViolations(dateFrom, dateTo) {
             u.email as owner_email,
             u.designation as owner_designation,
             up.full_name as owner_name,
-            reporter.id as reporter_id,
+            reporter.usc_id as reporter_usc_id,
             reporter_profile.full_name as reporter_name,
             reporter.designation as reporter_designation,
-            updater.id as updated_by_id,
+            reporter_profile.department as reporter_department,
+            updater.usc_id as updated_by_usc_id,
             updater_profile.full_name as updated_by_name,
             updater.designation as updated_by_designation,
+            updater_profile.department as updated_by_department,
             v.updated_at as last_updated
         FROM violations v
         JOIN violation_types vt ON v.violation_type_id = vt.id
-        JOIN vehicles vh ON v.vehicle_id = vh.id
-        JOIN users u ON vh.user_id = u.id
-        JOIN user_profiles up ON u.id = up.user_id
-        LEFT JOIN users reporter ON v.reported_by = reporter.id
-        LEFT JOIN user_profiles reporter_profile ON reporter.id = reporter_profile.user_id
-        LEFT JOIN users updater ON v.updated_by = updater.id
-        LEFT JOIN user_profiles updater_profile ON updater.id = updater_profile.user_id
+        JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
+        JOIN users u ON vh.usc_id = u.usc_id
+        JOIN user_profiles up ON u.usc_id = up.usc_id
+        LEFT JOIN users reporter ON v.reported_by = reporter.usc_id
+        LEFT JOIN user_profiles reporter_profile ON reporter.usc_id = reporter_profile.usc_id
+        LEFT JOIN users updater ON v.updated_by = updater.usc_id
+        LEFT JOIN user_profiles updater_profile ON updater.usc_id = updater_profile.usc_id
         WHERE 1=1 ${dateCondition}
         ORDER BY v.created_at DESC
     `;
@@ -386,7 +388,7 @@ export async function POST(request) {
             vehicle_id,
             violation_type,
             description || null,
-            session.userId,
+            session.uscId,
             imageBuffer,
             image_filename || null,
             image_mime_type || null

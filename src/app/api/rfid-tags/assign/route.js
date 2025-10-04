@@ -19,35 +19,66 @@ export async function POST(request) {
             );
         }
 
+        console.log('Attempting to assign tag:', { tagId, vehicleId });
+
         // Check if tag is available for assignment
-        const tag = await executeQuery(
-            'SELECT * FROM rfid_tags WHERE id = ? AND status = "unassigned"',
+        console.log('Looking for tag with ID:', tagId);
+        const tagResults = await executeQuery(
+            'SELECT * FROM rfid_vehicle_system.rfid_tags WHERE id = ?',
             [tagId]
         );
 
-        if (tag.length === 0) {
+        console.log('Tag query results:', tagResults);
+
+        if (tagResults.length === 0) {
             return Response.json(
-                { error: 'RFID tag not found or already assigned' },
+                { error: 'RFID tag not found' },
                 { status: 404 }
             );
         }
 
+        const tagCheck = tagResults[0];
+        console.log('Found tag:', tagCheck);
+
+        if (tagCheck.status !== 'unassigned') {
+            return Response.json(
+                { error: 'RFID tag is already assigned' },
+                { status: 400 }
+            );
+        }
+
         // Check if vehicle exists and is approved
-        const vehicle = await executeQuery(
-            'SELECT * FROM vehicles WHERE id = ? AND approval_status = "approved"',
+        const [vehicleCheck] = await executeQuery(
+            'SELECT v.*, rt.tag_uid, rt.status as tag_status FROM vehicles v LEFT JOIN rfid_vehicle_system.rfid_tags rt ON v.vehicle_id = rt.vehicle_id WHERE v.vehicle_id = ?',
             [vehicleId]
         );
 
-        if (vehicle.length === 0) {
+        console.log('Found vehicle:', vehicleCheck);
+
+        if (!vehicleCheck) {
             return Response.json(
-                { error: 'Vehicle not found or not approved' },
+                { error: 'Vehicle not found' },
                 { status: 404 }
+            );
+        }
+
+        if (vehicleCheck.approval_status !== 'approved') {
+            return Response.json(
+                { error: 'Vehicle is not approved' },
+                { status: 400 }
+            );
+        }
+
+        if (vehicleCheck.tag_uid) {
+            return Response.json(
+                { error: 'Vehicle already has an RFID tag assigned' },
+                { status: 400 }
             );
         }
 
         // Update RFID tag with vehicle assignment
         await executeQuery(
-            'UPDATE rfid_tags SET vehicle_id = ?, status = "active", assigned_date = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE rfid_vehicle_system.rfid_tags SET vehicle_id = ?, status = "active", assigned_date = CURRENT_TIMESTAMP WHERE id = ?',
             [vehicleId, tagId]
         );
 

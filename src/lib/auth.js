@@ -47,28 +47,42 @@ export function validatePassword(password) {
 // Find user by email
 export async function findUserByEmail(email) {
     const query = `
-    SELECT u.*, up.full_name, up.phone_number, up.gender 
+    SELECT 
+        u.*, 
+        up.full_name, 
+        up.phone_number, 
+        up.gender,
+        up.department,
+        up.profile_picture,
+        up.profile_picture_type
     FROM users u
-    LEFT JOIN user_profiles up ON u.id = up.user_id 
+    LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
     WHERE u.email = ?
   `;
     return await queryOne(query, [email]);
 }
 
-// Find user by ID
-export async function findUserById(id) {
+// Find user by USC ID
+export async function findUserByUscId(uscId) {
     const query = `
-    SELECT u.*, up.full_name, up.phone_number, up.gender 
+    SELECT 
+        u.*, 
+        up.full_name, 
+        up.phone_number, 
+        up.gender,
+        up.department,
+        up.profile_picture,
+        up.profile_picture_type
     FROM users u
-    LEFT JOIN user_profiles up ON u.id = up.user_id 
-    WHERE u.id = ?
+    LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+    WHERE u.usc_id = ?
   `;
-    return await queryOne(query, [id]);
+    return await queryOne(query, [uscId]);
 }
 
 // Enhanced createUser function with status support
 export async function createUser(userData) {
-    const { email, password, designation, fullName, phoneNumber, gender, status } = userData;
+    const { email, password, designation, fullName, phoneNumber, gender, status, uscId, department } = userData;
 
     // Validate password
     const passwordValidation = validatePassword(password);
@@ -76,31 +90,41 @@ export async function createUser(userData) {
         throw new Error(`Password validation failed: ${passwordValidation.errors.join(', ')}`);
     }
 
-    // Check if user already exists
+    // Check if user already exists by email or USC ID
     const existingUser = await findUserByEmail(email);
+    const existingUscId = uscId ? await findUserByUscId(uscId) : null;
     if (existingUser) {
         throw new Error('User with this email already exists');
+    }
+    if (existingUscId) {
+        throw new Error('User with this USC ID already exists');
     }
 
     // Hash password
     const hashedPassword = await hashPassword(password);
 
     try {
-        // Insert user with specified status (default to 'active' if not provided)
+        // Insert user with USC ID
         const userResult = await executeQuery(
-            'INSERT INTO users (email, password_hash, designation, status) VALUES (?, ?, ?, ?)',
-            [email, hashedPassword, designation, status || 'active']
+            'INSERT INTO users (usc_id, email, password_hash, designation, status) VALUES (?, ?, ?, ?, ?)',
+            [uscId, email, hashedPassword, designation, status || 'active']
         );
-
-        const userId = userResult.insertId;
 
         // Insert user profile
         await executeQuery(
-            'INSERT INTO user_profiles (user_id, full_name, phone_number, gender) VALUES (?, ?, ?, ?)',
-            [userId, fullName, phoneNumber || null, gender || null]
+            'INSERT INTO user_profiles (usc_id, email, full_name, phone_number, gender) VALUES (?, ?, ?, ?, ?)',
+            [uscId, email, fullName, phoneNumber || null, gender || null]
         );
 
-        return { userId, email, designation };
+        // Update user_profiles with department if provided
+        if (department) {
+            await executeQuery(
+                'UPDATE user_profiles SET department = ? WHERE usc_id = ?',
+                [department, uscId]
+            );
+        }
+
+        return { uscId, email, designation };
 
     } catch (error) {
         console.error('Error creating user:', error);
@@ -135,30 +159,41 @@ export async function authenticateUser(email, password) {
     };
 }
 
-// Get user by ID with profile
-export async function getUserWithProfile(userId) {
+// Get user by USC ID with profile
+export async function getUserWithProfile(uscId) {
     const query = `
         SELECT 
             u.*,
             up.full_name,
             up.phone_number,
-            up.gender
+            up.gender,
+            up.department,
+            up.profile_picture,
+            up.profile_picture_type
         FROM users u
-        LEFT JOIN user_profiles up ON u.id = up.user_id 
-        WHERE u.id = ?
+        LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+        WHERE u.usc_id = ?
     `;
-    return await queryOne(query, [userId]);
+    return await queryOne(query, [uscId]);
 }
 
 // Update user profile information
-export async function updateUserProfile(userId, profileData) {
-    const { fullName, phoneNumber, gender } = profileData;
+export async function updateUserProfile(uscId, profileData) {
+    const { fullName, phoneNumber, gender, department, profilePicture, profilePictureType } = profileData;
 
     try {
         await executeQuery(
-            'UPDATE user_profiles SET full_name = ?, phone_number = ?, gender = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-            [fullName, phoneNumber || null, gender || null, userId]
+            'UPDATE user_profiles SET full_name = ?, phone_number = ?, gender = ?, updated_at = CURRENT_TIMESTAMP WHERE usc_id = ?',
+            [fullName, phoneNumber || null, gender || null, uscId]
         );
+
+        // Update profile details in user_profiles
+        if (department || profilePicture || profilePictureType) {
+            await executeQuery(
+                'UPDATE user_profiles SET department = ?, profile_picture = ?, profile_picture_type = ? WHERE usc_id = ?',
+                [department || null, profilePicture || null, profilePictureType || null, uscId]
+            );
+        }
 
         return { success: true };
     } catch (error) {
@@ -194,7 +229,7 @@ export async function getUserStats() {
 }
 
 // Update user status function
-export async function updateUserStatus(userId, status) {
+export async function updateUserStatus(uscId, status) {
     const validStatuses = ['active', 'inactive', 'pending'];
     if (!validStatuses.includes(status)) {
         throw new Error('Invalid status');
@@ -202,8 +237,8 @@ export async function updateUserStatus(userId, status) {
 
     try {
         await executeQuery(
-            'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [status, userId]
+            'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE usc_id = ?',
+            [status, uscId]
         );
         return { success: true };
     } catch (error) {

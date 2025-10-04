@@ -5,17 +5,17 @@ const secretKey = process.env.SESSION_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey);
 
 // Create session token
-export async function createSession(userId, userRole) {
+export async function createSession(uscId, userRole) {
     const payload = {
-        userId,
+        uscId,
         userRole,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
     };
 
     const session = await new SignJWT(payload)
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
-        .setExpirationTime('7d')
+        .setExpirationTime('30d')
         .sign(encodedKey);
 
     return session;
@@ -30,7 +30,7 @@ export async function verifySession(token) {
 
         return {
             isValid: true,
-            userId: payload.userId,
+            uscId: payload.uscId,
             userRole: payload.userRole
         };
     } catch (error) {
@@ -57,7 +57,7 @@ export async function getSession() {
     }
 
     return {
-        userId: verification.userId,
+        uscId: verification.uscId,
         userRole: verification.userRole
     };
 }

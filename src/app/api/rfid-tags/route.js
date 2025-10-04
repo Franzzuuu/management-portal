@@ -18,9 +18,9 @@ export async function GET() {
         v.model as vehicle_model,
         up.full_name as owner_name
       FROM rfid_tags rt
-      LEFT JOIN vehicles v ON rt.vehicle_id = v.id
-      LEFT JOIN users u ON v.user_id = u.id
-      LEFT JOIN user_profiles up ON u.id = up.user_id
+      LEFT JOIN vehicles v ON rt.vehicle_id = v.vehicle_id
+      LEFT JOIN users u ON v.usc_id = u.usc_id
+      LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
       ORDER BY rt.created_at DESC
     `);
 

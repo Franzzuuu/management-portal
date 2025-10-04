@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
                 v.image_data,
                 v.image_mime_type,
                 v.image_filename,
-                ve.user_id as vehicle_owner_id
+                ve.usc_id as vehicle_owner_usc_id
             FROM violations v
             JOIN vehicles ve ON v.vehicle_id = ve.id
             WHERE v.id = ? AND v.image_data IS NOT NULL

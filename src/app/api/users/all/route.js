@@ -21,7 +21,7 @@ export async function GET() {
                 up.phone_number,
                 up.gender
             FROM users u
-            LEFT JOIN user_profiles up ON u.id = up.user_id
+            LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
             ORDER BY u.created_at DESC
         `);
 

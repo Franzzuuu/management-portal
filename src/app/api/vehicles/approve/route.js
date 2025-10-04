@@ -25,7 +25,7 @@ export async function POST(request) {
         const stickerStatus = status === 'approved' ? 'renewed' : 'pending';
 
         await executeQuery(
-            'UPDATE vehicles SET approval_status = ?, sticker_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE vehicles SET approval_status = ?, sticker_status = ?, updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?',
             [status, stickerStatus, vehicleId]
         );
 
