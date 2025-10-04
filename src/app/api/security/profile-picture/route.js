@@ -30,10 +30,10 @@ export async function POST(request) {
         // Convert base64 to buffer
         const imageBuffer = Buffer.from(image_data, 'base64');
 
-        // Update security user's profile picture
+        // Store in user_profiles table
         await executeQuery(
-            'UPDATE users SET profile_picture = ?, profile_picture_type = ? WHERE id = ?',
-            [imageBuffer, image_type, session.userId]
+            'UPDATE user_profiles SET profile_picture = ?, profile_picture_type = ? WHERE usc_id = ?',
+            [imageBuffer, image_type, session.uscId]
         );
 
         return new Response(JSON.stringify({
@@ -70,8 +70,8 @@ export async function GET(request) {
         }
 
         const user = await queryOne(
-            'SELECT profile_picture, profile_picture_type FROM users WHERE id = ?',
-            [session.userId]
+            'SELECT profile_picture, profile_picture_type FROM user_profiles WHERE usc_id = ?',
+            [session.uscId]
         );
 
         if (!user || !user.profile_picture) {

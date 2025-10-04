@@ -1,61 +1,49 @@
-import { queryOne, executeQuery } from '@/lib/database';
+import { queryOne, executeQuery, getConnection } from '@/lib/database';
 import { getSession } from '@/lib/utils';
 
 export async function GET() {
     try {
         const session = await getSession();
-        if (!session) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        if (session.userRole !== 'Security') return Response.json({ error: 'Access denied. Security only.' }, { status: 403 });
 
-        // Ensure this is a Security user
-        if (session.userRole !== 'Security') {
-            return Response.json({ error: 'Access denied. Security only.' }, { status: 403 });
-        }
-
-        const userId = session.userId;
-
-        // Get user profile information
         const profile = await queryOne(`
             SELECT 
                 up.full_name,
                 u.email,
                 up.phone_number as phone,
-                u.department,
-                up.usc_id as employee_id,
+                up.department,
+                u.usc_id as employee_id,
                 u.email as username,
                 u.designation,
-                u.created_at
+                u.created_at,
+                up.profile_picture_type
             FROM users u
-            LEFT JOIN user_profiles up ON u.id = up.user_id
-            WHERE u.id = ?
-        `, [userId]);
+            LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+            WHERE u.usc_id = ?
+        `, [session.uscId]);
 
         if (!profile) {
-            // Create default profile if none exists
             await executeQuery(`
-                INSERT INTO user_profiles (
-                    user_id,
-                    full_name,
-                    created_at
-                ) VALUES (?, ?, NOW())
-            `, [userId, session.userEmail || 'Security User']);
+                INSERT INTO user_profiles (usc_id, email, full_name, created_at) 
+                VALUES (?, ?, ?, NOW())
+            `, [session.uscId, session.userEmail || '', session.userEmail || 'Security User']);
 
-            // Fetch the newly created profile
             const newProfile = await queryOne(`
                 SELECT 
                     up.full_name,
                     u.email,
                     up.phone_number as phone,
-                    u.department,
-                    up.usc_id as employee_id,
+                    up.department,
+                    u.usc_id as employee_id,
                     u.email as username,
                     u.designation,
-                    u.created_at
+                    u.created_at,
+                    up.profile_picture_type
                 FROM users u
-                LEFT JOIN user_profiles up ON u.id = up.user_id
-                WHERE u.id = ?
-            `, [userId]);
+                LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+                WHERE u.usc_id = ?
+            `, [session.uscId]);
 
             return Response.json({
                 success: true,
@@ -64,7 +52,7 @@ export async function GET() {
                     email: session.userEmail || '',
                     phone: '',
                     department: '',
-                    employee_id: '',
+                    employee_id: session.uscId,
                     username: session.userEmail || '',
                     designation: 'Security',
                     created_at: new Date().toISOString()
@@ -72,131 +60,86 @@ export async function GET() {
             });
         }
 
-        return Response.json({
-            success: true,
-            profile
-        });
-
+        return Response.json({ success: true, profile });
     } catch (error) {
         console.error('Security profile GET API error:', error);
-        return Response.json(
-            { error: 'Failed to fetch profile data' },
-            { status: 500 }
-        );
+        return Response.json({ error: 'Failed to fetch profile data' }, { status: 500 });
     }
 }
 
 export async function PUT(request) {
     try {
         const session = await getSession();
-        if (!session) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        if (session.userRole !== 'Security') return Response.json({ error: 'Access denied. Security only.' }, { status: 403 });
 
-        // Ensure this is a Security user
-        if (session.userRole !== 'Security') {
-            return Response.json({ error: 'Access denied. Security only.' }, { status: 403 });
-        }
-
-        const userId = session.userId;
         const profileData = await request.json();
 
-        // Validate required fields
         if (!profileData.full_name?.trim()) {
-            return Response.json({
-                error: 'Full name is required'
-            }, { status: 400 });
+            return Response.json({ error: 'Full name is required' }, { status: 400 });
         }
 
         if (!profileData.email?.trim()) {
-            return Response.json({
-                error: 'Email is required'
-            }, { status: 400 });
+            return Response.json({ error: 'Email is required' }, { status: 400 });
         }
 
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(profileData.email)) {
-            return Response.json({
-                error: 'Please enter a valid email address'
-            }, { status: 400 });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+            return Response.json({ error: 'Please enter a valid email address' }, { status: 400 });
         }
 
-        // Check if profile exists
         const existingProfile = await queryOne(`
-            SELECT id FROM user_profiles WHERE user_id = ?
-        `, [userId]);
+            SELECT id FROM user_profiles WHERE usc_id = ?
+        `, [session.uscId]);
 
-        if (existingProfile) {
-            // Update existing profile
-            await executeQuery(`
-                UPDATE user_profiles 
-                SET 
-                    full_name = ?,
-                    phone_number = ?,
-                    usc_id = ?,
-                    updated_at = NOW()
-                WHERE user_id = ?
-            `, [
-                profileData.full_name.trim(),
-                profileData.phone?.trim() || null,
-                profileData.employee_id?.trim() || null,
-                userId
-            ]);
+        const connection = await getConnection();
+        await connection.beginTransaction();
 
-            // Update email and department in users table
-            await executeQuery(`
-                UPDATE users 
-                SET 
-                    email = ?,
-                    department = ?
-                WHERE id = ?
-            `, [
-                profileData.email.trim(),
-                profileData.department?.trim() || null,
-                userId
-            ]);
-        } else {
-            // Create new profile
-            await executeQuery(`
-                INSERT INTO user_profiles (
-                    user_id,
-                    full_name,
-                    phone_number,
-                    usc_id,
-                    created_at
-                ) VALUES (?, ?, ?, ?, NOW())
-            `, [
-                userId,
-                profileData.full_name.trim(),
-                profileData.phone?.trim() || null,
-                profileData.employee_id?.trim() || null
-            ]);
+        try {
+            if (existingProfile) {
+                await connection.execute(`
+                    UPDATE user_profiles 
+                    SET full_name = ?, phone_number = ?, email = ?, updated_at = NOW()
+                    WHERE usc_id = ?
+                `, [
+                    profileData.full_name.trim(),
+                    profileData.phone?.trim() || null,
+                    profileData.email.trim(),
+                    session.uscId
+                ]);
 
-            // Update email and department in users table
-            await executeQuery(`
-                UPDATE users 
-                SET 
-                    email = ?,
-                    department = ?
-                WHERE id = ?
-            `, [
-                profileData.email.trim(),
-                profileData.department?.trim() || null,
-                userId
-            ]);
+                await connection.execute(`
+                    UPDATE users SET email = ? WHERE usc_id = ?
+                `, [profileData.email.trim(), session.uscId]);
+
+                await connection.execute(`
+                    UPDATE user_profiles SET department = ? WHERE usc_id = ?
+                `, [profileData.department?.trim() || null, session.uscId]);
+            } else {
+                await connection.execute(`
+                    INSERT INTO user_profiles (usc_id, full_name, phone_number, email, created_at)
+                    VALUES (?, ?, ?, ?, NOW())
+                `, [
+                    session.uscId,
+                    profileData.full_name.trim(),
+                    profileData.phone?.trim() || null,
+                    profileData.email.trim()
+                ]);
+
+                await connection.execute(`
+                    UPDATE user_profiles SET department = ? WHERE usc_id = ?
+                `, [profileData.department?.trim() || null, session.uscId]);
+            }
+
+            await connection.commit();
+            return Response.json({ success: true, message: 'Profile updated successfully' });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-
-        return Response.json({
-            success: true,
-            message: 'Profile updated successfully'
-        });
-
     } catch (error) {
         console.error('Security profile PUT API error:', error);
-        return Response.json(
-            { error: 'Failed to update profile' },
-            { status: 500 }
-        );
+        return Response.json({ error: 'Failed to update profile' }, { status: 500 });
     }
 }
