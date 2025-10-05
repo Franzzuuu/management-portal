@@ -415,7 +415,7 @@ export default function VehicleManagement() {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {vehicles.length > 0 ? (
                                     vehicles.map((vehicle) => (
-                                        <tr key={vehicle.id}>
+                                        <tr key={vehicle.vehicle_id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div>
                                                     <div className="text-sm font-medium text-gray-900">{vehicle.owner_name}</div>

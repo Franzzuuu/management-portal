@@ -6,7 +6,6 @@ export async function POST(request) {
     try {
         const { identifier, password } = await request.json();
 
-        // Validate input (changed email to identifier to support both email and USC ID)
         if (!identifier || !password) {
             return Response.json(
                 { error: 'Email/USC ID and password are required' },
@@ -14,31 +13,43 @@ export async function POST(request) {
             );
         }
 
-        // Authenticate user (now supports email or USC ID)
         const authResult = await authenticateUser(identifier, password);
 
         if (!authResult.success) {
-            return Response.json(
-                { error: authResult.message },
-                { status: 401 }
-            );
+            return Response.json({ error: authResult.message }, { status: 401 });
         }
 
-        // Check if user must change password
-        if (authResult.mustChangePassword) {
-            // For first-login password change, we still create a session but include the flag
-            const sessionToken = await createSession(authResult.user.usc_id, authResult.user.designation);
+        // compute a safe "secure" flag for local LAN testing
+        const forwardedProto = request.headers.get('x-forwarded-proto');
+        const isHttps =
+            (forwardedProto && forwardedProto.includes('https')) ||
+            request.url.startsWith('https://');
 
-            // Set cookie with 30-day expiration
-            const cookieStore = await cookies();
-            cookieStore.set('session', sessionToken, {
+        // optional override via .env.local: FORCE_INSECURE_COOKIES=true
+        const forceInsecure = process.env.FORCE_INSECURE_COOKIES === 'true';
+        const secureFlag = !forceInsecure && isHttps;
+
+        // helper to set the cookie consistently
+        const setSessionCookie = async (token) => {
+            const cookieStore = cookies();
+            cookieStore.set('session', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
-                maxAge: 30 * 24 * 60 * 60 // 30 days for persistent login
+                secure: secureFlag, // <-- key change
+                path: '/',
+                maxAge: 30 * 24 * 60 * 60 // 30 days
             });
+        };
 
-            // Return user data with must_change_password flag
+        // --- Must-change-password branch ---
+        if (authResult.mustChangePassword) {
+            const sessionToken = await createSession(
+                authResult.user.usc_id,
+                authResult.user.designation
+            );
+
+            await setSessionCookie(sessionToken);
+
             const {
                 usc_id,
                 email: userEmail,
@@ -60,26 +71,21 @@ export async function POST(request) {
                     fullName: full_name,
                     phoneNumber: phone_number,
                     department,
-                    profile_picture: profile_picture ? true : false,
+                    profile_picture: !!profile_picture,
                     profile_picture_type,
                     must_change_password: true
                 }
             });
         }
 
-        // Create session
-        const sessionToken = await createSession(authResult.user.usc_id, authResult.user.designation);
+        // --- Normal login branch ---
+        const sessionToken = await createSession(
+            authResult.user.usc_id,
+            authResult.user.designation
+        );
 
-        // Set cookie with 30-day expiration
-        const cookieStore = await cookies();
-        cookieStore.set('session', sessionToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 30 * 24 * 60 * 60 // 30 days for persistent login
-        });
+        await setSessionCookie(sessionToken);
 
-        // Return user data (without sensitive info)
         const {
             usc_id,
             email: userEmail,
@@ -100,11 +106,10 @@ export async function POST(request) {
                 fullName: full_name,
                 phoneNumber: phone_number,
                 department,
-                profile_picture: profile_picture ? true : false, // Just indicate presence
+                profile_picture: !!profile_picture,
                 profile_picture_type
             }
         });
-
     } catch (error) {
         console.error('Login error:', error);
         return Response.json(

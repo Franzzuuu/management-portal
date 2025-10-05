@@ -1,16 +1,16 @@
+// src/lib/database.js
 import mysql from 'mysql2/promise';
 
-// Track active connections
-let activeConnections = 0;
-const MAX_CONNECTIONS = 25; // Lower than MySQL max_connections
 let pool;
+let activeConnections = 0;
+const MAX_CONNECTIONS = 25;
 
 function getPool() {
     if (pool) return pool;
 
     pool = mysql.createPool({
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
+        host: process.env.DB_HOST ?? 'localhost',
+        port: Number(process.env.DB_PORT ?? 3306),
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
@@ -18,14 +18,12 @@ function getPool() {
         connectionLimit: MAX_CONNECTIONS,
         queueLimit: 0,
         enableKeepAlive: true,
-        keepAliveInitialDelay: 0
+        keepAliveInitialDelay: 0,
     });
 
-    // Enhanced connection monitoring
     pool.on('connection', () => {
         activeConnections = Math.min(MAX_CONNECTIONS, activeConnections + 1);
-        // Only log if connections are getting high
-        if (activeConnections > MAX_CONNECTIONS * 0.8) { // Log when over 80% capacity
+        if (activeConnections > MAX_CONNECTIONS * 0.8) {
             console.warn(`High connection count: ${activeConnections}/${MAX_CONNECTIONS}`);
         }
     });
@@ -34,158 +32,130 @@ function getPool() {
         activeConnections = Math.max(0, activeConnections - 1);
     });
 
-    pool.on('error', (err) => {
+    pool.on('error', async (err) => {
         console.error('Database pool error:', err);
         if (activeConnections >= MAX_CONNECTIONS) {
             console.error(`Max connections (${MAX_CONNECTIONS}) reached!`);
-            // Force cleanup of idle connections
-            pool.end().catch(console.error);
-            pool = null; // Reset pool to force recreation
+            try { await pool.end(); } catch (_) { }
+            pool = null;
         }
     });
 
     return pool;
 }
 
-// Execute query with connection cleanup
+export async function testConnection() {
+    const p = getPool();
+    const conn = await p.getConnection();
+    try {
+        await conn.ping();
+        return true;
+    } finally {
+        conn.release();
+    }
+}
+
 export async function executeQuery(query, values = [], retries = 3) {
     let connection;
     let lastError;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            if (!pool) {
-                pool = getPool();
-            }
+            const p = getPool();
 
-            // Check for too many connections
             if (activeConnections >= MAX_CONNECTIONS) {
-                console.warn('Too many connections, waiting for cleanup...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(r => setTimeout(r, 1000));
                 continue;
             }
 
-            // Validate parameters
-            if (values.some(v => v === undefined)) {
+            if (values?.some(v => v === undefined)) {
                 throw new Error('Undefined bind parameter detected');
             }
 
-            connection = await pool.getConnection();
-            const [results] = await connection.execute(query, values);
-            return results;
-
-        } catch (error) {
-            lastError = error;
-            console.error(`Query error (attempt ${attempt}/${retries}):`, error.message);
-
-            if (error.code === 'ER_CON_COUNT_ERROR') {
-                // Force pool cleanup and recreation
-                if (pool) {
-                    await pool.end().catch(console.error);
-                    pool = null;
-                }
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            connection = await p.getConnection();
+            const [rows] = await connection.execute(query, values);
+            return rows;
+        } catch (err) {
+            lastError = err;
+            console.error(`Query error (attempt ${attempt}/${retries}):`, err.message);
+            if (err.code === 'ER_CON_COUNT_ERROR') {
+                try { await pool?.end(); } catch (_) { }
+                pool = null;
+                await new Promise(r => setTimeout(r, 1000 * attempt));
                 continue;
             }
-            throw error;
-
+            throw err;
         } finally {
-            if (connection) {
-                connection.release();
-            }
+            connection?.release();
         }
     }
 
     throw lastError;
 }
 
-// Simplified queryOne function
 export async function queryOne(query, values = []) {
-    const results = await executeQuery(query, values);
-    return results?.[0] || null;
+    const rows = await executeQuery(query, values);
+    return rows?.[0] ?? null;
 }
 
-// Simplified queryMany function
 export async function queryMany(query, values = []) {
-    return await executeQuery(query, values);
+    return executeQuery(query, values);
 }
 
-// Execute a direct query without prepared statements
-// Use this for commands like START TRANSACTION, COMMIT, ROLLBACK
 export async function executeDirectQuery(query, retries = 3) {
     let connection;
     let lastError;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            if (!pool) {
-                pool = getPool();
-            }
+            const p = getPool();
 
-            // Check for too many connections
             if (activeConnections >= MAX_CONNECTIONS) {
-                console.warn('Too many connections, waiting for cleanup...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(r => setTimeout(r, 1000));
                 continue;
             }
 
-            connection = await pool.getConnection();
-            const [results] = await connection.query(query); // Using query() instead of execute()
-            return results;
-
-        } catch (error) {
-            lastError = error;
-            console.error(`Direct query error (attempt ${attempt}/${retries}):`, error.message);
-
-            if (error.code === 'ER_CON_COUNT_ERROR') {
-                // Force pool cleanup and recreation
-                if (pool) {
-                    await pool.end().catch(console.error);
-                    pool = null;
-                }
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            connection = await p.getConnection();
+            const [rows] = await connection.query(query);
+            return rows;
+        } catch (err) {
+            lastError = err;
+            console.error(`Direct query error (attempt ${attempt}/${retries}):`, err.message);
+            if (err.code === 'ER_CON_COUNT_ERROR') {
+                try { await pool?.end(); } catch (_) { }
+                pool = null;
+                await new Promise(r => setTimeout(r, 1000 * attempt));
                 continue;
             }
-            throw error;
-
+            throw err;
         } finally {
-            if (connection) {
-                connection.release();
-            }
+            connection?.release();
         }
     }
 
     throw lastError;
 }
 
-// Get connection with timeout
 export async function getConnection(timeout = 5000) {
-    if (!pool) {
-        pool = getPool();
-    }
+    const p = getPool();
 
-    const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Connection timeout')), timeout);
-    });
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), timeout)
+    );
 
-    const connectionPromise = pool.getConnection();
+    const connectionPromise = p.getConnection();
 
     try {
-        const connection = await Promise.race([connectionPromise, timeoutPromise]);
-        return connection;
-    } catch (error) {
-        if (error.message === 'Connection timeout') {
-            // Force pool cleanup on timeout
-            if (pool) {
-                await pool.end().catch(console.error);
-                pool = null;
-            }
+        return await Promise.race([connectionPromise, timeoutPromise]);
+    } catch (err) {
+        if (err.message === 'Connection timeout') {
+            try { await pool?.end(); } catch (_) { }
+            pool = null;
         }
-        throw error;
+        throw err;
     }
 }
 
-// Cleanup function for graceful shutdown
 export async function cleanup() {
     if (pool) {
         await pool.end();
@@ -194,23 +164,11 @@ export async function cleanup() {
     }
 }
 
-// Helper function for IN clauses with proper parameter binding
 export async function executeInQuery(baseQuery, inValues = [], otherValues = []) {
-    if (!inValues || inValues.length === 0) {
-        throw new Error('No values provided for IN clause');
-    }
-
-    // Generate the correct number of placeholders
+    if (!inValues?.length) throw new Error('No values provided for IN clause');
     const placeholders = inValues.map(() => '?').join(',');
-
-    // Replace the first ? with the generated placeholders
     const query = baseQuery.replace('?', `(${placeholders})`);
-
-    // Combine the IN values with any other values
-    const allValues = [...inValues, ...otherValues];
-
-    // Execute the query with the combined values
-    return await executeQuery(query, allValues);
+    return executeQuery(query, [...inValues, ...otherValues]);
 }
 
 export default getPool;

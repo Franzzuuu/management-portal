@@ -1,34 +1,29 @@
+// src/app/api/test-db/route.js
+import { NextResponse } from 'next/server';
 import { testConnection } from '@/lib/database';
-import { initializeDatabase } from '@/lib/init-database';
+import { initializeDatabase } from '@/lib/init-database'; // ensure this exists; or remove if not needed
 
 export async function GET() {
     try {
-        // Test connection
-        const connectionSuccess = await testConnection();
-
-        if (!connectionSuccess) {
-            return Response.json(
-                { error: 'Database connection failed' },
-                { status: 500 }
-            );
+        const ok = await testConnection();
+        if (!ok) {
+            return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
         }
 
-        // Initialize database tables
-        await initializeDatabase();
+        // Optional: initialize tables/seeds if you have this helper
+        if (initializeDatabase) {
+            await initializeDatabase();
+        }
 
-        return Response.json({
+        return NextResponse.json({
             success: true,
             message: 'Database connection successful and tables initialized!',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
-
     } catch (error) {
         console.error('Database test error:', error);
-        return Response.json(
-            {
-                error: 'Database test failed',
-                details: error.message
-            },
+        return NextResponse.json(
+            { error: 'Database test failed', details: String(error?.message ?? error) },
             { status: 500 }
         );
     }

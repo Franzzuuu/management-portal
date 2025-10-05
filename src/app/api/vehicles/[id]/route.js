@@ -83,7 +83,54 @@ export async function DELETE(request, { params }) {
             );
         }
 
-        // Check for any related RFID tags and delete them first
+        // First, get all violations associated with this vehicle
+        const violationResults = await executeQuery(
+            'SELECT id FROM violations WHERE vehicle_id = ?',
+            [id]
+        );
+        const violationIds = violationResults.map(v => v.id);
+
+        if (violationIds.length > 0) {
+            console.log(`Found ${violationIds.length} violations for vehicle ${id}, deleting them...`);
+
+            // Helper function for IN queries
+            const executeInQuery = async (query, values) => {
+                if (values.length === 0) return { affectedRows: 0 };
+                const placeholders = values.map(() => '?').join(',');
+                const finalQuery = query.replace('IN ?', `IN (${placeholders})`);
+                return await executeQuery(finalQuery, values);
+            };
+
+            // Delete violation contests
+            const contestsResult = await executeInQuery(
+                'DELETE FROM violation_contests WHERE violation_id IN ?',
+                violationIds
+            );
+            console.log(`Deleted ${contestsResult.affectedRows} violation contests`);
+
+            // Delete violation history
+            const historyResult = await executeInQuery(
+                'DELETE FROM violation_history WHERE violation_id IN ?',
+                violationIds
+            );
+            console.log(`Deleted ${historyResult.affectedRows} violation history records`);
+
+            // Delete violation status history
+            const statusHistoryResult = await executeInQuery(
+                'DELETE FROM violation_status_history WHERE violation_id IN ?',
+                violationIds
+            );
+            console.log(`Deleted ${statusHistoryResult.affectedRows} violation status history records`);
+
+            // Finally, delete the violations themselves
+            const violationsResult = await executeInQuery(
+                'DELETE FROM violations WHERE id IN ?',
+                violationIds
+            );
+            console.log(`Deleted ${violationsResult.affectedRows} violations`);
+        }
+
+        // Check for any related RFID tags and delete them
         await executeQuery(
             'DELETE FROM rfid_vehicle_system.rfid_tags WHERE vehicle_id = ?',
             [id]
