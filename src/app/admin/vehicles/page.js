@@ -15,6 +15,7 @@ export default function VehicleManagement() {
         vehicleType: '2-wheel',
         make: '',
         model: '',
+        year: '',
         color: '',
         plateNumber: '',
         registrationDate: new Date().toISOString().split('T')[0]
@@ -61,6 +62,15 @@ export default function VehicleManagement() {
         setError('');
         setSuccess('');
 
+        // Client-side validation for year
+        const yearValue = parseInt(formData.year, 10);
+        const currentYear = new Date().getFullYear();
+
+        if (isNaN(yearValue) || yearValue < 1900 || yearValue > currentYear + 1) {
+            setError(`Invalid year. Must be a 4-digit year between 1900 and ${currentYear + 1}`);
+            return;
+        }
+
         try {
             const response = await fetch('/api/vehicles/create', {
                 method: 'POST',
@@ -79,6 +89,7 @@ export default function VehicleManagement() {
                     vehicleType: '2-wheel',
                     make: '',
                     model: '',
+                    year: '',
                     color: '',
                     plateNumber: '',
                     registrationDate: new Date().toISOString().split('T')[0]
@@ -262,7 +273,7 @@ export default function VehicleManagement() {
                                         id="vehicleType"
                                         name="vehicleType"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 hover:cursor-pointer rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 hover:cursor-pointer rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-700"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.vehicleType}
                                         onChange={handleInputChange}
@@ -281,7 +292,7 @@ export default function VehicleManagement() {
                                         id="make"
                                         name="make"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Toyota, Honda, Yamaha"
                                         value={formData.make}
@@ -298,12 +309,34 @@ export default function VehicleManagement() {
                                         id="model"
                                         name="model"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Vios, Civic, Mio"
                                         value={formData.model}
                                         onChange={handleInputChange}
                                     />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Model Year *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="year"
+                                        name="year"
+                                        required
+                                        min="1900"
+                                        max={new Date().getFullYear() + 1}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        placeholder="e.g., 2023"
+                                        value={formData.year}
+                                        onChange={handleInputChange}
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Year must be between 1900 and {new Date().getFullYear() + 1}
+                                    </p>
                                 </div>
 
                                 <div>
@@ -315,7 +348,7 @@ export default function VehicleManagement() {
                                         id="color"
                                         name="color"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., Red, Blue, Black"
                                         value={formData.color}
@@ -332,7 +365,7 @@ export default function VehicleManagement() {
                                         id="plateNumber"
                                         name="plateNumber"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="e.g., ABC-1234"
                                         value={formData.plateNumber}
@@ -392,7 +425,9 @@ export default function VehicleManagement() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div>
                                                     <div className="text-sm font-medium text-gray-900">{vehicle.make} {vehicle.model}</div>
-                                                    <div className="text-sm text-gray-500">{vehicle.vehicle_type} • {vehicle.color}</div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {vehicle.year ? vehicle.year : 'N/A'} • {vehicle.type} • {vehicle.color}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -409,6 +444,13 @@ export default function VehicleManagement() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                <button
+                                                    onClick={() => router.push(`/admin/vehicles/${vehicle.vehicle_id}/edit`)}
+                                                    className="text-blue-600 hover:text-blue-900 hover:cursor-pointer"
+                                                >
+                                                    Edit
+                                                </button>
+
                                                 {vehicle.approval_status === 'pending' && (
                                                     <>
                                                         <button

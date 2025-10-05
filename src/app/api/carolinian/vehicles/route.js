@@ -22,6 +22,7 @@ export async function GET() {
                 v.plate_number,
                 v.make,
                 v.model,
+                v.year,
                 v.color,
                 v.vehicle_type,
                 v.approval_status as registration_status,

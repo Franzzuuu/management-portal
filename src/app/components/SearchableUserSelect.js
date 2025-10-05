@@ -175,7 +175,7 @@ export default function SearchableUserSelect({ value, onChange, className = '' }
                     }}
                     onFocus={() => setIsOpen(true)}
                     onKeyDown={handleKeyDown}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-700"
                     style={{ '--tw-ring-color': '#355E3B' }}
                     placeholder="Search for a user..."
                 />

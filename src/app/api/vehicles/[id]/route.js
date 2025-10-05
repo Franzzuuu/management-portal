@@ -21,6 +21,8 @@ export async function GET(request, { params }) {
                 v.make,
                 v.model,
                 v.color,
+                v.vehicle_type,
+                v.year,
                 v.approval_status,
                 v.usc_id,
                 up.full_name as owner_name,
@@ -50,6 +52,56 @@ export async function GET(request, { params }) {
 
     } catch (error) {
         console.error('Failed to fetch vehicle:', error);
+        return NextResponse.json(
+            { success: false, error: 'Internal server error' },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(request, { params }) {
+    try {
+        // Check for session cookie
+        const cookieStore = await cookies();
+        const sessionCookie = cookieStore.get('session');
+        if (!sessionCookie) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { id } = await params;
+
+        // First check if the vehicle exists
+        const vehicleCheck = await executeQuery(
+            'SELECT vehicle_id FROM vehicles WHERE vehicle_id = ?',
+            [id]
+        );
+
+        if (vehicleCheck.length === 0) {
+            return NextResponse.json(
+                { success: false, error: 'Vehicle not found' },
+                { status: 404 }
+            );
+        }
+
+        // Check for any related RFID tags and delete them first
+        await executeQuery(
+            'DELETE FROM rfid_vehicle_system.rfid_tags WHERE vehicle_id = ?',
+            [id]
+        );
+
+        // Delete the vehicle
+        await executeQuery(
+            'DELETE FROM vehicles WHERE vehicle_id = ?',
+            [id]
+        );
+
+        return NextResponse.json({
+            success: true,
+            message: 'Vehicle deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Failed to delete vehicle:', error);
         return NextResponse.json(
             { success: false, error: 'Internal server error' },
             { status: 500 }
