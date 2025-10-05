@@ -152,27 +152,39 @@ export async function PUT(request) {
                     session.uscId
                 ]);
 
-                // Update email in users table
+                // Get the new USC ID (employee_id in the UI)
+                const newUscId = profileData.employee_id?.trim() || session.uscId;
+
+                // Update email and USC ID in users table
                 await connection.execute(`
                     UPDATE users 
-                    SET email = ?
+                    SET 
+                        email = ?,
+                        usc_id = ?
                     WHERE usc_id = ?
                 `, [
                     profileData.email.trim(),
+                    newUscId,
                     session.uscId
                 ]);
 
-                // Update department in user_profiles
+                // Update department and USC ID in user_profiles
                 await connection.execute(`
                     UPDATE user_profiles 
-                    SET department = ?
+                    SET 
+                        department = ?,
+                        usc_id = ?
                     WHERE usc_id = ?
                 `, [
                     profileData.department?.trim() || null,
+                    newUscId,
                     session.uscId
                 ]);
             } else {
-                // Create new profile
+                // Get the new USC ID (employee_id in the UI)
+                const newUscId = profileData.employee_id?.trim() || session.uscId;
+
+                // Create new profile with the new USC ID
                 await connection.execute(`
                     INSERT INTO user_profiles (
                         usc_id,
@@ -182,7 +194,7 @@ export async function PUT(request) {
                         created_at
                     ) VALUES (?, ?, ?, ?, NOW())
                 `, [
-                    session.uscId,
+                    newUscId,
                     profileData.full_name.trim(),
                     profileData.phone?.trim() || null,
                     profileData.email.trim()
@@ -191,10 +203,21 @@ export async function PUT(request) {
                 // Update department in user_profiles
                 await connection.execute(`
                     UPDATE user_profiles 
-                    SET department = ?
+                    SET 
+                        department = ?
                     WHERE usc_id = ?
                 `, [
                     profileData.department?.trim() || null,
+                    newUscId
+                ]);
+
+                // Update USC ID in users table
+                await connection.execute(`
+                    UPDATE users 
+                    SET usc_id = ?
+                    WHERE usc_id = ?
+                `, [
+                    newUscId,
                     session.uscId
                 ]);
             }

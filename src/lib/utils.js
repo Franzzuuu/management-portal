@@ -58,6 +58,7 @@ export async function getSession() {
 
     return {
         uscId: verification.uscId,
+        userId: verification.uscId, // Add alias for consistency
         userRole: verification.userRole
     };
 }

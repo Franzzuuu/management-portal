@@ -11,16 +11,16 @@ export async function POST(request) {
 
         const userData = await request.json();
 
-        // Validate required fields
-        const { email, password, designation, fullName } = userData;
-        if (!email || !password || !designation || !fullName) {
+        // Validate required fields (removed password requirements)
+        const { email, uscId, designation, fullName } = userData;
+        if (!email || !uscId || !designation || !fullName) {
             return Response.json(
-                { error: 'Email, password, designation, and full name are required' },
+                { error: 'Email, USC ID, designation, and full name are required' },
                 { status: 400 }
             );
         }
 
-        // Create the user with initial status
+        // Create the user with auto-generated default password
         const result = await createUser({
             ...userData,
             status: userData.status || 'active' // Default to active if not specified
@@ -28,9 +28,9 @@ export async function POST(request) {
 
         return Response.json({
             success: true,
-            message: 'User created successfully',
+            message: 'User created successfully with default password',
             user: {
-                userId: result.userId,
+                uscId: result.uscId,
                 email: result.email,
                 designation: result.designation
             }
@@ -42,7 +42,7 @@ export async function POST(request) {
         // Handle specific error types
         if (error.message.includes('already exists')) {
             return Response.json(
-                { error: 'A user with this email already exists' },
+                { error: error.message },
                 { status: 409 }
             );
         }

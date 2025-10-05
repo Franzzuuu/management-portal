@@ -21,7 +21,7 @@ export async function GET() {
                 up.full_name,
                 u.email,
                 up.phone_number as phone,
-                u.department,
+                up.department,
                 up.usc_id as student_id,
                 up.usc_id as employee_id,
                 u.email as username,
@@ -48,9 +48,9 @@ export async function GET() {
                     up.full_name,
                     u.email,
                     up.phone_number as phone,
-                    '' as department,
-                    '' as student_id,
-                    '' as employee_id,
+                    up.department,
+                    up.usc_id as student_id,
+                    up.usc_id as employee_id,
                     u.email as username,
                     u.designation,
                     u.created_at
@@ -127,26 +127,26 @@ export async function PUT(request) {
                 SET 
                     full_name = ?,
                     phone_number = ?,
+                    department = ?,
                     usc_id = ?,
                     updated_at = NOW()
                 WHERE usc_id = ?
             `, [
                 profileData.full_name.trim(),
                 profileData.phone?.trim() || null,
+                profileData.department?.trim() || null,
                 profileData.student_id?.trim() || profileData.employee_id?.trim() || null,
                 uscId
             ]);
 
-            // Update email and department in users table
+            // Update email in users table
             await executeQuery(`
                 UPDATE users 
                 SET 
-                    email = ?,
-                    department = ?
+                    email = ?
                 WHERE id = ?
             `, [
                 profileData.email.trim(),
-                profileData.department?.trim() || null,
                 uscId
             ]);
         } else {
@@ -156,26 +156,26 @@ export async function PUT(request) {
                     user_id,
                     full_name,
                     phone_number,
+                    department,
                     usc_id,
                     created_at
-                ) VALUES (?, ?, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, NOW())
             `, [
                 uscId,
                 profileData.full_name.trim(),
                 profileData.phone?.trim() || null,
+                profileData.department?.trim() || null,
                 profileData.student_id?.trim() || profileData.employee_id?.trim() || null
             ]);
 
-            // Update email and department in users table
+            // Update email in users table
             await executeQuery(`
                 UPDATE users 
                 SET 
-                    email = ?,
-                    department = ?
+                    email = ?
                 WHERE id = ?
             `, [
                 profileData.email.trim(),
-                profileData.department?.trim() || null,
                 uscId
             ]);
         }

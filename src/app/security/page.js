@@ -33,6 +33,12 @@ const SecurityDashboard = () => {
             const data = await response.json();
 
             if (data.success && data.user.designation === 'Security') {
+                // Check if user must change password
+                if (data.user.must_change_password) {
+                    router.push('/change-password');
+                    return;
+                }
+
                 setUser(data.user);
                 await fetchDashboardData();
             } else {

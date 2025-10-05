@@ -6,9 +6,8 @@ import { clearAuthData } from '@/lib/client-auth';
 
 export default function AddNewUser() {
     const [formData, setFormData] = useState({
+        uscId: '',
         email: '',
-        password: '',
-        confirmPassword: '',
         designation: 'Student',
         fullName: '',
         phoneNumber: '',
@@ -17,14 +16,16 @@ export default function AddNewUser() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [messageTimeout, setMessageTimeout] = useState(null);
-    const [timeRemaining, setTimeRemaining] = useState(5);
     const [user, setUser] = useState(null);
     const [activeTab, setActiveTab] = useState('create'); // 'create' or 'manage'
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [passwordAction, setPasswordAction] = useState(''); // 'reset' or 'change'
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
     const router = useRouter();
 
     useEffect(() => {
@@ -37,40 +38,6 @@ export default function AddNewUser() {
             fetchUsers();
         }
     }, [activeTab]);
-
-    // Clear messages after 5 seconds with countdown
-    useEffect(() => {
-        if (error || success) {
-            // Reset the timer
-            setTimeRemaining(5);
-
-            // Clear any existing timeout
-            if (messageTimeout) {
-                clearInterval(messageTimeout);
-            }
-
-            // Set interval to update countdown every second
-            const countdownInterval = setInterval(() => {
-                setTimeRemaining(prev => {
-                    if (prev <= 1) {
-                        clearInterval(countdownInterval);
-                        // Clear messages when countdown reaches zero
-                        setError('');
-                        setSuccess('');
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-
-            setMessageTimeout(countdownInterval);
-
-            // Cleanup function to clear interval if component unmounts
-            return () => {
-                clearInterval(countdownInterval);
-            };
-        }
-    }, [error, success, messageTimeout]);
 
     const checkAuth = async () => {
         try {
@@ -145,12 +112,6 @@ export default function AddNewUser() {
         setError('');
         setSuccess('');
 
-        if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
-            setLoading(false);
-            return;
-        }
-
         try {
             const response = await fetch('/api/users/create', {
                 method: 'POST',
@@ -163,11 +124,10 @@ export default function AddNewUser() {
             const data = await response.json();
 
             if (data.success) {
-                setSuccess(`User ${formData.fullName} created successfully!`);
+                setSuccess(`User ${formData.fullName} created successfully with default password: ${formData.uscId}Usc$`);
                 setFormData({
+                    uscId: '',
                     email: '',
-                    password: '',
-                    confirmPassword: '',
                     designation: 'Student',
                     fullName: '',
                     phoneNumber: '',
@@ -224,6 +184,57 @@ export default function AddNewUser() {
                 setShowDeleteModal(false);
             } else {
                 setError(data.error || 'Failed to delete user');
+            }
+        } catch (err) {
+            setError('Network error');
+        }
+        setLoading(false);
+    };
+
+    const handlePasswordReset = async (uscId) => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/admin/password-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uscId })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                setSuccess(`Password reset successfully. New password: ${uscId}Usc$`);
+                setShowPasswordModal(false);
+            } else {
+                setError(data.error || 'Failed to reset password');
+            }
+        } catch (err) {
+            setError('Network error');
+        }
+        setLoading(false);
+    };
+
+    const handlePasswordChange = async (uscId) => {
+        if (newPassword !== confirmNewPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await fetch('/api/admin/password-change', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uscId, newPassword })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                setSuccess('Password changed successfully');
+                setShowPasswordModal(false);
+                setNewPassword('');
+                setConfirmNewPassword('');
+            } else {
+                setError(data.error || 'Failed to change password');
             }
         } catch (err) {
             setError('Network error');
@@ -376,6 +387,23 @@ export default function AddNewUser() {
                             {/* Existing form fields - keeping the same structure */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div>
+                                    <label htmlFor="uscId" className="block text-sm font-medium text-gray-700 mb-1">
+                                        USC ID *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="uscId"
+                                        name="uscId"
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        placeholder="Enter USC ID (e.g., 22104086)"
+                                        value={formData.uscId}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div>
                                     <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                                         Full Name *
                                     </label>
@@ -384,7 +412,7 @@ export default function AddNewUser() {
                                         id="fullName"
                                         name="fullName"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter full name"
                                         value={formData.fullName}
@@ -401,7 +429,7 @@ export default function AddNewUser() {
                                         id="email"
                                         name="email"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter email address"
                                         value={formData.email}
@@ -417,7 +445,7 @@ export default function AddNewUser() {
                                         type="tel"
                                         id="phoneNumber"
                                         name="phoneNumber"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         placeholder="Enter phone number"
                                         value={formData.phoneNumber}
@@ -432,7 +460,7 @@ export default function AddNewUser() {
                                     <select
                                         id="gender"
                                         name="gender"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.gender}
                                         onChange={handleInputChange}
@@ -452,7 +480,7 @@ export default function AddNewUser() {
                                         id="designation"
                                         name="designation"
                                         required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                         value={formData.designation}
                                         onChange={handleInputChange}
@@ -463,66 +491,33 @@ export default function AddNewUser() {
                                         <option value="Admin">Admin</option>
                                     </select>
                                 </div>
-
-                                <div className="md:col-span-2">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Password *
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="password"
-                                                name="password"
-                                                required
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
-                                                style={{ '--tw-ring-color': '#355E3B' }}
-                                                placeholder="Enter password"
-                                                value={formData.password}
-                                                onChange={handleInputChange}
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Password must be at least 8 characters with uppercase, lowercase, number, and special character
-                                            </p>
-                                        </div>
-
-                                        <div>
-                                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Confirm Password *
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="confirmPassword"
-                                                name="confirmPassword"
-                                                required
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400"
-                                                style={{ '--tw-ring-color': '#355E3B' }}
-                                                placeholder="Confirm password"
-                                                value={formData.confirmPassword}
-                                                onChange={handleInputChange}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
-                            {/* Error/Success Messages with countdown and dismiss button */}
+                            {/* Password Information */}
+                            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <h4 className="text-sm font-medium text-blue-900 mb-2">Default Password Information</h4>
+                                <p className="text-sm text-blue-700">
+                                    A default password will be automatically generated using the format: <strong>&lt;USC_ID&gt;Usc$</strong>
+                                </p>
+                                <p className="text-sm text-blue-600 mt-1">
+                                    The user must contact an administrator to change their password.
+                                </p>
+                            </div>
+
+                            {/* Error/Success Messages with dismiss button */}
                             {error && (
                                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                                     <div className="flex justify-between items-center">
                                         <p className="text-sm text-red-600">{error}</p>
-                                        <div className="flex items-center space-x-2">
-                                            <span className="text-xs text-red-400">Closing in {timeRemaining}s</span>
-                                            <button
-                                                onClick={() => setError('')}
-                                                className="text-red-400 hover:text-red-600"
-                                                aria-label="Dismiss"
-                                            >
-                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => setError('')}
+                                            className="text-red-400 hover:text-red-600"
+                                            aria-label="Dismiss"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -531,18 +526,15 @@ export default function AddNewUser() {
                                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                                     <div className="flex justify-between items-center">
                                         <p className="text-sm text-green-600">{success}</p>
-                                        <div className="flex items-center space-x-2">
-                                            <span className="text-xs text-green-400">Closing in {timeRemaining}s</span>
-                                            <button
-                                                onClick={() => setSuccess('')}
-                                                className="text-green-400 hover:text-green-600"
-                                                aria-label="Dismiss"
-                                            >
-                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => setSuccess('')}
+                                            className="text-green-400 hover:text-green-600"
+                                            aria-label="Dismiss"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -577,23 +569,20 @@ export default function AddNewUser() {
                             <p className="text-sm text-gray-600 mt-1">View, update status, and manage user accounts ({users.length} users)</p>
                         </div>
 
-                        {/* Error/Success Messages for Manage Tab with countdown and dismiss button */}
+                        {/* Error/Success Messages for Manage Tab with dismiss button */}
                         {error && (
                             <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                                 <div className="flex justify-between items-center">
                                     <p className="text-sm text-red-600">{error}</p>
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-xs text-red-400">Closing in {timeRemaining}s</span>
-                                        <button
-                                            onClick={() => setError('')}
-                                            className="text-red-400 hover:text-red-600"
-                                            aria-label="Dismiss"
-                                        >
-                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => setError('')}
+                                        className="text-red-400 hover:text-red-600"
+                                        aria-label="Dismiss"
+                                    >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -602,18 +591,15 @@ export default function AddNewUser() {
                             <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                                 <div className="flex justify-between items-center">
                                     <p className="text-sm text-green-600">{success}</p>
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-xs text-green-400">Closing in {timeRemaining}s</span>
-                                        <button
-                                            onClick={() => setSuccess('')}
-                                            className="text-green-400 hover:text-green-600"
-                                            aria-label="Dismiss"
-                                        >
-                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => setSuccess('')}
+                                        className="text-green-400 hover:text-green-600"
+                                        aria-label="Dismiss"
+                                    >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -623,6 +609,7 @@ export default function AddNewUser() {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USC ID</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
@@ -639,6 +626,9 @@ export default function AddNewUser() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{userData.usc_id}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDesignationColor(userData.designation)}`}>
                                                     {userData.designation}
                                                 </span>
@@ -652,15 +642,15 @@ export default function AddNewUser() {
                                                 {userData.phone_number || 'No phone'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div className="flex space-x-2">
+                                                <div className="flex flex-col space-y-2">
                                                     <button
                                                         onClick={() => {
                                                             setSelectedUser(userData);
                                                             setShowStatusModal(true);
                                                         }}
-                                                        className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors hover:cursor-pointer"
+                                                        className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors hover:cursor-pointer text-center"
                                                     >
-                                                        Update Status
+                                                        Manage Account
                                                     </button>
                                                     {userData.designation !== 'Admin' && (
                                                         <button
@@ -668,7 +658,7 @@ export default function AddNewUser() {
                                                                 setSelectedUser(userData);
                                                                 setShowDeleteModal(true);
                                                             }}
-                                                            className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors hover:cursor-pointer"
+                                                            className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors hover:cursor-pointer text-center"
                                                         >
                                                             Delete
                                                         </button>
@@ -684,38 +674,168 @@ export default function AddNewUser() {
                 )}
             </main>
 
-            {/* Status Update Modal */}
+            {/* Manage Account Modal */}
             {showStatusModal && selectedUser && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
                         <h3 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
-                            Update User Status
+                            Manage Account: {selectedUser.full_name}
                         </h3>
                         <p className="text-gray-600 mb-4">
-                            Change status for <strong>{selectedUser.full_name}</strong>
+                            USC ID: <strong>{selectedUser.usc_id}</strong>
                         </p>
-                        <div className="flex space-x-3 mb-3">
-                            <button
-                                onClick={() => handleUpdateStatus(selectedUser.id, 'active')}
-                                disabled={loading}
-                                className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
-                            >
-                                Activate
-                            </button>
-                            <button
-                                onClick={() => handleUpdateStatus(selectedUser.id, 'inactive')}
-                                disabled={loading}
-                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
-                            >
-                                Deactivate
-                            </button>
+
+                        {/* Status Management */}
+                        <div className="mb-4">
+                            <h4 className="font-medium text-gray-700 mb-2">Update Status</h4>
+                            <div className="flex space-x-2 mb-3">
+                                <button
+                                    onClick={() => handleUpdateStatus(selectedUser.id, 'active')}
+                                    disabled={loading}
+                                    className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer text-sm"
+                                >
+                                    Activate
+                                </button>
+                                <button
+                                    onClick={() => handleUpdateStatus(selectedUser.id, 'inactive')}
+                                    disabled={loading}
+                                    className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer text-sm"
+                                >
+                                    Deactivate
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Password Management */}
+                        <div className="mb-4">
+                            <h4 className="font-medium text-gray-700 mb-2">Password Management</h4>
+                            <div className="flex space-x-2 mb-3">
+                                <button
+                                    onClick={() => {
+                                        setPasswordAction('reset');
+                                        setShowPasswordModal(true);
+                                        setShowStatusModal(false);
+                                    }}
+                                    disabled={loading}
+                                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer text-sm"
+                                >
+                                    Reset Password
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setPasswordAction('change');
+                                        setShowPasswordModal(true);
+                                        setShowStatusModal(false);
+                                    }}
+                                    disabled={loading}
+                                    className="flex-1 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer text-sm"
+                                >
+                                    Change Password
+                                </button>
+                            </div>
+                        </div>
+
                         <button
                             onClick={() => setShowStatusModal(false)}
                             className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors hover:cursor-pointer"
                         >
-                            Cancel
+                            Close
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Password Management Modal */}
+            {showPasswordModal && selectedUser && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                        <h3 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
+                            {passwordAction === 'reset' ? 'Reset Password' : 'Change Password'}
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                            User: <strong>{selectedUser.full_name}</strong><br />
+                            USC ID: <strong>{selectedUser.usc_id}</strong>
+                        </p>
+
+                        {passwordAction === 'reset' ? (
+                            <div>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    This will reset the password to the default format: <strong>{selectedUser.usc_id}Usc$</strong>
+                                </p>
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={() => handlePasswordReset(selectedUser.usc_id)}
+                                        disabled={loading}
+                                        className="flex-1 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
+                                    >
+                                        {loading ? 'Resetting...' : 'Reset Password'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowPasswordModal(false);
+                                            setShowStatusModal(true);
+                                        }}
+                                        className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors hover:cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="mb-4">
+                                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                                        New Password *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        id="newPassword"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-gray-900"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        placeholder="Enter new password"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Password must be at least 8 characters with uppercase, lowercase, number, and special character
+                                    </p>
+                                </div>
+                                <div className="mb-4">
+                                    <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Confirm Password *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        id="confirmNewPassword"
+                                        value={confirmNewPassword}
+                                        onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-gray-900"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        placeholder="Confirm new password"
+                                    />
+                                </div>
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={() => handlePasswordChange(selectedUser.usc_id)}
+                                        disabled={loading || !newPassword || !confirmNewPassword}
+                                        className="flex-1 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
+                                    >
+                                        {loading ? 'Changing...' : 'Change Password'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowPasswordModal(false);
+                                            setShowStatusModal(true);
+                                            setNewPassword('');
+                                            setConfirmNewPassword('');
+                                        }}
+                                        className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors hover:cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

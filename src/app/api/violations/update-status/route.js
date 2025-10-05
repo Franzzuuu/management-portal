@@ -57,7 +57,7 @@ export async function POST(request) {
             WHERE id = ?
         `;
 
-        await executeQuery(updateQuery, [status, session.userId, violationId]);
+        await executeQuery(updateQuery, [status, session.uscId, violationId]);
         console.log('Status updated successfully');
 
         return Response.json({

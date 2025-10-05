@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
     const [formData, setFormData] = useState({
-        email: '',
+        identifier: '',
         password: ''
     });
     const [loading, setLoading] = useState(false);
@@ -31,14 +31,22 @@ export default function LoginPage() {
             const data = await response.json();
 
             if (data.success) {
-                const role = data.user.designation;
-                if (role === 'Admin') {
-                    router.push('/admin');
-                } else if (role === 'Security') {
-                    router.push('/security');
+                if (data.mustChangePassword) {
+                    // User needs to change password - redirect to change password page
+                    router.push('/change-password');
                 } else {
-                    router.push('/carolinian');
+                    // Normal login flow - redirect to dashboard
+                    const role = data.user.designation;
+                    if (role === 'Admin') {
+                        router.push('/admin');
+                    } else if (role === 'Security') {
+                        router.push('/security');
+                    } else {
+                        router.push('/carolinian');
+                    }
                 }
+            } else if (data.mustChangePassword) {
+                setError(data.message || 'Your password must be changed by an administrator before you can log in.');
             } else {
                 setError(data.error || 'Login failed');
             }
@@ -90,13 +98,13 @@ export default function LoginPage() {
                     <div className="bg-white/95 backdrop-blur-sm py-6 px-5 shadow-2xl rounded-xl border border-white/20">
                         <div className="space-y-3">
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium" style={{ color: '#355E3B' }}>
-                                    Email Address
+                                <label htmlFor="identifier" className="block text-sm font-medium" style={{ color: '#355E3B' }}>
+                                    Email or USC ID
                                 </label>
                                 <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
+                                    id="identifier"
+                                    name="identifier"
+                                    type="text"
                                     required
                                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm 
                                              text-black placeholder-gray-400 
@@ -105,8 +113,8 @@ export default function LoginPage() {
                                         focusRingColor: '#355E3B',
                                         '--tw-ring-color': '#355E3B'
                                     }}
-                                    placeholder="Enter your email"
-                                    value={formData.email}
+                                    placeholder="Enter your email or USC ID"
+                                    value={formData.identifier}
                                     onChange={handleInputChange}
                                 />
                             </div>

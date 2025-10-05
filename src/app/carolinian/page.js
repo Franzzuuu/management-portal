@@ -17,17 +17,25 @@ export default function CarolinianDashboard() {
     const router = useRouter();
 
     useEffect(() => {
-        fetchUserData();
+        checkAuth();
         fetchPersonalStats();
         fetchProfilePicture();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const fetchUserData = async () => {
+    const checkAuth = async () => {
         try {
-            const response = await fetch('/api/auth/session');
-            if (response.ok) {
-                const sessionData = await response.json();
-                setUser(sessionData.user);
+            const response = await fetch('/api/auth/me');
+            const data = await response.json();
+
+            if (data.success) {
+                // Check if user must change password
+                if (data.user.must_change_password) {
+                    router.push('/change-password');
+                    return;
+                }
+
+                setUser(data.user);
             } else {
                 router.push('/login');
             }
@@ -109,7 +117,7 @@ export default function CarolinianDashboard() {
                         <div className="flex items-center space-x-4">
                             <div className="text-right">
                                 <div className="text-white font-medium">
-                                    {user?.full_name || user?.username}
+                                    {user?.fullName || user?.email}
                                 </div>
                                 <div className="flex items-center justify-end mt-1">
                                     <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
@@ -135,7 +143,7 @@ export default function CarolinianDashboard() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-2">
-                                Welcome, {user?.full_name || user?.username}
+                                Welcome, {user?.fullName || user?.email}
                             </h2>
                             <p className="text-gray-200">
                                 Integrated RFID Sticker System - Vehicle Management Portal

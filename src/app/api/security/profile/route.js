@@ -96,30 +96,55 @@ export async function PUT(request) {
 
         try {
             if (existingProfile) {
+                // Get the new USC ID (employee_id in the UI)
+                const newUscId = profileData.employee_id?.trim() || session.uscId;
+
                 await connection.execute(`
                     UPDATE user_profiles 
-                    SET full_name = ?, phone_number = ?, email = ?, updated_at = NOW()
+                    SET 
+                        full_name = ?, 
+                        phone_number = ?, 
+                        email = ?, 
+                        usc_id = ?,
+                        updated_at = NOW()
                     WHERE usc_id = ?
                 `, [
                     profileData.full_name.trim(),
                     profileData.phone?.trim() || null,
                     profileData.email.trim(),
+                    newUscId,
                     session.uscId
                 ]);
 
                 await connection.execute(`
-                    UPDATE users SET email = ? WHERE usc_id = ?
-                `, [profileData.email.trim(), session.uscId]);
+                    UPDATE users 
+                    SET 
+                        email = ?,
+                        usc_id = ?
+                    WHERE usc_id = ?
+                `, [
+                    profileData.email.trim(),
+                    newUscId,
+                    session.uscId
+                ]);
 
                 await connection.execute(`
-                    UPDATE user_profiles SET department = ? WHERE usc_id = ?
-                `, [profileData.department?.trim() || null, session.uscId]);
+                    UPDATE user_profiles 
+                    SET department = ? 
+                    WHERE usc_id = ?
+                `, [
+                    profileData.department?.trim() || null,
+                    newUscId
+                ]);
             } else {
+                // Get the new USC ID (employee_id in the UI)
+                const newUscId = profileData.employee_id?.trim() || session.uscId;
+
                 await connection.execute(`
                     INSERT INTO user_profiles (usc_id, full_name, phone_number, email, created_at)
                     VALUES (?, ?, ?, ?, NOW())
                 `, [
-                    session.uscId,
+                    newUscId,
                     profileData.full_name.trim(),
                     profileData.phone?.trim() || null,
                     profileData.email.trim()
@@ -127,7 +152,14 @@ export async function PUT(request) {
 
                 await connection.execute(`
                     UPDATE user_profiles SET department = ? WHERE usc_id = ?
-                `, [profileData.department?.trim() || null, session.uscId]);
+                `, [profileData.department?.trim() || null, newUscId]);
+
+                // Update USC ID in users table if it changed
+                if (newUscId !== session.uscId) {
+                    await connection.execute(`
+                        UPDATE users SET usc_id = ? WHERE usc_id = ?
+                    `, [newUscId, session.uscId]);
+                }
             }
 
             await connection.commit();
