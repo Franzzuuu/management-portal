@@ -8,7 +8,8 @@ export async function POST() {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 0 // Immediately expire
+            maxAge: 0, // Immediately expire
+            path: '/' // Make sure cookie is deleted from all paths
         });
 
         return Response.json({

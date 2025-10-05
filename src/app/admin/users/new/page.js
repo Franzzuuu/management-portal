@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { clearAuthData } from '@/lib/client-auth';
 
 export default function AddNewUser() {
     const [formData, setFormData] = useState({
@@ -16,6 +17,8 @@ export default function AddNewUser() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [messageTimeout, setMessageTimeout] = useState(null);
+    const [timeRemaining, setTimeRemaining] = useState(5);
     const [user, setUser] = useState(null);
     const [activeTab, setActiveTab] = useState('create'); // 'create' or 'manage'
     const [users, setUsers] = useState([]);
@@ -26,6 +29,7 @@ export default function AddNewUser() {
 
     useEffect(() => {
         checkAuth();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -33,6 +37,40 @@ export default function AddNewUser() {
             fetchUsers();
         }
     }, [activeTab]);
+
+    // Clear messages after 5 seconds with countdown
+    useEffect(() => {
+        if (error || success) {
+            // Reset the timer
+            setTimeRemaining(5);
+
+            // Clear any existing timeout
+            if (messageTimeout) {
+                clearInterval(messageTimeout);
+            }
+
+            // Set interval to update countdown every second
+            const countdownInterval = setInterval(() => {
+                setTimeRemaining(prev => {
+                    if (prev <= 1) {
+                        clearInterval(countdownInterval);
+                        // Clear messages when countdown reaches zero
+                        setError('');
+                        setSuccess('');
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            setMessageTimeout(countdownInterval);
+
+            // Cleanup function to clear interval if component unmounts
+            return () => {
+                clearInterval(countdownInterval);
+            };
+        }
+    }, [error, success, messageTimeout]);
 
     const checkAuth = async () => {
         try {
@@ -63,10 +101,33 @@ export default function AddNewUser() {
 
     const handleLogout = async () => {
         try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            // Clear any local state first
+            setUser(null);
+
+            // Clear client-side auth data (cookies, localStorage, etc.)
+            clearAuthData();
+
+            // Make logout request with caching disabled
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            if (!response.ok) {
+                console.error('Logout failed with status:', response.status);
+            }
+
+            // Redirect to login regardless of success/failure
             router.push('/login');
+
         } catch (error) {
             console.error('Logout error:', error);
+            // Clear client-side auth data again just to be safe
+            clearAuthData();
+            // Force redirect to login anyway
             router.push('/login');
         }
     };
@@ -445,16 +506,44 @@ export default function AddNewUser() {
                                 </div>
                             </div>
 
-                            {/* Error/Success Messages */}
+                            {/* Error/Success Messages with countdown and dismiss button */}
                             {error && (
                                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                    <p className="text-sm text-red-600">{error}</p>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-sm text-red-600">{error}</p>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-xs text-red-400">Closing in {timeRemaining}s</span>
+                                            <button
+                                                onClick={() => setError('')}
+                                                className="text-red-400 hover:text-red-600"
+                                                aria-label="Dismiss"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
                             {success && (
                                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                    <p className="text-sm text-green-600">{success}</p>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-sm text-green-600">{success}</p>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-xs text-green-400">Closing in {timeRemaining}s</span>
+                                            <button
+                                                onClick={() => setSuccess('')}
+                                                className="text-green-400 hover:text-green-600"
+                                                aria-label="Dismiss"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -488,16 +577,44 @@ export default function AddNewUser() {
                             <p className="text-sm text-gray-600 mt-1">View, update status, and manage user accounts ({users.length} users)</p>
                         </div>
 
-                        {/* Error/Success Messages for Manage Tab */}
+                        {/* Error/Success Messages for Manage Tab with countdown and dismiss button */}
                         {error && (
                             <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-sm text-red-600">{error}</p>
+                                <div className="flex justify-between items-center">
+                                    <p className="text-sm text-red-600">{error}</p>
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-xs text-red-400">Closing in {timeRemaining}s</span>
+                                        <button
+                                            onClick={() => setError('')}
+                                            className="text-red-400 hover:text-red-600"
+                                            aria-label="Dismiss"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
                         {success && (
                             <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                <p className="text-sm text-green-600">{success}</p>
+                                <div className="flex justify-between items-center">
+                                    <p className="text-sm text-green-600">{success}</p>
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-xs text-green-400">Closing in {timeRemaining}s</span>
+                                        <button
+                                            onClick={() => setSuccess('')}
+                                            className="text-green-400 hover:text-green-600"
+                                            aria-label="Dismiss"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -617,7 +734,16 @@ export default function AddNewUser() {
                         </div>
                         <p className="text-gray-600 mb-4">
                             Are you sure you want to delete <strong>{selectedUser.full_name}</strong>?
-                            This action cannot be undone and will also delete all associated vehicles and data.
+                            This action cannot be undone and will delete the user along with all associated data including:
+                            <ul className="list-disc ml-5 mt-2">
+                                <li>User profile information</li>
+                                <li>All vehicles registered to this user</li>
+                                <li>All RFID tags associated with their vehicles</li>
+                                <li>All access logs for their vehicles</li>
+                                <li>All violations associated with their vehicles</li>
+                                <li>All contested violation records</li>
+                                <li>All notifications</li>
+                            </ul>
                         </p>
                         <div className="flex space-x-3">
                             <button
@@ -625,7 +751,7 @@ export default function AddNewUser() {
                                 disabled={loading}
                                 className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg transition-colors hover:cursor-pointer"
                             >
-                                {loading ? 'Deleting...' : 'Delete User'}
+                                {loading ? 'Deleting...' : 'Permanently Delete User and All Data'}
                             </button>
                             <button
                                 onClick={() => setShowDeleteModal(false)}
