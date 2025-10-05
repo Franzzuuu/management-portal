@@ -330,16 +330,36 @@ const SecurityDashboard = () => {
                             {/* Report New Violation */}
                             <button
                                 onClick={() => router.push('/security/violations?tab=add')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
+                                className="relative flex items-center p-6 border-2 border-gray-200 rounded-2xl hover:shadow-xl transition-all duration-300 group hover:border-green-300 hover:cursor-pointer overflow-hidden bg-gradient-to-br from-white to-green-50"
                             >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
-                                        <Plus className="h-6 w-6" style={{ color: '#355E3B' }} />
+                                {/* Background Pattern */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                                <div className="relative flex items-center w-full">
+                                    <div className="flex-shrink-0">
+                                        <div className="h-14 w-14 rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg"
+                                            style={{ backgroundColor: '#355E3B' }}>
+                                            <svg className="h-7 w-7" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">Report New Violation</p>
-                                    <p className="text-sm text-gray-600">Issue traffic violation with evidence and details</p>
+                                    <div className="ml-5 text-left flex-1">
+                                        <p className="text-xl font-bold text-gray-900 mb-1 group-hover:text-green-800 transition-colors duration-200">Report New Violation</p>
+                                        <p className="text-sm text-gray-600 leading-relaxed group-hover:text-green-700 transition-colors duration-200">
+                                            Issue traffic violation with evidence and comprehensive details
+                                        </p>
+                                        <div className="mt-3 flex items-center text-xs font-medium text-green-600 group-hover:text-green-700">
+                                            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                            </svg>
+                                            Create Report
+                                        </div>
+                                    </div>
+
+                                    {/* Decorative Element */}
+                                    <div className="absolute -right-2 -top-2 w-16 h-16 bg-gradient-to-br from-green-200 to-emerald-200 rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
+                                    <div className="absolute -right-6 -bottom-2 w-20 h-20 bg-gradient-to-br from-emerald-200 to-green-200 rounded-full opacity-10 group-hover:opacity-30 transition-opacity duration-300"></div>
                                 </div>
                             </button>
 

@@ -24,7 +24,7 @@ export async function POST(request) {
         // Check if tag is available for assignment
         console.log('Looking for tag with ID:', tagId);
         const tagResults = await executeQuery(
-            'SELECT * FROM rfid_vehicle_system.rfid_tags WHERE id = ?',
+            'SELECT * FROM rfid_tags WHERE id = ?',
             [tagId]
         );
 
@@ -49,7 +49,7 @@ export async function POST(request) {
 
         // Check if vehicle exists and is approved
         const [vehicleCheck] = await executeQuery(
-            'SELECT v.*, rt.tag_uid, rt.status as tag_status FROM vehicles v LEFT JOIN rfid_vehicle_system.rfid_tags rt ON v.vehicle_id = rt.vehicle_id WHERE v.vehicle_id = ?',
+            'SELECT v.*, rt.tag_uid, rt.status FROM vehicles v LEFT JOIN rfid_tags rt ON v.vehicle_id = rt.vehicle_id WHERE v.vehicle_id = ?',
             [vehicleId]
         );
 
@@ -77,10 +77,20 @@ export async function POST(request) {
         }
 
         // Update RFID tag with vehicle assignment
-        await executeQuery(
-            'UPDATE rfid_vehicle_system.rfid_tags SET vehicle_id = ?, status = "active", assigned_date = CURRENT_TIMESTAMP WHERE id = ?',
+        const tagUpdateResult = await executeQuery(
+            'UPDATE rfid_tags SET vehicle_id = ?, status = "active", assigned_date = CURRENT_TIMESTAMP WHERE id = ?',
             [vehicleId, tagId]
         );
+
+        console.log('Tag update result:', tagUpdateResult);
+
+        // Update vehicle sticker_status to 'renewed' when RFID tag is assigned
+        const vehicleUpdateResult = await executeQuery(
+            'UPDATE vehicles SET sticker_status = "renewed", updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?',
+            [vehicleId]
+        );
+
+        console.log('Vehicle sticker_status update result:', vehicleUpdateResult);
 
         return Response.json({
             success: true,

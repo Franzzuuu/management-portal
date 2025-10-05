@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { clearAuthData } from '@/lib/client-auth';
@@ -12,7 +12,8 @@ export default function AdminDashboard() {
         totalVehicles: 0,
         pendingApprovals: 0,
         activeViolations: 0,
-        todayLogs: 0
+        todayLogs: 0,
+        pendingAppeals: 0
     });
     const [recentActivity, setRecentActivity] = useState([]);
     const [latestRegistrations, setLatestRegistrations] = useState([]);
@@ -20,12 +21,7 @@ export default function AdminDashboard() {
     const [profilePicture, setProfilePicture] = useState(null);
     const router = useRouter();
 
-    useEffect(() => {
-        checkAuth();
-        fetchProfilePicture();
-    }, []);
-
-    const checkAuth = async () => {
+    const checkAuth = useCallback(async () => {
         try {
             const response = await fetch('/api/auth/me');
             const data = await response.json();
@@ -51,7 +47,12 @@ export default function AdminDashboard() {
             router.push('/login');
         }
         setLoading(false);
-    };
+    }, [router]);
+
+    useEffect(() => {
+        checkAuth();
+        fetchProfilePicture();
+    }, [checkAuth]);
 
     const fetchDashboardData = async () => {
         try {
@@ -221,7 +222,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Dashboard Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                     <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderLeftColor: '#355E3B' }}>
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
@@ -286,6 +287,23 @@ export default function AdminDashboard() {
                                 <h3 className="text-lg font-semibold text-gray-900">Active Violations</h3>
                                 <p className="text-3xl font-bold text-red-500">{stats.activeViolations}</p>
                                 <p className="text-sm text-gray-500">Unresolved issues</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-purple-500">
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                                <div className="h-12 w-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Pending Appeals</h3>
+                                <p className="text-3xl font-bold text-purple-500">{stats.pendingAppeals || 0}</p>
+                                <p className="text-sm text-gray-500">Awaiting review</p>
                             </div>
                         </div>
                     </div>
@@ -475,6 +493,24 @@ export default function AdminDashboard() {
                                 <div className="ml-4 text-left">
                                     <p className="text-lg font-semibold text-gray-900">Violation Management</p>
                                     <p className="text-sm text-gray-600">Handle parking violations and penalties</p>
+                                </div>
+                            </button>
+
+                            {/* Violation Appeals */}
+                            <button
+                                onClick={() => router.push('/admin/appeals')}
+                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
+                            >
+                                <div className="flex-shrink-0">
+                                    <div className="h-12 w-12 bg-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="ml-4 text-left">
+                                    <p className="text-lg font-semibold text-gray-900">Violation Appeals</p>
+                                    <p className="text-sm text-gray-600">Review and process student violation appeals</p>
                                 </div>
                             </button>
 

@@ -5,10 +5,21 @@ import { useRouter } from 'next/navigation';
 
 export default function CarolinianVehicles() {
     const [user, setUser] = useState(null);
-    const [vehicles, setVehicles] = useState([]);
+    const [registeredVehicles, setRegisteredVehicles] = useState([]);
+    const [pendingVehicles, setPendingVehicles] = useState([]);
     const [activeTab, setActiveTab] = useState('vehicles');
     const [loading, setLoading] = useState(true);
     const [accessLogs, setAccessLogs] = useState([]);
+    const [showForm, setShowForm] = useState(false);
+    const [formLoading, setFormLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        vehicleType: '',
+        make: '',
+        model: '',
+        year: '',
+        color: '',
+        plateNumber: ''
+    });
     const router = useRouter();
 
     useEffect(() => {
@@ -17,7 +28,19 @@ export default function CarolinianVehicles() {
         if (activeTab === 'logs') {
             fetchAccessLogs();
         }
-    }, [activeTab]);
+    }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Add auto-refresh when page becomes visible
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                fetchVehicles();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     const fetchUserData = async () => {
         try {
@@ -37,10 +60,11 @@ export default function CarolinianVehicles() {
     const fetchVehicles = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/carolinian/vehicles');
+            const response = await fetch('/api/vehicles?mine=1');
             if (response.ok) {
                 const data = await response.json();
-                setVehicles(data.vehicles || []);
+                setRegisteredVehicles(data.registered || []);
+                setPendingVehicles(data.pending || []);
             }
         } catch (error) {
             console.error('Failed to fetch vehicles:', error);
@@ -64,6 +88,44 @@ export default function CarolinianVehicles() {
         }
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setFormLoading(true);
+
+        try {
+            const response = await fetch('/api/vehicles/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Show success message
+                alert('Vehicle submitted for approval. You will be notified once reviewed.');
+                setShowForm(false);
+                setFormData({
+                    vehicleType: '',
+                    make: '',
+                    model: '',
+                    year: '',
+                    color: '',
+                    plateNumber: ''
+                });
+                // Refresh vehicle list
+                fetchVehicles();
+            } else {
+                alert(result.error || 'Failed to submit vehicle registration');
+            }
+        } catch (error) {
+            console.error('Error submitting vehicle:', error);
+            alert('Failed to submit vehicle registration. Please try again.');
+        } finally {
+            setFormLoading(false);
+        }
+    };
+
     const handleLogout = async () => {
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
@@ -73,7 +135,7 @@ export default function CarolinianVehicles() {
         }
     };
 
-    const getStatusColor = (status) => {
+    const getApprovalStatusColor = (status) => {
         switch (status) {
             case 'approved': return 'bg-green-100 text-green-800';
             case 'rejected': return 'bg-red-100 text-red-800';
@@ -82,7 +144,16 @@ export default function CarolinianVehicles() {
         }
     };
 
-    const getStatusIcon = (status) => {
+    const getStickerStatusColor = (status) => {
+        switch (status) {
+            case 'renewed': return 'bg-green-100 text-green-800';
+            case 'expired': return 'bg-red-100 text-red-800';
+            case 'pending': return 'bg-gray-100 text-gray-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const getApprovalStatusIcon = (status) => {
         switch (status) {
             case 'approved':
                 return (
@@ -106,6 +177,89 @@ export default function CarolinianVehicles() {
                 return null;
         }
     };
+
+    const renderVehicleCard = (vehicle, isRegistered = true) => (
+        <div key={vehicle.vehicle_id} className="border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                    <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                        <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                        </svg>
+                    </div>
+                    <div className="ml-3">
+                        <h4 className="text-lg font-semibold text-gray-900">{vehicle.plate_number}</h4>
+                        <p className="text-sm text-gray-500">{vehicle.make} {vehicle.model}</p>
+                    </div>
+                </div>
+                <div className="flex items-center">
+                    {getApprovalStatusIcon(vehicle.approval_status)}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Color:</span>
+                    <span className="text-sm font-medium text-gray-900">{vehicle.color}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Year:</span>
+                    <span className="text-sm font-medium text-gray-900">{vehicle.year}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Type:</span>
+                    <span className="text-sm font-medium text-gray-900">{vehicle.vehicle_type}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Status:</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getApprovalStatusColor(vehicle.approval_status)}`}>
+                        {vehicle.approval_status}
+                    </span>
+                </div>
+                {isRegistered && (
+                    <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Sticker:</span>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStickerStatusColor(vehicle.sticker_status)}`}>
+                            {vehicle.sticker_status || 'pending'}
+                        </span>
+                    </div>
+                )}
+                {vehicle.rfid_tag_uid && (
+                    <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">RFID Tag:</span>
+                        <span className="text-xs font-mono text-gray-700 bg-gray-100 px-2 py-1 rounded">
+                            {vehicle.rfid_tag_uid.slice(-8)}...
+                        </span>
+                    </div>
+                )}
+                <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Submitted:</span>
+                    <span className="text-sm text-gray-700">
+                        {new Date(vehicle.created_at).toLocaleDateString()}
+                    </span>
+                </div>
+                {isRegistered && vehicle.registration_date && (
+                    <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Registered:</span>
+                        <span className="text-sm text-gray-700">
+                            {new Date(vehicle.registration_date).toLocaleDateString()}
+                        </span>
+                    </div>
+                )}
+            </div>
+
+            {vehicle.approval_status === 'rejected' && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center">
+                        <svg className="h-5 w-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <p className="text-sm text-red-700">Vehicle registration was rejected. Please contact the admin office.</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     if (loading) {
         return (
@@ -183,117 +337,229 @@ export default function CarolinianVehicles() {
                             <p className="text-green-100">Manage your registered vehicles and view access history</p>
                         </div>
 
-                        {/* Tab Navigation */}
-                        <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
+                        <div className="flex items-center space-x-4">
+                            {/* Register Vehicle Button */}
                             <button
-                                onClick={() => setActiveTab('vehicles')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'vehicles'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
-                                    }`}
-                                style={activeTab === 'vehicles' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
+                                onClick={() => setShowForm(!showForm)}
+                                className="px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer"
+                                style={{ backgroundColor: '#FFD700', color: '#355E3B' }}
                             >
-                                My Vehicles
+                                {showForm ? 'Cancel' : '+ Register Vehicle'}
                             </button>
-                            <button
-                                onClick={() => setActiveTab('logs')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'logs'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
-                                    }`}
-                                style={activeTab === 'logs' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
-                            >
-                                Access Logs
-                            </button>
+
+                            {/* Tab Navigation */}
+                            <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
+                                <button
+                                    onClick={() => setActiveTab('vehicles')}
+                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'vehicles'
+                                        ? 'text-white shadow-lg'
+                                        : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                        }`}
+                                    style={activeTab === 'vehicles' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
+                                >
+                                    My Vehicles
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('logs')}
+                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'logs'
+                                        ? 'text-white shadow-lg'
+                                        : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                        }`}
+                                    style={activeTab === 'logs' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
+                                >
+                                    Access Logs
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Content Based on Active Tab */}
                 {activeTab === 'vehicles' ? (
-                    /* Vehicles List */
-                    <div className="bg-white rounded-xl shadow-lg">
-                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                            <h3 className="text-lg font-semibold text-white">Registered Vehicles</h3>
-                            <p className="text-sm" style={{ color: '#FFD700' }}>View your vehicle registration details and RFID status</p>
-                        </div>
-
-                        <div className="p-6">
-                            {vehicles.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {vehicles.map((vehicle) => (
-                                        <div key={vehicle.id} className="border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center">
-                                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
-                                                        <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                                        </svg>
-                                                    </div>
-                                                    <div className="ml-3">
-                                                        <h4 className="text-lg font-semibold text-gray-900">{vehicle.plate_number}</h4>
-                                                        <p className="text-sm text-gray-500">{vehicle.make} {vehicle.model}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    {getStatusIcon(vehicle.registration_status)}
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500">Color:</span>
-                                                    <span className="text-sm font-medium text-gray-900">{vehicle.color}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500">Year:</span>
-                                                    <span className="text-sm font-medium text-gray-900">{vehicle.year}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500">Registration:</span>
-                                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(vehicle.registration_status)}`}>
-                                                        {vehicle.registration_status}
-                                                    </span>
-                                                </div>
-                                                {vehicle.rfid_tag_uid && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-sm text-gray-500">RFID Tag:</span>
-                                                        <span className="text-xs font-mono text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                                                            {vehicle.rfid_tag_uid.slice(-8)}...
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500">Registered:</span>
-                                                    <span className="text-sm text-gray-700">
-                                                        {new Date(vehicle.created_at).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {vehicle.registration_status === 'rejected' && (
-                                                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                                    <div className="flex items-center">
-                                                        <svg className="h-5 w-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                                        </svg>
-                                                        <p className="text-sm text-red-700">Vehicle registration was rejected. Please contact the admin office.</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                    <div className="space-y-6">
+                        {/* Add Vehicle Form */}
+                        {showForm && (
+                            <div className="mb-8 bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Register New Vehicle</h3>
+                                    <p className="text-sm" style={{ color: '#FFD700' }}>Fill in the vehicle details</p>
                                 </div>
-                            ) : (
+
+                                <form onSubmit={handleSubmit} className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label htmlFor="vehicleType" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Vehicle Type *
+                                            </label>
+                                            <select
+                                                id="vehicleType"
+                                                name="vehicleType"
+                                                required
+                                                className="w-full px-3 py-2 border border-gray-300 hover:cursor-pointer rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-700"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
+                                                value={formData.vehicleType}
+                                                onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
+                                            >
+                                                <option value="">Select Type</option>
+                                                <option value="2-wheel">2-wheel (Motorcycle/Scooter)</option>
+                                                <option value="4-wheel">4-wheel (Car/SUV)</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="plateNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Plate Number *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="plateNumber"
+                                                name="plateNumber"
+                                                required
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
+                                                placeholder="e.g., ABC-1234"
+                                                value={formData.plateNumber}
+                                                onChange={(e) => setFormData({ ...formData, plateNumber: e.target.value.toUpperCase() })}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Vehicle Make *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="make"
+                                                name="make"
+                                                required
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
+                                                placeholder="e.g., Toyota, Honda, Yamaha"
+                                                value={formData.make}
+                                                onChange={(e) => setFormData({ ...formData, make: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Vehicle Model *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="model"
+                                                name="model"
+                                                required
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
+                                                placeholder="e.g., Vios, Civic, Mio"
+                                                value={formData.model}
+                                                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Model Year *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                id="year"
+                                                name="year"
+                                                required
+                                                min="1900"
+                                                max={new Date().getFullYear() + 1}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
+                                                placeholder="e.g., 2023"
+                                                value={formData.year}
+                                                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Year must be between 1900 and {new Date().getFullYear() + 1}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Color *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="color"
+                                                name="color"
+                                                required
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-700"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
+                                                placeholder="e.g., Red, Blue, Black"
+                                                value={formData.color}
+                                                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 flex justify-end space-x-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowForm(false)}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={formLoading}
+                                            className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer disabled:opacity-50"
+                                            style={{ backgroundColor: '#355E3B' }}
+                                        >
+                                            {formLoading ? 'Submitting...' : 'Register Vehicle'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* Registered Vehicles */}
+                        {registeredVehicles.length > 0 && (
+                            <div className="bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Registered Vehicles</h3>
+                                    <p className="text-sm" style={{ color: '#FFD700' }}>Your approved vehicles with campus access</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {registeredVehicles.map((vehicle) => renderVehicleCard(vehicle, true))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Pending Registration */}
+                        {pendingVehicles.length > 0 && (
+                            <div className="bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #d4a574 0%, #b8935f 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Pending Registration</h3>
+                                    <p className="text-sm text-yellow-100">Waiting for admin approval</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {pendingVehicles.map((vehicle) => renderVehicleCard(vehicle, false))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* No Vehicles Message */}
+                        {registeredVehicles.length === 0 && pendingVehicles.length === 0 && !showForm && (
+                            <div className="bg-white rounded-xl shadow-lg">
                                 <div className="text-center py-12">
                                     <svg className="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
                                     </svg>
                                     <p className="text-gray-500 text-lg mb-2">No vehicles registered</p>
-                                    <p className="text-gray-400 text-sm">Contact the admin office to register your vehicle for campus access.</p>
+                                    <p className="text-gray-400 text-sm">Click &quot;Register Vehicle&quot; above to register your vehicle for campus access.</p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     /* Access Logs */

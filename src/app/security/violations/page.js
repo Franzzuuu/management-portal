@@ -631,13 +631,29 @@ export default function ViolationsManagement() {
                         <div className="flex flex-col sm:flex-row gap-4">
                             <button
                                 onClick={() => setShowAddForm(true)}
-                                className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                                style={{ backgroundColor: '#355E3B', color: '#FFFFFF' }}
+                                className="relative inline-flex items-center px-8 py-4 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden group"
+                                style={{ backgroundColor: '#355E3B' }}
                             >
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                                Report New Violation
+                                {/* Background animation */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-green-700 to-green-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                                <div className="relative flex items-center">
+                                    <div className="h-8 w-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3 group-hover:bg-opacity-30 transition-all duration-200">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-lg">Report New Violation</span>
+
+                                    {/* Arrow icon */}
+                                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                </div>
+
+                                {/* Sparkle effects */}
+                                <div className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full opacity-60 group-hover:opacity-100 animate-pulse"></div>
+                                <div className="absolute bottom-3 right-4 w-1 h-1 bg-white rounded-full opacity-40 group-hover:opacity-80 animate-pulse delay-100"></div>
                             </button>
                         </div>
 
@@ -1300,16 +1316,34 @@ export default function ViolationsManagement() {
 
                 {/* Add Violation Modal */}
                 {showAddForm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+                    <div
+                        className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                        style={{
+                            backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/ismisbg.jpg')",
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                        }}
+                    >
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+                            {/* Enhanced Header */}
+                            <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
-                                        Report New Violation
-                                    </h3>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg"
+                                            style={{ backgroundColor: '#355E3B' }}>
+                                            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-gray-900">Report New Violation</h3>
+                                            <p className="text-sm text-gray-600 mt-1">Document traffic violation with comprehensive details</p>
+                                        </div>
+                                    </div>
                                     <button
                                         onClick={() => setShowAddForm(false)}
-                                        className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                                        className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100"
                                     >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1318,105 +1352,188 @@ export default function ViolationsManagement() {
                                 </div>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-6">
+                            <form onSubmit={handleSubmit} className="p-8">
                                 {error && (
-                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                        <p className="text-red-600 text-sm">{error}</p>
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                        <div className="flex items-center">
+                                            <svg className="h-5 w-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <p className="text-red-800 text-sm font-medium">{error}</p>
+                                        </div>
                                     </div>
                                 )}
 
                                 {success && (
-                                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                        <p className="text-green-600 text-sm">{success}</p>
+                                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+                                        <div className="flex items-center">
+                                            <svg className="h-5 w-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <p className="text-green-800 text-sm font-medium">{success}</p>
+                                        </div>
                                     </div>
                                 )}
 
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Select Vehicle *
-                                        </label>
-                                        <select
-                                            value={formData.vehicleId}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, vehicleId: e.target.value }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
-                                            style={{ focusRingColor: '#355E3B' }}
-                                            required
-                                        >
-                                            <option value="">Choose a vehicle...</option>
-                                            {vehicles.map(vehicle => (
-                                                <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
-                                                    {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.owner_name})
-                                                </option>
-                                            ))}
-                                        </select>
+                                <div className="space-y-8">
+                                    {/* Vehicle Selection Section */}
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                                        <div className="flex items-center mb-4">
+                                            <div className="h-8 w-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                                                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-lg font-semibold text-blue-900">Vehicle Information</h4>
+                                                <p className="text-sm text-blue-700">Select the vehicle involved in the violation</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-blue-900 mb-3">
+                                                Select Vehicle *
+                                            </label>
+                                            <select
+                                                value={formData.vehicleId}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, vehicleId: e.target.value }))}
+                                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 shadow-sm transition-all duration-200"
+                                                required
+                                            >
+                                                <option value="">Choose a vehicle...</option>
+                                                {vehicles.map(vehicle => (
+                                                    <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
+                                                        {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.owner_name})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Violation Type *
-                                        </label>
-                                        <select
-                                            value={formData.violationTypeId}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, violationTypeId: e.target.value }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
-                                            style={{ focusRingColor: '#355E3B' }}
-                                            required
-                                        >
-                                            <option value="">Select violation type...</option>
-                                            {violationTypes.map(type => (
-                                                <option key={type.id} value={type.id}>
-                                                    {type.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                    {/* Violation Details Section */}
+                                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border border-red-100">
+                                        <div className="flex items-center mb-4">
+                                            <div className="h-8 w-8 bg-red-500 rounded-lg flex items-center justify-center mr-3">
+                                                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-lg font-semibold text-red-900">Violation Details</h4>
+                                                <p className="text-sm text-red-700">Specify the type and details of the violation</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-red-900 mb-3">
+                                                    Violation Type *
+                                                </label>
+                                                <select
+                                                    value={formData.violationTypeId}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, violationTypeId: e.target.value }))}
+                                                    className="w-full px-4 py-3 border-2 border-red-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white text-gray-900 shadow-sm transition-all duration-200"
+                                                    required
+                                                >
+                                                    <option value="">Select violation type...</option>
+                                                    {violationTypes.map(type => (
+                                                        <option key={type.id} value={type.id}>
+                                                            {type.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-semibold text-red-900 mb-3">
+                                                    Additional Description
+                                                </label>
+                                                <textarea
+                                                    value={formData.description}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                                                    placeholder="Provide additional details about the violation, circumstances, location specifics, etc..."
+                                                    rows={4}
+                                                    className="w-full px-4 py-3 border-2 border-red-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white text-gray-900 shadow-sm resize-none transition-all duration-200"
+                                                    style={{
+                                                        fontSize: '14px',
+                                                        lineHeight: '1.5'
+                                                    }}
+                                                />
+                                                <div className="mt-2 flex items-center text-xs text-red-600">
+                                                    <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Include time, location details, and any relevant circumstances
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Description
-                                        </label>
-                                        <textarea
-                                            value={formData.description}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                            placeholder="Provide additional details about the violation..."
-                                            rows={4}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none resize-none"
-                                            style={{ focusRingColor: '#355E3B' }}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Evidence Photo
-                                        </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => setFormData(prev => ({ ...prev, imageFile: e.target.files[0] }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
-                                            style={{ focusRingColor: '#355E3B' }}
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Upload an image as evidence (optional, max 5MB)
-                                        </p>
+                                    {/* Evidence Section */}
+                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+                                        <div className="flex items-center mb-4">
+                                            <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center mr-3">
+                                                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-lg font-semibold text-green-900">Evidence Photo</h4>
+                                                <p className="text-sm text-green-700">Upload photographic evidence of the violation</p>
+                                            </div>
+                                        </div>
+                                        <div className="border-2 border-dashed border-green-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors duration-200">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => setFormData(prev => ({ ...prev, imageFile: e.target.files[0] }))}
+                                                className="hidden"
+                                                id="evidence-upload"
+                                            />
+                                            <label htmlFor="evidence-upload" className="cursor-pointer">
+                                                <div className="flex flex-col items-center">
+                                                    <svg className="h-12 w-12 text-green-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                    </svg>
+                                                    <p className="text-green-700 font-semibold mb-1">Click to upload evidence photo</p>
+                                                    <p className="text-sm text-green-600">
+                                                        Images only • Max 5MB • JPG, PNG, WEBP
+                                                    </p>
+                                                </div>
+                                            </label>
+                                            {formData.imageFile && (
+                                                <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-200">
+                                                    <div className="flex items-center justify-center">
+                                                        <svg className="h-5 w-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span className="text-green-800 font-medium text-sm">{formData.imageFile.name}</span>
+                                                        <span className="text-green-600 text-xs ml-2">({(formData.imageFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-4 mt-8 pt-6 border-t border-gray-200">
-                                    <button
-                                        type="submit"
-                                        className="flex-1 px-6 py-3 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                                        style={{ backgroundColor: '#355E3B' }}
-                                    >
-                                        Report Violation
-                                    </button>
+                                {/* Enhanced Action Buttons */}
+                                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 space-y-3 space-y-reverse sm:space-y-0 mt-10 pt-8 border-t border-gray-200">
                                     <button
                                         type="button"
                                         onClick={() => setShowAddForm(false)}
-                                        className="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors duration-200"
+                                        className="w-full sm:w-auto px-8 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
                                     >
                                         Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="w-full sm:w-auto px-8 py-3 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                                        style={{ backgroundColor: '#355E3B' }}
+                                    >
+                                        <span className="flex items-center justify-center">
+                                            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                            </svg>
+                                            Submit Violation Report
+                                        </span>
                                     </button>
                                 </div>
                             </form>

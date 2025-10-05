@@ -16,6 +16,20 @@ export async function POST(request) {
             return Response.json({ error: 'Invalid session' }, { status: 401 });
         }
 
+        // Get the user's database ID from their USC ID
+        const userResult = await executeQuery(
+            'SELECT id FROM users WHERE usc_id = ?',
+            [session.uscId]
+        );
+
+        if (userResult.length === 0) {
+            console.error('User not found for uscId:', session.uscId);
+            return Response.json({ error: 'User not found' }, { status: 401 });
+        }
+
+        const userId = userResult[0].id;
+        console.log('Found user ID:', userId, 'for USC ID:', session.uscId);
+
         const formData = await request.formData();
         const vehicleId = formData.get('vehicleId');
         const violationTypeId = formData.get('violationTypeId');
@@ -67,7 +81,8 @@ export async function POST(request) {
             hasImageData: !!imageData,
             imageFilename,
             imageMimeType,
-            uscId: session.uscId
+            uscId: session.uscId,
+            userId: userId
         });
 
         // Insert violation record with image data
@@ -93,7 +108,7 @@ export async function POST(request) {
             imageData || null,
             imageFilename || null,
             imageMimeType || null,
-            session.uscId
+            userId  // Use the database user ID instead of uscId
         ];
 
         console.log('Query parameters:', params.map(p => p === null ? 'null' : typeof p));

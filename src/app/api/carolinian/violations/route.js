@@ -19,34 +19,13 @@ export async function GET(request) {
 
         let violations = [];
 
-        // Base query to get violations for user's vehicles
-        // Check if contest columns exist
-        let contestColumns = '';
-        try {
-            // Try to access contest columns
-            await queryMany('SELECT contest_status FROM violations LIMIT 1');
-            contestColumns = `
-                v.contest_status,
-                v.contest_explanation,
-                v.contest_submitted_at,
-            `;
-        } catch (error) {
-            // Contest columns don't exist yet
-            console.warn('Contest columns not found in violations table');
-            contestColumns = `
-                NULL as contest_status,
-                NULL as contest_explanation,
-                NULL as contest_submitted_at,
-            `;
-        }
-
+        // Base query to get violations for user's vehicles with contest data
         const baseQuery = `
             SELECT 
                 v.id,
                 v.created_at,
                 v.description,
                 v.status,
-                ${contestColumns}
                 v.location,
                 v.image_data IS NOT NULL as has_image,
                 vt.name as violation_type,
@@ -54,20 +33,24 @@ export async function GET(request) {
                 ve.plate_number,
                 ve.make as vehicle_make,
                 ve.model as vehicle_model,
-                ve.color as vehicle_color
+                ve.color as vehicle_color,
+                vc.contest_status,
+                vc.contest_notes as contest_explanation,
+                vc.created_at as contest_submitted_at
             FROM violations v
             JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN violation_types vt ON v.violation_type_id = vt.id
             JOIN users u ON ve.usc_id = u.usc_id
+            LEFT JOIN violation_contests vc ON v.id = vc.violation_id
             WHERE u.usc_id = ?
         `;
 
         switch (view) {
             case 'current':
-                // Show only pending violations
+                // Show pending and contested violations (active violations)
                 violations = await queryMany(`
                     ${baseQuery}
-                    AND v.status = 'pending'
+                    AND v.status IN ('pending', 'contested')
                     ORDER BY v.created_at DESC
                 `, [uscId]);
                 break;
@@ -84,8 +67,8 @@ export async function GET(request) {
                 // Show only violations with contest submissions
                 violations = await queryMany(`
                     ${baseQuery}
-                    AND v.contest_status IS NOT NULL
-                    ORDER BY v.contest_submitted_at DESC
+                    AND vc.id IS NOT NULL
+                    ORDER BY vc.created_at DESC
                 `, [uscId]);
                 break;
 

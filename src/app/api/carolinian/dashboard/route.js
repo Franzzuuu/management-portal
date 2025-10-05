@@ -34,24 +34,17 @@ export async function GET() {
         `, [uscId]);
         const totalViolations = violationsResult[0]?.count || 0;
 
-        // Get pending appeals count (violations with contest_status = 'pending')
-        // Use a conditional query in case the column doesn't exist yet
-        let pendingAppeals = 0;
-        try {
-            const appealsResult = await queryMany(`
-                SELECT COUNT(*) as count
-                FROM violations v
-                JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
-                JOIN users u ON ve.usc_id = u.usc_id
-                WHERE u.usc_id = ? 
-                AND v.contest_status = 'pending'
-            `, [uscId]);
-            pendingAppeals = appealsResult[0]?.count || 0;
-        } catch (error) {
-            // If contest_status column doesn't exist, default to 0
-            console.warn('Contest status column not found, defaulting to 0 pending appeals');
-            pendingAppeals = 0;
-        }
+        // Get pending appeals count from violation_contests table
+        const appealsResult = await queryMany(`
+            SELECT COUNT(*) as count
+            FROM violation_contests vc
+            JOIN violations v ON vc.violation_id = v.id
+            JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
+            JOIN users u ON ve.usc_id = u.usc_id
+            WHERE u.usc_id = ? 
+            AND vc.contest_status = 'pending'
+        `, [uscId]);
+        const pendingAppeals = appealsResult[0]?.count || 0;
 
         // Get recent activity (last 10 violations and access logs)
         const recentViolations = await queryMany(`

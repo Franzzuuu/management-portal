@@ -37,17 +37,23 @@ export async function POST(request) {
             );
         }
 
-        // Update vehicle approval status and sticker status
-        // When approved, set sticker_status to 'renewed' 
-        // When rejected, keep sticker_status as 'pending'
-        const stickerStatus = status === 'approved' ? 'renewed' : 'pending';
+        // Update vehicle approval status only
+        // Sticker status is managed separately through RFID tag assignment
+        let updateQuery, updateParams;
 
-        console.log('Updating vehicle with:', { status, stickerStatus, vehicleId });
+        if (status === 'approved') {
+            // When approved, set registration_date to current timestamp
+            updateQuery = 'UPDATE vehicles SET approval_status = ?, registration_date = NOW(), updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?';
+            updateParams = [status, vehicleId];
+        } else {
+            // When rejected, only update approval_status
+            updateQuery = 'UPDATE vehicles SET approval_status = ?, updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?';
+            updateParams = [status, vehicleId];
+        }
 
-        const updateResult = await executeQuery(
-            'UPDATE vehicles SET approval_status = ?, sticker_status = ?, updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?',
-            [status, stickerStatus, vehicleId]
-        );
+        console.log('Updating vehicle with:', { status, vehicleId });
+
+        const updateResult = await executeQuery(updateQuery, updateParams);
 
         console.log('Update result:', updateResult);
 

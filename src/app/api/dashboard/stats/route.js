@@ -15,7 +15,8 @@ export async function GET() {
             totalVehicles,
             pendingApprovals,
             activeViolations,
-            todayLogs
+            todayLogs,
+            pendingAppeals
         ] = await Promise.all([
             // Total users count
             queryOne('SELECT COUNT(*) as count FROM users WHERE status = "active"'),
@@ -30,7 +31,10 @@ export async function GET() {
             queryOne('SELECT COUNT(*) as count FROM violations WHERE status = "pending"'),
 
             // Today's access logs
-            queryOne('SELECT COUNT(*) as count FROM access_logs WHERE DATE(timestamp) = CURDATE()')
+            queryOne('SELECT COUNT(*) as count FROM access_logs WHERE DATE(timestamp) = CURDATE()'),
+
+            // Pending violation appeals
+            queryOne('SELECT COUNT(*) as count FROM violation_contests WHERE contest_status = "pending"')
         ]);
 
         // Get recent activity (last 5 entries)
@@ -71,7 +75,8 @@ export async function GET() {
                 totalVehicles: totalVehicles?.count || 0,
                 pendingApprovals: pendingApprovals?.count || 0,
                 activeViolations: activeViolations?.count || 0,
-                todayLogs: todayLogs?.count || 0
+                todayLogs: todayLogs?.count || 0,
+                pendingAppeals: pendingAppeals?.count || 0
             },
             recentActivity: Array.isArray(recentActivity) ? recentActivity : (recentActivity ? [recentActivity] : []),
             latestRegistrations: Array.isArray(latestRegistrations) ? latestRegistrations : (latestRegistrations ? [latestRegistrations] : [])

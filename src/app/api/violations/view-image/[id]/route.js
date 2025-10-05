@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
                 v.image_filename,
                 ve.usc_id as vehicle_owner_usc_id
             FROM violations v
-            JOIN vehicles ve ON v.vehicle_id = ve.id
+            JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             WHERE v.id = ? AND v.image_data IS NOT NULL
         `, [violationId]);
 
@@ -29,7 +29,7 @@ export async function GET(request, { params }) {
 
         // Check permissions: Admin/Security/Staff can view all images, users can view their own
         const hasPermission = ['Admin', 'Security', 'Staff'].includes(session.userRole) ||
-            violation.vehicle_owner_id === session.userId;
+            violation.vehicle_owner_usc_id === session.uscId;
 
         if (!hasPermission) {
             return new Response('Forbidden', { status: 403 });

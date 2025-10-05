@@ -10,10 +10,14 @@ export default function ViolationsManagement() {
     const [vehicles, setVehicles] = useState([]);
     const [violationTypes, setViolationTypes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('manage'); // manage, history, stats
+    const [activeTab, setActiveTab] = useState('manage'); // manage, contested, history, stats
     const [showAddForm, setShowAddForm] = useState(false);
     const [showImageModal, setShowImageModal] = useState(false);
     const [selectedImage, setSelectedImage] = useState('');
+
+    // Contested violations state
+    const [contestedViolations, setContestedViolations] = useState([]);
+    const [loadingContested, setLoadingContested] = useState(false);
 
     // Filtering and Sorting States
     const [searchTerm, setSearchTerm] = useState('');
@@ -61,6 +65,8 @@ export default function ViolationsManagement() {
     useEffect(() => {
         if (activeTab === 'stats') {
             generateStatistics();
+        } else if (activeTab === 'contested') {
+            fetchContestedViolations();
         }
     }, [activeTab, violations, statsDateRange]);
 
@@ -132,6 +138,21 @@ export default function ViolationsManagement() {
             }
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
+        }
+    };
+
+    const fetchContestedViolations = async () => {
+        try {
+            setLoadingContested(true);
+            const response = await fetch('/api/admin/violation-contests');
+            const data = await response.json();
+            if (data.success) {
+                setContestedViolations(data.contests);
+            }
+        } catch (error) {
+            console.error('Failed to fetch contested violations:', error);
+        } finally {
+            setLoadingContested(false);
         }
     };
 
@@ -552,6 +573,16 @@ export default function ViolationsManagement() {
                                 Manage Violations
                             </button>
                             <button
+                                onClick={() => setActiveTab('contested')}
+                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'contested'
+                                    ? 'text-white shadow-lg'
+                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    }`}
+                                style={activeTab === 'contested' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
+                            >
+                                Contested Violations
+                            </button>
+                            <button
                                 onClick={() => setActiveTab('history')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'history'
                                     ? 'text-white shadow-lg'
@@ -582,13 +613,10 @@ export default function ViolationsManagement() {
                         <div className="flex flex-col sm:flex-row gap-4">
                             <button
                                 onClick={() => setShowAddForm(true)}
-                                className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 hover:cursor-pointer"
+                                className="inline-flex items-center justify-center px-8 py-4 text-white font-semibold rounded-xl shadow-lg hover:cursor-pointer"
                                 style={{ backgroundColor: '#355E3B' }}
                             >
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                                Report New Violation
+                                <span className="text-lg">Report New Violation</span>
                             </button>
                         </div>
 
@@ -927,6 +955,132 @@ export default function ViolationsManagement() {
                     </div>
                 )}
 
+                {/* Contested Violations Tab */}
+                {activeTab === 'contested' && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
+                                        Contested Violations Appeals
+                                    </h3>
+                                    <p className="text-gray-600 mt-1">
+                                        Review and manage violation appeals submitted by students and faculty
+                                    </p>
+                                </div>
+                                <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                                    {contestedViolations.length} Appeals
+                                </div>
+                            </div>
+
+                            {loadingContested ? (
+                                <div className="flex justify-center items-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#355E3B' }}></div>
+                                    <span className="ml-3 text-gray-600">Loading contested violations...</span>
+                                </div>
+                            ) : contestedViolations.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="text-gray-400 mb-4">
+                                        <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No Contested Violations</h3>
+                                    <p className="text-gray-600">
+                                        No violation appeals have been submitted yet.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Appeal Details
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Violation Info
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Appellant
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Status
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {contestedViolations.map((contest) => (
+                                                <tr key={contest.contest_id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm">
+                                                            <div className="font-medium text-gray-900">Appeal #{contest.contest_id}</div>
+                                                            <div className="text-gray-600">
+                                                                Submitted: {new Date(contest.contest_created_at).toLocaleDateString()}
+                                                            </div>
+                                                            <div className="text-gray-500 text-xs mt-1 max-w-xs truncate">
+                                                                {contest.contest_notes}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm">
+                                                            <div className="font-medium text-gray-900">Violation #{contest.violation_id}</div>
+                                                            <div className="text-gray-600">{contest.violation_type}</div>
+                                                            <div className="text-gray-500">{contest.vehicle_info}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm">
+                                                            <div className="font-medium text-gray-900">{contest.user_name}</div>
+                                                            <div className="text-gray-600">{contest.email}</div>
+                                                            <div className="text-gray-500">{contest.designation}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${contest.contest_status === 'pending'
+                                                            ? 'bg-yellow-100 text-yellow-800'
+                                                            : contest.contest_status === 'approved'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : contest.contest_status === 'denied'
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : 'bg-blue-100 text-blue-800'
+                                                            }`}>
+                                                            {contest.contest_status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                        <button
+                                                            onClick={() => window.location.href = `/admin/appeals?appeal=${contest.contest_id}`}
+                                                            className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                        >
+                                                            Review
+                                                        </button>
+                                                        {contest.violation_image && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedImage(`data:${contest.violation_image_mime};base64,${contest.violation_image}`);
+                                                                    setShowImageModal(true);
+                                                                }}
+                                                                className="text-blue-600 hover:text-blue-900"
+                                                            >
+                                                                View Evidence
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* History Tab */}
                 {activeTab === 'history' && (
                     <div className="space-y-6">
@@ -1241,16 +1395,34 @@ export default function ViolationsManagement() {
 
                 {/* Add Violation Modal */}
                 {showAddForm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+                    <div
+                        className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                        style={{
+                            backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/ismisbg.jpg')",
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                        }}
+                    >
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+                            {/* Enhanced Header */}
+                            <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
-                                        Report New Violation
-                                    </h3>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg"
+                                            style={{ backgroundColor: '#355E3B' }}>
+                                            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-gray-900">Report New Violation</h3>
+                                            <p className="text-sm text-gray-600 mt-1">Document traffic violation with comprehensive details</p>
+                                        </div>
+                                    </div>
                                     <button
                                         onClick={() => setShowAddForm(false)}
-                                        className="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:cursor-pointer"
+                                        className="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:cursor-pointer p-2 rounded-full hover:bg-gray-100"
                                     >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

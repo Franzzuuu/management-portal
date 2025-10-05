@@ -25,11 +25,12 @@ export async function POST(request) {
 
         // Verify the violation belongs to the user
         const violation = await queryOne(`
-            SELECT v.id, v.status, v.contest_status, ve.user_id
+            SELECT v.id, v.status, v.contest_status, u.id as user_id
             FROM violations v
-            JOIN vehicles ve ON v.vehicle_id = ve.id
-            WHERE v.id = ? AND ve.user_id = ?
-        `, [violationId, session.userId]);
+            JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
+            JOIN users u ON ve.usc_id = u.usc_id
+            WHERE v.id = ? AND u.usc_id = ?
+        `, [violationId, session.uscId]);
 
         if (!violation) {
             return Response.json({
@@ -65,10 +66,22 @@ export async function POST(request) {
             }
         }
 
-        // Update violation with contest information
+        // Insert the contest into violation_contests table
+        const contestResult = await executeQuery(`
+            INSERT INTO violation_contests (
+                violation_id,
+                user_id,
+                contest_notes,
+                contest_status,
+                created_at
+            ) VALUES (?, ?, ?, 'pending', NOW())
+        `, [violationId, violation.user_id, explanation]);
+
+        // Update violation status to 'contested' and add contest information
         await executeQuery(`
             UPDATE violations 
             SET 
+                status = 'contested',
                 contest_status = 'pending',
                 contest_explanation = ?,
                 contest_submitted_at = NOW()
@@ -104,11 +117,13 @@ export async function POST(request) {
                     u.id,
                     'New Violation Appeal',
                     ?,
-                    'violation_appeal',
+                    'violation_contested',
                     NOW()
                 FROM users u 
                 WHERE u.designation = 'Admin'
-            `, [`A new violation appeal has been submitted by ${session.username} for violation #${violationId}`]);
+            `, [
+                `A new violation appeal has been submitted by ${session.username} for violation #${violationId}. Contest ID: ${contestResult.insertId}`
+            ]);
         } catch (notificationError) {
             console.warn('Failed to create notification:', notificationError);
             // Don't fail the main operation if notification fails
@@ -116,7 +131,9 @@ export async function POST(request) {
 
         return Response.json({
             success: true,
-            message: 'Appeal submitted successfully'
+            message: 'Appeal submitted successfully',
+            contestId: contestResult.insertId,
+            violationId: violationId
         });
 
     } catch (error) {

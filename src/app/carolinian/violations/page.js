@@ -42,6 +42,7 @@ export default function CarolinianViolations() {
             const response = await fetch(`/api/carolinian/violations?view=${activeTab}`);
             if (response.ok) {
                 const data = await response.json();
+                console.log('Violations data:', data.violations); // Debug log
                 setViolations(data.violations || []);
             }
         } catch (error) {
@@ -72,7 +73,24 @@ export default function CarolinianViolations() {
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
-        setContestForm(prev => ({ ...prev, evidence_files: files }));
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        const validFiles = [];
+        const rejectedFiles = [];
+
+        files.forEach(file => {
+            if (file.size <= maxSize) {
+                validFiles.push(file);
+            } else {
+                rejectedFiles.push(file);
+            }
+        });
+
+        if (rejectedFiles.length > 0) {
+            const fileNames = rejectedFiles.map(f => f.name).join(', ');
+            alert(`The following files exceed the 5MB limit and were not added: ${fileNames}`);
+        }
+
+        setContestForm(prev => ({ ...prev, evidence_files: validFiles }));
     };
 
     const submitContest = async () => {
@@ -112,21 +130,27 @@ export default function CarolinianViolations() {
         }
     };
 
-    const getStatusColor = (status) => {
+    const getStatusColor = (status, contestStatus) => {
+        // If appeal is approved, show as resolved/dismissed regardless of original status
+        if (contestStatus === 'approved') {
+            return 'bg-green-50 text-green-800 border-green-200';
+        }
+
         switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800';
-            case 'resolved': return 'bg-green-100 text-green-800';
-            case 'rejected': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'pending': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+            case 'contested': return 'bg-blue-50 text-blue-800 border-blue-200';
+            case 'resolved': return 'bg-green-50 text-green-800 border-green-200';
+            case 'rejected': return 'bg-red-50 text-red-800 border-red-200';
+            default: return 'bg-gray-50 text-gray-800 border-gray-200';
         }
     };
 
     const getContestStatusColor = (contestStatus) => {
         switch (contestStatus) {
-            case 'pending': return 'bg-blue-100 text-blue-800';
-            case 'approved': return 'bg-green-100 text-green-800';
-            case 'rejected': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'pending': return 'bg-blue-50 text-blue-800 border-blue-200';
+            case 'approved': return 'bg-green-50 text-green-800 border-green-200';
+            case 'rejected': return 'bg-red-50 text-red-800 border-red-200';
+            default: return 'bg-gray-50 text-gray-800 border-gray-200';
         }
     };
 
@@ -253,117 +277,170 @@ export default function CarolinianViolations() {
 
                     <div className="p-6">
                         {violations.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Date & Time
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Vehicle
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Violation Type
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Location
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {violations.map((violation) => (
-                                            <tr key={violation.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {new Date(violation.created_at).toLocaleDateString()}
+                            <div className="space-y-6">
+                                {violations.map((violation) => (
+                                    <div key={violation.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+                                        {/* Violation Header */}
+                                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                                            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                                        </svg>
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {new Date(violation.created_at).toLocaleTimeString()}
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold text-gray-900">{violation.violation_type}</h3>
+                                                        <p className="text-sm text-gray-600">
+                                                            Vehicle: <span className="font-medium text-gray-900">{violation.plate_number}</span>
+                                                            <span className="mx-2">•</span>
+                                                            {violation.vehicle_make} {violation.vehicle_model}
+                                                        </p>
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {violation.plate_number}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {violation.vehicle_make} {violation.vehicle_model}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {violation.violation_type}
-                                                    </div>
-                                                    {violation.description && (
-                                                        <div className="text-sm text-gray-500">
-                                                            {violation.description}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        {violation.location || 'Campus'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex flex-col space-y-1">
-                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(violation.status)}`}>
-                                                            {violation.status}
+                                                </div>
+                                                <div className="mt-4 md:mt-0 flex flex-col md:items-end space-y-2">
+                                                    <div className="flex space-x-2">
+                                                        <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(violation.status, violation.contest_status)}`}>
+                                                            <div className={`w-2 h-2 rounded-full mr-2 ${violation.contest_status === 'approved' ? 'bg-green-400' :
+                                                                violation.status === 'pending' ? 'bg-yellow-400' :
+                                                                    violation.status === 'contested' ? 'bg-blue-400' :
+                                                                        violation.status === 'resolved' ? 'bg-green-400' : 'bg-red-400'
+                                                                }`}></div>
+                                                            {violation.contest_status === 'approved' ? 'Dismissed' :
+                                                                violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}
                                                         </span>
-                                                        {violation.contest_status && (
-                                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getContestStatusColor(violation.contest_status)}`}>
-                                                                Appeal: {violation.contest_status}
+                                                        {violation.contest_status && violation.contest_status !== 'approved' && (
+                                                            <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getContestStatusColor(violation.contest_status)}`}>
+                                                                <div className={`w-2 h-2 rounded-full mr-2 ${violation.contest_status === 'pending' ? 'bg-blue-400' :
+                                                                    violation.contest_status === 'approved' ? 'bg-green-400' : 'bg-red-400'
+                                                                    }`}></div>
+                                                                Appeal: {violation.contest_status.charAt(0).toUpperCase() + violation.contest_status.slice(1)}
                                                             </span>
                                                         )}
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <div className="flex space-x-2">
-                                                        {violation.has_image && (
-                                                            <button
-                                                                onClick={() => window.open(`/api/violations/view-image/${violation.id}`, '_blank')}
-                                                                className="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors duration-200 hover:cursor-pointer"
-                                                            >
-                                                                View Evidence
-                                                            </button>
-                                                        )}
-                                                        {violation.status === 'pending' && !violation.contest_status && (
-                                                            <button
-                                                                onClick={() => openContestModal(violation)}
-                                                                className="text-white px-3 py-1 rounded-md transition-colors duration-200 hover:opacity-90 hover:cursor-pointer"
-                                                                style={{ backgroundColor: '#355E3B' }}
-                                                            >
-                                                                Contest
-                                                            </button>
-                                                        )}
+                                                    <div className="text-sm text-gray-500">
+                                                        {new Date(violation.created_at).toLocaleDateString('en-US', {
+                                                            weekday: 'short',
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })} at {new Date(violation.created_at).toLocaleTimeString('en-US', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Violation Details */}
+                                        <div className="px-6 py-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Description</h4>
+                                                        <p className="mt-1 text-gray-900">
+                                                            {violation.description || 'No additional details provided'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Location</h4>
+                                                        <div className="mt-1 flex items-center text-gray-900">
+                                                            <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            </svg>
+                                                            {violation.location || 'USC Campus'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Actions</h4>
+                                                        <div className="mt-1 flex flex-wrap gap-2">
+                                                            {violation.has_image && (
+                                                                <button
+                                                                    onClick={() => window.open(`/api/violations/view-image/${violation.id}`, '_blank')}
+                                                                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors duration-200 hover:cursor-pointer"
+                                                                >
+                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                    </svg>
+                                                                    View Evidence
+                                                                </button>
+                                                            )}
+                                                            {violation.status === 'pending' && !violation.contest_status && (
+                                                                <button
+                                                                    onClick={() => openContestModal(violation)}
+                                                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:shadow-lg hover:cursor-pointer transform hover:scale-105"
+                                                                    style={{ backgroundColor: '#355E3B' }}
+                                                                >
+                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                    </svg>
+                                                                    Submit Appeal
+                                                                </button>
+                                                            )}
+                                                            {violation.contest_status === 'pending' && (
+                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
+                                                                    <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    Appeal Under Review
+                                                                </div>
+                                                            )}
+                                                            {violation.contest_status === 'approved' && (
+                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg">
+                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                    Appeal Approved - Violation Dismissed
+                                                                </div>
+                                                            )}
+                                                            {violation.contest_status === 'rejected' && violation.status !== 'resolved' && (
+                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                    Appeal Rejected
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
-                            <div className="text-center py-12">
-                                <svg className="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p className="text-gray-500 text-lg mb-2">
-                                    {activeTab === 'current' && 'No current violations'}
-                                    {activeTab === 'history' && 'No violation history'}
-                                    {activeTab === 'appeals' && 'No appeals submitted'}
+                            <div className="text-center py-16">
+                                <div className="mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6" style={{ backgroundColor: '#f0f9ff' }}>
+                                    <svg className="h-12 w-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                    {activeTab === 'current' && 'No Current Violations! 🎉'}
+                                    {activeTab === 'history' && 'Clean Driving Record 📋'}
+                                    {activeTab === 'appeals' && 'No Appeals Yet 📝'}
+                                </h3>
+                                <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                                    {activeTab === 'current' && 'Excellent! You currently have no outstanding violations. Keep up the good driving behavior on campus.'}
+                                    {activeTab === 'history' && 'You have a perfect record with no traffic violations. Way to go with safe and responsible driving!'}
+                                    {activeTab === 'appeals' && 'You haven\'t submitted any violation appeals yet. If you receive a violation you believe is incorrect, you can contest it here.'}
                                 </p>
-                                <p className="text-gray-400 text-sm">
-                                    {activeTab === 'current' && 'Great! You have no outstanding violations.'}
-                                    {activeTab === 'history' && 'You have a clean record with no violations.'}
-                                    {activeTab === 'appeals' && 'You haven\'t submitted any appeals yet.'}
-                                </p>
+                                {activeTab === 'current' && (
+                                    <div className="inline-flex items-center px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        All Clear
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -372,106 +449,180 @@ export default function CarolinianViolations() {
 
             {/* Contest Modal */}
             {contestModal.open && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                    <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white">
-                        <div className="mt-3">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Contest Violation</h3>
+                <div
+                    className="fixed inset-0 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+                    style={{
+                        backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/ismisbg.jpg')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                    }}
+                >
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
+                        {/* Modal Header */}
+                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                        <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-gray-900">Submit Violation Appeal</h3>
+                                        <p className="text-sm text-gray-500">Contest this violation with supporting evidence</p>
+                                    </div>
+                                </div>
                                 <button
                                     onClick={closeContestModal}
-                                    className="text-gray-400 hover:text-gray-600 hover:cursor-pointer"
+                                    className="text-gray-400 hover:text-gray-600 hover:cursor-pointer p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
                                 >
                                     <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
                             </div>
+                        </div>
 
-                            {/* Violation Details */}
-                            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                                <h4 className="font-medium text-gray-900 mb-2">Violation Details</h4>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span className="text-gray-500">Date:</span>
-                                        <span className="ml-2 text-gray-900">
-                                            {new Date(contestModal.violation.created_at).toLocaleDateString()}
-                                        </span>
+                        <div className="p-6">
+                            {/* Violation Summary Card */}
+                            <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 rounded-xl">
+                                <div className="flex items-start space-x-3">
+                                    <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                        <svg className="h-4 w-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-500">Vehicle:</span>
-                                        <span className="ml-2 text-gray-900">
-                                            {contestModal.violation.plate_number}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-500">Violation:</span>
-                                        <span className="ml-2 text-gray-900">
-                                            {contestModal.violation.violation_type}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-500">Location:</span>
-                                        <span className="ml-2 text-gray-900">
-                                            {contestModal.violation.location || 'Campus'}
-                                        </span>
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-red-900 mb-2">Violation Details</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center">
+                                                    <span className="text-red-600 font-medium w-20">Type:</span>
+                                                    <span className="text-red-800">{contestModal.violation.violation_type}</span>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="text-red-600 font-medium w-20">Vehicle:</span>
+                                                    <span className="text-red-800">{contestModal.violation.plate_number}</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center">
+                                                    <span className="text-red-600 font-medium w-20">Date:</span>
+                                                    <span className="text-red-800">
+                                                        {new Date(contestModal.violation.created_at).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric'
+                                                        })}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="text-red-600 font-medium w-20">Location:</span>
+                                                    <span className="text-red-800">{contestModal.violation.location || 'USC Campus'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Contest Form */}
-                            <div className="space-y-4">
+                            {/* Appeal Form */}
+                            <div className="space-y-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Explanation <span className="text-red-500">*</span>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                                        <span className="flex items-center">
+                                            <svg className="h-4 w-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z" />
+                                            </svg>
+                                            Your Explanation
+                                            <span className="text-red-500 ml-1">*</span>
+                                        </span>
                                     </label>
                                     <textarea
                                         value={contestForm.explanation}
                                         onChange={(e) => setContestForm(prev => ({ ...prev, explanation: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                        rows={4}
-                                        placeholder="Please explain why you believe this violation should be dismissed..."
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-400"
+                                        rows={6}
+                                        placeholder="Please provide a detailed explanation of why you believe this violation should be dismissed. Include specific circumstances, timing, or any relevant context that supports your appeal..."
+                                        style={{
+                                            fontSize: '14px',
+                                            lineHeight: '1.5',
+                                            fontFamily: 'inherit'
+                                        }}
                                         required
                                     />
+                                    <div className="mt-2 flex items-center text-xs text-gray-500">
+                                        <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Be specific and honest. Clear explanations have better chances of approval.
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Supporting Evidence (Optional)
+                                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                                        <span className="flex items-center">
+                                            <svg className="h-4 w-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Supporting Evidence
+                                            <span className="text-gray-400 ml-2 font-normal">(Optional)</span>
+                                        </span>
                                     </label>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        accept="image/*,.pdf,.doc,.docx"
-                                        onChange={handleFileChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Accepted formats: Images, PDF, Word documents. Max 5 files.
-                                    </p>
-                                </div>
-
-                                {contestForm.evidence_files.length > 0 && (
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-700 mb-2">Selected Files:</p>
-                                        <ul className="text-sm text-gray-600">
-                                            {contestForm.evidence_files.map((file, index) => (
-                                                <li key={index} className="flex items-center">
-                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                    {file.name}
-                                                </li>
-                                            ))}
-                                        </ul>
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-colors duration-200">
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept="image/*,.pdf,.doc,.docx"
+                                            onChange={handleFileChange}
+                                            className="hidden"
+                                            id="evidence-upload"
+                                        />
+                                        <label htmlFor="evidence-upload" className="cursor-pointer">
+                                            <div className="flex flex-col items-center">
+                                                <svg className="h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                                <p className="text-gray-600 font-medium">Click to upload files</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Images, PDF, Word documents • Max 5 files • 5MB each
+                                                </p>
+                                            </div>
+                                        </label>
                                     </div>
-                                )}
+
+                                    {contestForm.evidence_files.length > 0 && (
+                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                            <p className="text-sm font-medium text-blue-900 mb-3">Selected Files ({contestForm.evidence_files.length}):</p>
+                                            <ul className="space-y-2">
+                                                {contestForm.evidence_files.map((file, index) => (
+                                                    <li key={index} className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-100">
+                                                        <div className="flex items-center">
+                                                            <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                                                <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                </svg>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                                                <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Modal Actions */}
-                            <div className="flex justify-end space-x-3 mt-6">
+                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 space-y-3 space-y-reverse sm:space-y-0 mt-8 pt-6 border-t border-gray-200">
                                 <button
                                     onClick={closeContestModal}
-                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer"
+                                    className="w-full sm:w-auto px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:cursor-pointer font-medium"
                                     disabled={submitting}
                                 >
                                     Cancel
@@ -479,10 +630,25 @@ export default function CarolinianViolations() {
                                 <button
                                     onClick={submitContest}
                                     disabled={submitting || !contestForm.explanation.trim()}
-                                    className="px-4 py-2 text-white rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+                                    className="w-full sm:w-auto px-6 py-3 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:hover:scale-100"
                                     style={{ backgroundColor: '#355E3B' }}
                                 >
-                                    {submitting ? 'Submitting...' : 'Submit Appeal'}
+                                    {submitting ? (
+                                        <span className="flex items-center justify-center">
+                                            <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Submitting Appeal...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center justify-center">
+                                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                            </svg>
+                                            Submit Appeal
+                                        </span>
+                                    )}
                                 </button>
                             </div>
                         </div>
