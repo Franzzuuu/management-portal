@@ -13,15 +13,15 @@ export async function GET() {
             return Response.json({ error: 'Access denied. Students and Faculty only.' }, { status: 403 });
         }
 
-        const userId = session.userId;
+        const uscId = session.uscId;
 
         // Get user's vehicles count
         const vehiclesResult = await queryMany(`
             SELECT COUNT(*) as count
             FROM vehicles v
             JOIN users u ON v.usc_id = u.usc_id
-            WHERE u.id = ?
-        `, [userId]);
+            WHERE u.usc_id = ?
+        `, [uscId]);
         const registeredVehicles = vehiclesResult[0]?.count || 0;
 
         // Get user's total violations count
@@ -30,8 +30,8 @@ export async function GET() {
             FROM violations v
             JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN users u ON ve.usc_id = u.usc_id
-            WHERE u.id = ?
-        `, [userId]);
+            WHERE u.usc_id = ?
+        `, [uscId]);
         const totalViolations = violationsResult[0]?.count || 0;
 
         // Get pending appeals count (violations with contest_status = 'pending')
@@ -43,9 +43,9 @@ export async function GET() {
                 FROM violations v
                 JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
                 JOIN users u ON ve.usc_id = u.usc_id
-                WHERE u.id = ? 
+                WHERE u.usc_id = ? 
                 AND v.contest_status = 'pending'
-            `, [userId]);
+            `, [uscId]);
             pendingAppeals = appealsResult[0]?.count || 0;
         } catch (error) {
             // If contest_status column doesn't exist, default to 0
@@ -63,10 +63,10 @@ export async function GET() {
             JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN violation_types vt ON v.violation_type_id = vt.id
             JOIN users u ON ve.usc_id = u.usc_id
-            WHERE u.id = ?
+            WHERE u.usc_id = ?
             ORDER BY v.created_at DESC
             LIMIT 5
-        `, [userId]);
+        `, [uscId]);
 
         // Get recent access logs (using correct column name 'entry_type')
         const recentLogs = await queryMany(`
@@ -84,10 +84,10 @@ export async function GET() {
             FROM access_logs al
             JOIN vehicles ve ON al.vehicle_id = ve.vehicle_id
             JOIN users u ON ve.usc_id = u.usc_id
-            WHERE u.id = ?
+            WHERE u.usc_id = ?
             ORDER BY al.timestamp DESC
             LIMIT 5
-        `, [userId]);
+        `, [uscId]);
 
         // Combine and sort recent activity
         const recentActivity = [...recentViolations, ...recentLogs]

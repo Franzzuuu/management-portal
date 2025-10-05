@@ -15,7 +15,7 @@ export async function GET(request) {
 
         const url = new URL(request.url);
         const limitParam = url.searchParams.get('limit') || '50';
-        const userId = session.userId;
+        const uscId = session.uscId;
 
         // Get access logs for user's vehicles (using correct column names)
         // Remove LIMIT from prepared statement and use string interpolation for the limit
@@ -31,11 +31,11 @@ export async function GET(request) {
                 v.model as vehicle_model,
                 v.color as vehicle_color
             FROM access_logs al
-            JOIN vehicles v ON al.vehicle_id = v.id
-            WHERE v.user_id = ?
+            JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+            WHERE v.usc_id = ?
             ORDER BY al.timestamp DESC
             LIMIT ${parseInt(limitParam, 10)}
-        `, [userId]);
+        `, [uscId]);
 
         return Response.json({
             success: true,

@@ -2,10 +2,10 @@ import { executeQuery } from '../database.js';
 
 export async function addProfilePictureColumns() {
     try {
-        console.log('Adding profile picture columns to users table...');
+        console.log('Adding profile picture columns to user_profiles table...');
 
         await executeQuery(`
-            ALTER TABLE users 
+            ALTER TABLE user_profiles 
             ADD COLUMN IF NOT EXISTS profile_picture LONGBLOB NULL,
             ADD COLUMN IF NOT EXISTS profile_picture_type VARCHAR(100) NULL
         `);

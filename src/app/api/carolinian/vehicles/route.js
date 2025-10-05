@@ -13,7 +13,7 @@ export async function GET() {
             return Response.json({ error: 'Access denied. Students and Faculty only.' }, { status: 403 });
         }
 
-        const userId = session.userId;
+        const uscId = session.uscId;
 
         // Get user's vehicles with RFID tag information (using approval_status for consistency)
         const vehicles = await queryMany(`
@@ -32,7 +32,7 @@ export async function GET() {
             LEFT JOIN rfid_tags rt ON v.vehicle_id = rt.vehicle_id
             WHERE v.usc_id = ?
             ORDER BY v.created_at DESC
-        `, [userId]);
+        `, [uscId]);
 
         // Format the response
         const formattedVehicles = vehicles.map(vehicle => ({

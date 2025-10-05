@@ -13,7 +13,7 @@ export async function GET() {
             return Response.json({ error: 'Access denied. Students and Faculty only.' }, { status: 403 });
         }
 
-        const userId = session.userId;
+        const uscId = session.uscId;
 
         // Get user profile information (using correct column names)
         const profile = await queryOne(`
@@ -28,9 +28,9 @@ export async function GET() {
                 u.designation,
                 u.created_at
             FROM users u
-            LEFT JOIN user_profiles up ON u.id = up.user_id
-            WHERE u.id = ?
-        `, [userId]);
+            LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+            WHERE u.usc_id = ?
+        `, [uscId]);
 
         if (!profile) {
             // Create default profile if none exists
@@ -40,7 +40,7 @@ export async function GET() {
                     full_name,
                     created_at
                 ) VALUES (?, ?, NOW())
-            `, [userId, session.userEmail || 'User']);
+            `, [uscId, session.userEmail || 'User']);
 
             // Fetch the newly created profile
             const newProfile = await queryOne(`
@@ -55,9 +55,9 @@ export async function GET() {
                     u.designation,
                     u.created_at
                 FROM users u
-                LEFT JOIN user_profiles up ON u.id = up.user_id
-                WHERE u.id = ?
-            `, [userId]);
+                LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+                WHERE u.usc_id = ?
+            `, [uscId]);
 
             return Response.json({
                 success: true,
@@ -91,7 +91,7 @@ export async function PUT(request) {
             return Response.json({ error: 'Access denied. Students and Faculty only.' }, { status: 403 });
         }
 
-        const userId = session.userId;
+        const uscId = session.uscId;
         const profileData = await request.json();
 
         // Validate required fields
@@ -117,8 +117,8 @@ export async function PUT(request) {
 
         // Check if profile exists
         const existingProfile = await queryOne(`
-            SELECT id FROM user_profiles WHERE user_id = ?
-        `, [userId]);
+            SELECT id FROM user_profiles WHERE usc_id = ?
+        `, [uscId]);
 
         if (existingProfile) {
             // Update existing profile (using correct column names)
@@ -129,12 +129,12 @@ export async function PUT(request) {
                     phone_number = ?,
                     usc_id = ?,
                     updated_at = NOW()
-                WHERE user_id = ?
+                WHERE usc_id = ?
             `, [
                 profileData.full_name.trim(),
                 profileData.phone?.trim() || null,
                 profileData.student_id?.trim() || profileData.employee_id?.trim() || null,
-                userId
+                uscId
             ]);
 
             // Update email and department in users table
@@ -147,7 +147,7 @@ export async function PUT(request) {
             `, [
                 profileData.email.trim(),
                 profileData.department?.trim() || null,
-                userId
+                uscId
             ]);
         } else {
             // Create new profile (using correct column names)
@@ -160,7 +160,7 @@ export async function PUT(request) {
                     created_at
                 ) VALUES (?, ?, ?, ?, NOW())
             `, [
-                userId,
+                uscId,
                 profileData.full_name.trim(),
                 profileData.phone?.trim() || null,
                 profileData.student_id?.trim() || profileData.employee_id?.trim() || null
@@ -176,7 +176,7 @@ export async function PUT(request) {
             `, [
                 profileData.email.trim(),
                 profileData.department?.trim() || null,
-                userId
+                uscId
             ]);
         }
 

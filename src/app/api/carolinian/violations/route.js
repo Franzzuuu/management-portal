@@ -15,7 +15,7 @@ export async function GET(request) {
 
         const url = new URL(request.url);
         const view = url.searchParams.get('view') || 'current';
-        const userId = session.userId;
+        const uscId = session.uscId;
 
         let violations = [];
 
@@ -59,7 +59,7 @@ export async function GET(request) {
             JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN violation_types vt ON v.violation_type_id = vt.id
             JOIN users u ON ve.usc_id = u.usc_id
-            WHERE u.id = ?
+            WHERE u.usc_id = ?
         `;
 
         switch (view) {
@@ -69,7 +69,7 @@ export async function GET(request) {
                     ${baseQuery}
                     AND v.status = 'pending'
                     ORDER BY v.created_at DESC
-                `, [userId]);
+                `, [uscId]);
                 break;
 
             case 'history':
@@ -77,7 +77,7 @@ export async function GET(request) {
                 violations = await queryMany(`
                     ${baseQuery}
                     ORDER BY v.created_at DESC
-                `, [userId]);
+                `, [uscId]);
                 break;
 
             case 'appeals':
@@ -86,14 +86,14 @@ export async function GET(request) {
                     ${baseQuery}
                     AND v.contest_status IS NOT NULL
                     ORDER BY v.contest_submitted_at DESC
-                `, [userId]);
+                `, [uscId]);
                 break;
 
             default:
                 violations = await queryMany(`
                     ${baseQuery}
                     ORDER BY v.created_at DESC
-                `, [userId]);
+                `, [uscId]);
         }
 
         return Response.json({

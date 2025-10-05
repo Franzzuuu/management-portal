@@ -1,0 +1,108 @@
+'use client';
+
+import { useState } from 'react';
+
+export default function ProfilePictureMigrationPage() {
+    const [isRunning, setIsRunning] = useState(false);
+    const [result, setResult] = useState('');
+    const [error, setError] = useState('');
+
+    const runMigration = async () => {
+        setIsRunning(true);
+        setResult('');
+        setError('');
+
+        try {
+            const response = await fetch('/api/admin/migrate-profile-picture-columns', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setResult('✅ Migration completed successfully!\n\nProfile picture columns have been added to the user_profiles table.');
+            } else {
+                setError('❌ Migration failed: ' + data.error);
+            }
+        } catch (err) {
+            setError('❌ Migration failed: ' + err.message);
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 p-8">
+            <div className="max-w-4xl mx-auto">
+                <div className="bg-white rounded-xl shadow-lg p-8">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold mb-4" style={{ color: '#355E3B' }}>
+                            Profile Picture Migration
+                        </h1>
+                        <p className="text-gray-600">
+                            Run this migration to add profile picture columns to the user_profiles table
+                        </p>
+                    </div>
+
+                    <div className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4" style={{ color: '#355E3B' }}>
+                            What this migration will do:
+                        </h2>
+                        <ul className="list-disc list-inside space-y-2 text-gray-700">
+                            <li>Add profile_picture column (LONGBLOB) to user_profiles table</li>
+                            <li>Add profile_picture_type column (VARCHAR) to user_profiles table</li>
+                        </ul>
+                    </div>
+
+                    <div className="text-center mb-8">
+                        <button
+                            onClick={runMigration}
+                            disabled={isRunning}
+                            className={`px-8 py-4 rounded-lg font-semibold text-white transition-all duration-200 ${isRunning
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'hover:shadow-xl transform hover:scale-105'
+                                }`}
+                            style={{ backgroundColor: isRunning ? undefined : '#355E3B' }}
+                        >
+                            {isRunning ? (
+                                <div className="flex items-center space-x-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                    <span>Running Migration...</span>
+                                </div>
+                            ) : (
+                                'Run Profile Picture Migration'
+                            )}
+                        </button>
+                    </div>
+
+                    {result && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-4">
+                            <h3 className="text-green-800 font-semibold mb-2">Migration Results:</h3>
+                            <pre className="text-green-700 text-sm whitespace-pre-wrap">{result}</pre>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+                            <h3 className="text-red-800 font-semibold mb-2">Migration Error:</h3>
+                            <pre className="text-red-700 text-sm whitespace-pre-wrap">{error}</pre>
+                        </div>
+                    )}
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                        <h3 className="text-yellow-800 font-semibold mb-2">⚠️ Important Notes:</h3>
+                        <ul className="text-yellow-700 text-sm space-y-1">
+                            <li>• This migration is safe and won&apos;t delete existing data</li>
+                            <li>• You can run this migration multiple times safely (uses IF NOT EXISTS)</li>
+                            <li>• Make sure your MySQL server is running</li>
+                            <li>• After successful migration, you&apos;ll be able to use profile picture features</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
