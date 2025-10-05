@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { clearAuthData } from '@/lib/client-auth';
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -76,10 +77,34 @@ export default function AdminDashboard() {
 
     const handleLogout = async () => {
         try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            // Clear any local state first
+            setUser(null);
+
+            // Clear client-side auth data (cookies, localStorage, etc.)
+            clearAuthData();
+
+            // Make logout request with caching disabled
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            if (!response.ok) {
+                console.error('Logout failed with status:', response.status);
+            }
+
+            // Redirect to login regardless of success/failure
             router.push('/login');
+
         } catch (error) {
-            console.error('Logout failed:', error);
+            console.error('Logout error:', error);
+            // Clear client-side auth data again just to be safe
+            clearAuthData();
+            // Force redirect to login anyway
+            router.push('/login');
         }
     };
 
@@ -105,7 +130,13 @@ export default function AdminDashboard() {
                     <div className="flex justify-between items-center py-4">
                         <div className="flex items-center">
                             <div>
-                                <img src="/images/usclogo.png" alt="Logo" className="mx-auto h-32 w-auto" />
+                                <Image
+                                    src="/images/usclogo.png"
+                                    alt="Logo"
+                                    width={128}
+                                    height={128}
+                                    className="mx-auto h-32 w-auto"
+                                />
                             </div>
                             <div className="ml-3">
                                 <h1 className="text-xl font-bold text-white">

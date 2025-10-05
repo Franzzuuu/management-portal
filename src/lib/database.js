@@ -110,6 +110,54 @@ export async function queryMany(query, values = []) {
     return await executeQuery(query, values);
 }
 
+// Execute a direct query without prepared statements
+// Use this for commands like START TRANSACTION, COMMIT, ROLLBACK
+export async function executeDirectQuery(query, retries = 3) {
+    let connection;
+    let lastError;
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            if (!pool) {
+                pool = getPool();
+            }
+
+            // Check for too many connections
+            if (activeConnections >= MAX_CONNECTIONS) {
+                console.warn('Too many connections, waiting for cleanup...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
+
+            connection = await pool.getConnection();
+            const [results] = await connection.query(query); // Using query() instead of execute()
+            return results;
+
+        } catch (error) {
+            lastError = error;
+            console.error(`Direct query error (attempt ${attempt}/${retries}):`, error.message);
+
+            if (error.code === 'ER_CON_COUNT_ERROR') {
+                // Force pool cleanup and recreation
+                if (pool) {
+                    await pool.end().catch(console.error);
+                    pool = null;
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                continue;
+            }
+            throw error;
+
+        } finally {
+            if (connection) {
+                connection.release();
+            }
+        }
+    }
+
+    throw lastError;
+}
+
 // Get connection with timeout
 export async function getConnection(timeout = 5000) {
     if (!pool) {
@@ -144,6 +192,25 @@ export async function cleanup() {
         pool = null;
         activeConnections = 0;
     }
+}
+
+// Helper function for IN clauses with proper parameter binding
+export async function executeInQuery(baseQuery, inValues = [], otherValues = []) {
+    if (!inValues || inValues.length === 0) {
+        throw new Error('No values provided for IN clause');
+    }
+
+    // Generate the correct number of placeholders
+    const placeholders = inValues.map(() => '?').join(',');
+
+    // Replace the first ? with the generated placeholders
+    const query = baseQuery.replace('?', `(${placeholders})`);
+
+    // Combine the IN values with any other values
+    const allValues = [...inValues, ...otherValues];
+
+    // Execute the query with the combined values
+    return await executeQuery(query, allValues);
 }
 
 export default getPool;
