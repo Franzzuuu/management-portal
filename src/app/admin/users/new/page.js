@@ -254,7 +254,7 @@ export default function AddNewUser() {
     const getDesignationColor = (designation) => {
         switch (designation) {
             case 'Admin': return 'bg-purple-100 text-purple-800';
-            case 'Staff': return 'bg-blue-100 text-blue-800';
+            case 'Security': return 'bg-blue-100 text-blue-800';
             case 'Faculty': return 'bg-indigo-100 text-indigo-800';
             case 'Student': return 'bg-gray-100 text-gray-800';
             default: return 'bg-gray-100 text-gray-800';

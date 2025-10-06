@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import SearchableVehicleSelectForViolations from '../../components/SearchableVehicleSelectForViolations';
 
 export default function ViolationsManagement() {
     const [user, setUser] = useState(null);
     const [violations, setViolations] = useState([]);
     const [filteredViolations, setFilteredViolations] = useState([]);
-    const [vehicles, setVehicles] = useState([]);
     const [violationTypes, setViolationTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('manage'); // manage, history, stats
@@ -116,7 +116,6 @@ export default function ViolationsManagement() {
                 console.log('Authenticated as Security:', data.user);
                 setUser(data.user);
                 await Promise.all([
-                    fetchVehicles(),
                     fetchViolationTypes(),
                     fetchNotifications()
                 ]);
@@ -129,18 +128,6 @@ export default function ViolationsManagement() {
             router.push('/login');
         }
         setLoading(false);
-    };
-
-    const fetchVehicles = async () => {
-        try {
-            const response = await fetch('/api/vehicles');
-            const data = await response.json();
-            if (data.success) {
-                setVehicles(data.vehicles.filter(v => v.approval_status === 'approved'));
-            }
-        } catch (error) {
-            console.error('Failed to fetch vehicles:', error);
-        }
     };
 
     const fetchViolationTypes = async () => {
@@ -589,12 +576,12 @@ export default function ViolationsManagement() {
                         </div>
 
                         {/* Tab Navigation */}
-                        <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
+                        <div className="flex space-x-1 bg-green-950 bg-opacity-30 rounded-lg p-1">
                             <button
                                 onClick={() => setActiveTab('manage')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'manage'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'manage' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -603,8 +590,8 @@ export default function ViolationsManagement() {
                             <button
                                 onClick={() => setActiveTab('history')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'history'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'history' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -613,8 +600,8 @@ export default function ViolationsManagement() {
                             <button
                                 onClick={() => setActiveTab('stats')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === 'stats'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'stats' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -1393,19 +1380,13 @@ export default function ViolationsManagement() {
                                             <label className="block text-sm font-semibold text-blue-900 mb-3">
                                                 Select Vehicle *
                                             </label>
-                                            <select
+                                            <SearchableVehicleSelectForViolations
                                                 value={formData.vehicleId}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, vehicleId: e.target.value }))}
+                                                onChange={(vehicleId) => setFormData(prev => ({ ...prev, vehicleId }))}
                                                 className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 shadow-sm transition-all duration-200"
+                                                placeholder="Search and select a vehicle..."
                                                 required
-                                            >
-                                                <option value="">Choose a vehicle...</option>
-                                                {vehicles.map(vehicle => (
-                                                    <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
-                                                        {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.owner_name})
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            />
                                         </div>
                                     </div>
 

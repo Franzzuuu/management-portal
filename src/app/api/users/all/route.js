@@ -13,6 +13,7 @@ export async function GET() {
         const users = await queryMany(`
             SELECT 
                 u.id,
+                u.usc_id,
                 u.email,
                 u.designation,
                 u.status,

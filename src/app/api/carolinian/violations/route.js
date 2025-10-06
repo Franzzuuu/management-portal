@@ -36,7 +36,9 @@ export async function GET(request) {
                 ve.color as vehicle_color,
                 vc.contest_status,
                 vc.contest_notes as contest_explanation,
-                vc.created_at as contest_submitted_at
+                vc.created_at as contest_submitted_at,
+                vc.review_notes as admin_review_notes,
+                vc.reviewed_at as appeal_reviewed_at
             FROM violations v
             JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN violation_types vt ON v.violation_type_id = vt.id

@@ -348,12 +348,12 @@ export default function CarolinianVehicles() {
                             </button>
 
                             {/* Tab Navigation */}
-                            <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
+                            <div className="flex space-x-1 bg-green-950 bg-opacity-30 rounded-lg p-1">
                                 <button
                                     onClick={() => setActiveTab('vehicles')}
                                     className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'vehicles'
-                                        ? 'text-white shadow-lg'
-                                        : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                        ? 'shadow-lg'
+                                        : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                         }`}
                                     style={activeTab === 'vehicles' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                                 >
@@ -362,8 +362,8 @@ export default function CarolinianVehicles() {
                                 <button
                                     onClick={() => setActiveTab('logs')}
                                     className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'logs'
-                                        ? 'text-white shadow-lg'
-                                        : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                        ? 'shadow-lg'
+                                        : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                         }`}
                                     style={activeTab === 'logs' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                                 >
