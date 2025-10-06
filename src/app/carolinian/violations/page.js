@@ -225,12 +225,12 @@ export default function CarolinianViolations() {
                         </div>
 
                         {/* Tab Navigation */}
-                        <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
+                        <div className="flex space-x-1 bg-green-950 bg-opacity-30 rounded-lg p-1">
                             <button
                                 onClick={() => setActiveTab('current')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'current'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'current' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -239,8 +239,8 @@ export default function CarolinianViolations() {
                             <button
                                 onClick={() => setActiveTab('history')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'history'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'history' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -249,8 +249,8 @@ export default function CarolinianViolations() {
                             <button
                                 onClick={() => setActiveTab('appeals')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'appeals'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-100 hover:text-white hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'appeals' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -261,7 +261,7 @@ export default function CarolinianViolations() {
                 </div>
 
                 {/* Violations List */}
-                <div className="bg-white rounded-xl shadow-lg">
+                <div className="bg-gray-100 rounded-xl shadow-lg">
                     <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
                         <h3 className="text-lg font-semibold text-white">
                             {activeTab === 'current' && 'Current Violations'}
@@ -279,9 +279,9 @@ export default function CarolinianViolations() {
                         {violations.length > 0 ? (
                             <div className="space-y-6">
                                 {violations.map((violation) => (
-                                    <div key={violation.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+                                    <div key={violation.id} className="bg-gray-50 border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
                                         {/* Violation Header */}
-                                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                                        <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-6 py-4 border-b border-gray-200">
                                             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                                                 <div className="flex items-center space-x-4">
                                                     <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
@@ -413,6 +413,36 @@ export default function CarolinianViolations() {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Admin Review Notes Section */}
+                                        {violation.admin_review_notes && (violation.contest_status === 'approved' || violation.contest_status === 'rejected') && (
+                                            <div className="mx-6 mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                                        <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                                                            Admin Review Notes
+                                                            {violation.appeal_reviewed_at && (
+                                                                <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                                                    Reviewed {new Date(violation.appeal_reviewed_at).toLocaleDateString('en-US', {
+                                                                        month: 'short',
+                                                                        day: 'numeric',
+                                                                        year: 'numeric'
+                                                                    })}
+                                                                </span>
+                                                            )}
+                                                        </h4>
+                                                        <div className="text-sm text-blue-800 bg-gray-50 bg-opacity-70 p-3 rounded-lg border border-blue-100 leading-relaxed">
+                                                            {violation.admin_review_notes}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -458,9 +488,9 @@ export default function CarolinianViolations() {
                         backgroundRepeat: 'no-repeat'
                     }}
                 >
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
+                    <div className="relative bg-gray-50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
                         {/* Modal Header */}
-                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+                        <div className="sticky top-0 bg-gray-50 border-b border-gray-200 px-6 py-4 rounded-t-2xl">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
                                     <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
@@ -542,7 +572,7 @@ export default function CarolinianViolations() {
                                     <textarea
                                         value={contestForm.explanation}
                                         onChange={(e) => setContestForm(prev => ({ ...prev, explanation: e.target.value }))}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-400"
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-all duration-200 bg-gray-50 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-400"
                                         rows={6}
                                         placeholder="Please provide a detailed explanation of why you believe this violation should be dismissed. Include specific circumstances, timing, or any relevant context that supports your appeal..."
                                         style={{
@@ -598,7 +628,7 @@ export default function CarolinianViolations() {
                                             <p className="text-sm font-medium text-blue-900 mb-3">Selected Files ({contestForm.evidence_files.length}):</p>
                                             <ul className="space-y-2">
                                                 {contestForm.evidence_files.map((file, index) => (
-                                                    <li key={index} className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-100">
+                                                    <li key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded-lg border border-blue-100">
                                                         <div className="flex items-center">
                                                             <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
                                                                 <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,7 +652,7 @@ export default function CarolinianViolations() {
                             <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 space-y-3 space-y-reverse sm:space-y-0 mt-8 pt-6 border-t border-gray-200">
                                 <button
                                     onClick={closeContestModal}
-                                    className="w-full sm:w-auto px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:cursor-pointer font-medium"
+                                    className="w-full sm:w-auto px-6 py-3 text-gray-700 bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:cursor-pointer font-medium"
                                     disabled={submitting}
                                 >
                                     Cancel

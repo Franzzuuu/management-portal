@@ -561,12 +561,12 @@ export default function ViolationsManagement() {
                         </div>
 
                         {/* Tab Navigation */}
-                        <div className="flex space-x-1 bg-white bg-opacity-10 rounded-lg p-1">
+                        <div className="flex space-x-1 bg-green-800 bg-opacity-30 rounded-lg p-1">
                             <button
                                 onClick={() => setActiveTab('manage')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'manage'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'manage' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -575,8 +575,8 @@ export default function ViolationsManagement() {
                             <button
                                 onClick={() => setActiveTab('contested')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'contested'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'contested' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -585,8 +585,8 @@ export default function ViolationsManagement() {
                             <button
                                 onClick={() => setActiveTab('history')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'history'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'history' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
@@ -595,8 +595,8 @@ export default function ViolationsManagement() {
                             <button
                                 onClick={() => setActiveTab('stats')}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'stats'
-                                    ? 'text-white shadow-lg'
-                                    : 'text-green-500 hover:text-green-900 hover:bg-white hover:bg-opacity-10'
+                                    ? 'shadow-lg'
+                                    : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'stats' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
