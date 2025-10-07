@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function CarolinianViolations() {
@@ -16,12 +16,7 @@ export default function CarolinianViolations() {
     const [submitting, setSubmitting] = useState(false);
     const router = useRouter();
 
-    useEffect(() => {
-        fetchUserData();
-        fetchViolations();
-    }, [activeTab]);
-
-    const fetchUserData = async () => {
+    const fetchUserData = useCallback(async () => {
         try {
             const response = await fetch('/api/auth/session');
             if (response.ok) {
@@ -34,9 +29,9 @@ export default function CarolinianViolations() {
             console.error('Failed to fetch user data:', error);
             router.push('/login');
         }
-    };
+    }, [router]);
 
-    const fetchViolations = async () => {
+    const fetchViolations = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch(`/api/carolinian/violations?view=${activeTab}`);
@@ -50,7 +45,12 @@ export default function CarolinianViolations() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab]);
+
+    useEffect(() => {
+        fetchUserData();
+        fetchViolations();
+    }, [fetchUserData, fetchViolations]);
 
     const handleLogout = async () => {
         try {
@@ -136,6 +136,11 @@ export default function CarolinianViolations() {
             return 'bg-green-50 text-green-800 border-green-200';
         }
 
+        // If appeal is denied, show as resolved but with different color to indicate it stands
+        if (contestStatus === 'denied') {
+            return 'bg-orange-50 text-orange-800 border-orange-200';
+        }
+
         switch (status) {
             case 'pending': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
             case 'contested': return 'bg-blue-50 text-blue-800 border-blue-200';
@@ -149,7 +154,7 @@ export default function CarolinianViolations() {
         switch (contestStatus) {
             case 'pending': return 'bg-blue-50 text-blue-800 border-blue-200';
             case 'approved': return 'bg-green-50 text-green-800 border-green-200';
-            case 'rejected': return 'bg-red-50 text-red-800 border-red-200';
+            case 'denied': return 'bg-red-50 text-red-800 border-red-200';
             default: return 'bg-gray-50 text-gray-800 border-gray-200';
         }
     };
@@ -302,12 +307,14 @@ export default function CarolinianViolations() {
                                                     <div className="flex space-x-2">
                                                         <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(violation.status, violation.contest_status)}`}>
                                                             <div className={`w-2 h-2 rounded-full mr-2 ${violation.contest_status === 'approved' ? 'bg-green-400' :
-                                                                violation.status === 'pending' ? 'bg-yellow-400' :
-                                                                    violation.status === 'contested' ? 'bg-blue-400' :
-                                                                        violation.status === 'resolved' ? 'bg-green-400' : 'bg-red-400'
+                                                                violation.contest_status === 'denied' ? 'bg-orange-400' :
+                                                                    violation.status === 'pending' ? 'bg-yellow-400' :
+                                                                        violation.status === 'contested' ? 'bg-blue-400' :
+                                                                            violation.status === 'resolved' ? 'bg-green-400' : 'bg-red-400'
                                                                 }`}></div>
                                                             {violation.contest_status === 'approved' ? 'Dismissed' :
-                                                                violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}
+                                                                violation.contest_status === 'denied' ? 'Violation Stands' :
+                                                                    violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}
                                                         </span>
                                                         {violation.contest_status && violation.contest_status !== 'approved' && (
                                                             <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getContestStatusColor(violation.contest_status)}`}>
@@ -400,12 +407,12 @@ export default function CarolinianViolations() {
                                                                     Appeal Approved - Violation Dismissed
                                                                 </div>
                                                             )}
-                                                            {violation.contest_status === 'rejected' && violation.status !== 'resolved' && (
-                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                                                            {violation.contest_status === 'denied' && (
+                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg">
                                                                     <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                                     </svg>
-                                                                    Appeal Rejected
+                                                                    Appeal Denied - Violation Stands
                                                                 </div>
                                                             )}
                                                         </div>
@@ -415,7 +422,7 @@ export default function CarolinianViolations() {
                                         </div>
 
                                         {/* Admin Review Notes Section */}
-                                        {violation.admin_review_notes && (violation.contest_status === 'approved' || violation.contest_status === 'rejected') && (
+                                        {violation.admin_review_notes && (violation.contest_status === 'approved' || violation.contest_status === 'denied') && (
                                             <div className="mx-6 mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
                                                 <div className="flex items-start space-x-3">
                                                     <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">

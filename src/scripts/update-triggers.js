@@ -1,28 +1,30 @@
 // src/scripts/update-triggers.js
+// src/scripts/update-triggers.js
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import mysql from 'mysql2/promise';
 
 // Load env for running the script via node
+// Load env for running the script via node
 config({ path: resolve(process.cwd(), '.env.local') });
 config({ path: resolve(process.cwd(), '.env') });
 
 (async () => {
-    let connection;
-    try {
-        connection = await mysql.createConnection({
-            host: process.env.DB_HOST ?? 'localhost',
-            port: Number(process.env.DB_PORT ?? 3306),
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD ?? process.env.DB_PASS,
-            database: process.env.DB_NAME,
-            multipleStatements: true,
-        });
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST ?? 'localhost',
+      port: Number(process.env.DB_PORT ?? 3306),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD ?? process.env.DB_PASS,
+      database: process.env.DB_NAME,
+      multipleStatements: true,
+    });
 
-        await connection.query('DROP TRIGGER IF EXISTS update_violation_count_insert');
-        await connection.query('DROP TRIGGER IF EXISTS update_violation_count_update');
+    await connection.query('DROP TRIGGER IF EXISTS update_violation_count_insert');
+    await connection.query('DROP TRIGGER IF EXISTS update_violation_count_update');
 
-        const createInsertTrigger = `
+    const createInsertTrigger = `
       CREATE TRIGGER update_violation_count_insert 
       AFTER INSERT ON violations
       FOR EACH ROW
@@ -48,7 +50,7 @@ config({ path: resolve(process.cwd(), '.env') });
       END
     `;
 
-        const createUpdateTrigger = `
+    const createUpdateTrigger = `
       CREATE TRIGGER update_violation_count_update
       AFTER UPDATE ON violations
       FOR EACH ROW
@@ -78,14 +80,14 @@ config({ path: resolve(process.cwd(), '.env') });
       END
     `;
 
-        await connection.query(createInsertTrigger);
-        await connection.query(createUpdateTrigger);
+    await connection.query(createInsertTrigger);
+    await connection.query(createUpdateTrigger);
 
-        console.log('Triggers updated successfully.');
-    } catch (err) {
-        console.error('Failed to update triggers:', err);
-        process.exitCode = 1;
-    } finally {
-        if (connection) await connection.end();
-    }
+    console.log('Triggers updated successfully.');
+  } catch (err) {
+    console.error('Failed to update triggers:', err);
+    process.exitCode = 1;
+  } finally {
+    if (connection) await connection.end();
+  }
 })();
