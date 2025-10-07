@@ -210,9 +210,9 @@ export async function POST(request) {
         // Update violation status based on the decision
         let newViolationStatus = contestData.violation_status;
         if (action === 'approve') {
-            newViolationStatus = 'resolved'; // Changed from 'dismissed' to 'resolved'
+            newViolationStatus = 'resolved'; // Appeal approved - violation dismissed
         } else if (action === 'deny') {
-            newViolationStatus = 'pending'; // Return to pending for payment
+            newViolationStatus = 'resolved'; // Appeal denied - violation stands but is resolved
         }
         // under_review keeps violation as 'contested'
 
@@ -231,7 +231,7 @@ export async function POST(request) {
                     notificationMessage = `Your violation appeal for violation #${contestData.violation_id} has been approved. The violation has been resolved.`;
                     break;
                 case 'deny':
-                    notificationMessage = `Your violation appeal for violation #${contestData.violation_id} has been denied. ${reviewNotes ? 'Reason: ' + reviewNotes : 'Please proceed with payment.'}`;
+                    notificationMessage = `Your violation appeal for violation #${contestData.violation_id} has been denied. ${reviewNotes ? 'Reason: ' + reviewNotes : 'The violation stands as recorded.'} No further action is required.`;
                     break;
                 case 'under_review':
                     notificationMessage = `Your violation appeal for violation #${contestData.violation_id} is now under review.`;

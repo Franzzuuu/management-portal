@@ -213,4 +213,15 @@ export async function executeInQuery(baseQuery, inValues = [], otherValues = [])
     return await executeQuery(query, allValues);
 }
 
+// Test database connection
+export async function testConnection() {
+    try {
+        await executeQuery('SELECT 1');
+        return true;
+    } catch (error) {
+        console.error('Database connection test failed:', error);
+        return false;
+    }
+}
+
 export default getPool;
