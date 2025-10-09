@@ -31,7 +31,7 @@ export async function POST(request) {
 
         // helper to set the cookie consistently
         const setSessionCookie = async (token) => {
-            const cookieStore = cookies();
+            const cookieStore = await cookies();
             cookieStore.set('session', token, {
                 httpOnly: true,
                 sameSite: 'lax',

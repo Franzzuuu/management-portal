@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { clearAuthData } from '@/lib/client-auth';
+import DashboardLayout from '../components/DashboardLayout';
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -18,7 +18,6 @@ export default function AdminDashboard() {
     const [recentActivity, setRecentActivity] = useState([]);
     const [latestRegistrations, setLatestRegistrations] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [profilePicture, setProfilePicture] = useState(null);
     const router = useRouter();
 
     const checkAuth = useCallback(async () => {
@@ -51,7 +50,6 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         checkAuth();
-        fetchProfilePicture();
     }, [checkAuth]);
 
     const fetchDashboardData = async () => {
@@ -69,53 +67,6 @@ export default function AdminDashboard() {
         }
     };
 
-    const fetchProfilePicture = async () => {
-        try {
-            const response = await fetch('/api/admin/profile-picture');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    setProfilePicture(`data:${data.image_type};base64,${data.image_data}`);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch profile picture:', error);
-        }
-    };
-
-    const handleLogout = async () => {
-        try {
-            // Clear any local state first
-            setUser(null);
-
-            // Clear client-side auth data (cookies, localStorage, etc.)
-            clearAuthData();
-
-            // Make logout request with caching disabled
-            const response = await fetch('/api/auth/logout', {
-                method: 'POST',
-                cache: 'no-store',
-                headers: {
-                    'Cache-Control': 'no-cache'
-                }
-            });
-
-            if (!response.ok) {
-                console.error('Logout failed with status:', response.status);
-            }
-
-            // Redirect to login regardless of success/failure
-            router.push('/login');
-
-        } catch (error) {
-            console.error('Logout error:', error);
-            // Clear client-side auth data again just to be safe
-            clearAuthData();
-            // Force redirect to login anyway
-            router.push('/login');
-        }
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -130,449 +81,115 @@ export default function AdminDashboard() {
         );
     }
 
+    // Dashboard stats configuration
+    const dashboardStats = [
+        {
+            title: 'Total Users',
+            value: stats.totalUsers,
+            subtitle: 'Registered in system',
+            iconPath: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+            bgColor: '#355E3B',
+            iconColor: '#FFD700',
+            textColor: '#355E3B',
+            borderColor: '#355E3B'
+        },
+        {
+            title: 'Total Vehicles',
+            value: stats.totalVehicles,
+            subtitle: 'Active registrations',
+            iconPath: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z',
+            bgColor: '#FFD700',
+            iconColor: '#355E3B',
+            textColor: '#FFD700',
+            borderColor: '#FFD700'
+        },
+        {
+            title: 'Pending Approvals',
+            value: stats.pendingApprovals,
+            subtitle: 'Awaiting review',
+            iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z',
+            bgColor: '#f97316',
+            iconColor: '#ffffff',
+            textColor: '#f97316',
+            borderColor: '#f97316'
+        },
+        {
+            title: 'Active Violations',
+            value: stats.activeViolations,
+            subtitle: 'Unresolved issues',
+            iconPath: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+            bgColor: '#dc2626',
+            iconColor: '#ffffff',
+            textColor: '#dc2626',
+            borderColor: '#dc2626'
+        }
+    ];
+
+    // Quick actions configuration
+    const quickActions = [
+        {
+            title: 'Add New User',
+            subtitle: 'Create new accounts',
+            iconPath: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
+            bgColor: '#355E3B',
+            iconColor: '#FFD700',
+            onClick: () => router.push('/admin/users/new')
+        },
+        {
+            title: 'Vehicle Management',
+            subtitle: 'Manage vehicle registrations',
+            iconPath: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z',
+            bgColor: '#FFD700',
+            iconColor: '#355E3B',
+            onClick: () => router.push('/admin/vehicles')
+        },
+        {
+            title: 'View Reports',
+            subtitle: 'Access analytics and system reports',
+            iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+            bgColor: '#2563eb',
+            iconColor: '#ffffff',
+            onClick: () => router.push('/admin/reports')
+        },
+        {
+            title: 'RFID Tag Management',
+            subtitle: 'Assign and manage RFID tags',
+            iconPath: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z',
+            bgColor: '#355E3B',
+            iconColor: '#FFD700',
+            onClick: () => router.push('/admin/rfid-tags')
+        },
+        {
+            title: 'Access Logs',
+            subtitle: 'Monitor vehicle entry and exit logs',
+            iconPath: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+            bgColor: '#FFD700',
+            iconColor: '#355E3B',
+            onClick: () => router.push('/admin/access-logs')
+        },
+        {
+            title: 'Violation Management',
+            subtitle: 'Handle parking violations and penalties',
+            iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z',
+            bgColor: '#dc2626',
+            iconColor: '#ffffff',
+            onClick: () => router.push('/admin/violations')
+        }
+    ];
+
+    // Format recent activity for DashboardLayout
+    const formattedRecentActivity = recentActivity.map((activity, index) => ({
+        description: `${activity.plate_number} - ${activity.user_name} (${activity.entry_type.toUpperCase()})`,
+        timestamp: new Date(activity.timestamp).toLocaleString()
+    }));
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="shadow-lg border-b-2" style={{ backgroundColor: '#355E3B', borderBottomColor: '#FFD700' }}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center">
-                            <div>
-                                <Image
-                                    src="/images/usclogo.png"
-                                    alt="Logo"
-                                    width={128}
-                                    height={128}
-                                    className="mx-auto h-32 w-auto"
-                                />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="text-xl font-bold text-white">
-                                    RFID Vehicle Management Portal
-                                </h1>
-                                <p className="text-sm" style={{ color: '#FFD700' }}>
-                                    University of San Carlos - Talamban Campus
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <div className="text-sm text-right">
-                                <div className="text-white">
-                                    Welcome, <span className="font-semibold">{user?.fullName || user?.email}</span>
-                                </div>
-                                <div className="flex items-center justify-end mt-1">
-                                    <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
-                                        {user?.designation}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="hidden md:block">
-                                <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-lg">
-                                    {profilePicture ? (
-                                        <Image
-                                            src={profilePicture}
-                                            alt="Profile"
-                                            width={48}
-                                            height={48}
-                                            className="w-full h-full object-cover"
-                                            unoptimized={true}
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                            <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg hover:cursor-pointer"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                {/* Welcome Banner */}
-                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">
-                                Administrator Dashboard
-                            </h2>
-                            <p className="text-gray-200">
-                                Integrated RFID Sticker System for Seamless Vehicle Identification
-                            </p>
-                        </div>
-                        <div className="hidden md:block">
-                            <div className="h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <svg className="h-8 w-8" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Dashboard Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderLeftColor: '#355E3B' }}>
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
-                                    <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Total Users</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>{stats.totalUsers}</p>
-                                <p className="text-sm text-gray-500">Registered in system</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderLeftColor: '#FFD700' }}>
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                    <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Registered Vehicles</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#FFD700' }}>{stats.totalVehicles}</p>
-                                <p className="text-sm text-gray-500">Active registrations</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-orange-500">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-orange-500 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Pending Approvals</h3>
-                                <p className="text-3xl font-bold text-orange-500">{stats.pendingApprovals}</p>
-                                <p className="text-sm text-gray-500">Awaiting review</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-red-500">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-red-500 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Active Violations</h3>
-                                <p className="text-3xl font-bold text-red-500">{stats.activeViolations}</p>
-                                <p className="text-sm text-gray-500">Unresolved issues</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-purple-500">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="h-12 w-12 bg-purple-500 rounded-lg flex items-center justify-center">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Pending Appeals</h3>
-                                <p className="text-3xl font-bold text-purple-500">{stats.pendingAppeals || 0}</p>
-                                <p className="text-sm text-gray-500">Awaiting review</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Recent Activity & Latest Registrations */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Recent Activity */}
-                    <div className="bg-white rounded-xl shadow-lg">
-                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                            <h3 className="text-lg font-semibold text-white">Recent Vehicle Activity</h3>
-                            <p className="text-sm" style={{ color: '#FFD700' }}>Todays access logs: {stats.todayLogs}</p>
-                        </div>
-                        <div className="p-6">
-                            {recentActivity.length > 0 ? (
-                                <div className="space-y-3">
-                                    {recentActivity.map((activity, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                            <div className="flex items-center space-x-3">
-                                                <div className={`h-2 w-2 rounded-full ${activity.entry_type === 'entry' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">{activity.plate_number}</p>
-                                                    <p className="text-xs text-gray-500">{activity.user_name}</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs font-medium" style={{ color: activity.entry_type === 'entry' ? '#355E3B' : '#dc2626' }}>
-                                                    {activity.entry_type.toUpperCase()}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {new Date(activity.timestamp).toLocaleTimeString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-500 text-center py-4">No recent activity</p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Latest Registrations */}
-                    <div className="bg-white rounded-xl shadow-lg">
-                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #FFD700 0%, #e6c200 100%)' }}>
-                            <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>Latest Registrations</h3>
-                            <p className="text-sm" style={{ color: '#355E3B' }}>Pending vehicle approvals</p>
-                        </div>
-                        <div className="p-6">
-                            {latestRegistrations.length > 0 ? (
-                                <div className="space-y-3">
-                                    {latestRegistrations.map((registration, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">{registration.full_name}</p>
-                                                <p className="text-xs text-gray-500">{registration.plate_number} • {registration.vehicle_type}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-md">
-                                                    Pending
-                                                </span>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {new Date(registration.created_at).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-500 text-center py-4">No pending registrations</p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white rounded-xl shadow-lg">
-                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h2 className="text-xl font-semibold text-white">Quick Actions</h2>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>Manage your RFID vehicle system</p>
-                    </div>
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                            {/* Add New User */}
-                            <button
-                                onClick={() => router.push('/admin/users/new')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
-                                        <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">Add New User</p>
-                                    <p className="text-sm text-gray-600">Create new user accounts and assign roles</p>
-                                </div>
-                            </button>
-
-                            {/* Vehicle Management */}
-                            <button
-                                onClick={() => router.push('/admin/vehicles')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
-                                        <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">Vehicle Management</p>
-                                    <p className="text-sm text-gray-600">Manage registrations and RFID assignments</p>
-                                </div>
-                            </button>
-
-                            {/* View Reports */}
-                            <button
-                                onClick={() => router.push('/admin/reports')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">View Reports</p>
-                                    <p className="text-sm text-gray-600">Access analytics and system reports</p>
-                                </div>
-                            </button>
-
-                            {/* RFID Tag Management */}
-                            <button
-                                onClick={() => router.push('/admin/rfid-tags')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#355E3B' }}>
-                                        <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">RFID Tag Management</p>
-                                    <p className="text-sm text-gray-600">Assign and manage RFID tags</p>
-                                </div>
-                            </button>
-
-                            {/* Access Logs */}
-                            <button
-                                onClick={() => router.push('/admin/access-logs')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: '#FFD700' }}>
-                                        <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">Access Logs</p>
-                                    <p className="text-sm text-gray-600">Monitor vehicle entry and exit logs</p>
-                                </div>
-                            </button>
-
-                            {/* Violation Management */}
-                            <button
-                                onClick={() => router.push('/admin/violations')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 bg-red-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">Violation Management</p>
-                                    <p className="text-sm text-gray-600">Handle parking violations and penalties</p>
-                                </div>
-                            </button>
-
-                            {/* Violation Appeals */}
-                            <button
-                                onClick={() => router.push('/admin/appeals')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 bg-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">Violation Appeals</p>
-                                    <p className="text-sm text-gray-600">Review and process student violation appeals</p>
-                                </div>
-                            </button>
-
-                            {/* My Profile */}
-                            <button
-                                onClick={() => router.push('/admin/profile')}
-                                className="flex items-center p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
-                            >
-                                <div className="flex-shrink-0">
-                                    <div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="ml-4 text-left">
-                                    <p className="text-lg font-semibold text-gray-900">My Profile</p>
-                                    <p className="text-sm text-gray-600">Update personal information and settings</p>
-                                </div>
-                            </button>
-
-                        </div>
-                    </div>
-                </div>
-
-                {/* System Status */}
-                <div className="mt-8 bg-white rounded-xl shadow-lg">
-                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h2 className="text-xl font-semibold text-white">System Status</h2>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>Current system health and performance</p>
-                    </div>
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                            <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg border border-green-200">
-                                <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
-                                <div>
-                                    <p className="text-sm font-medium text-green-800">Database Connection</p>
-                                    <p className="text-xs text-green-600">Online</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg border border-green-200">
-                                <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
-                                <div>
-                                    <p className="text-sm font-medium text-green-800">RFID Scanners</p>
-                                    <p className="text-xs text-green-600">Ready for Integration</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                <div className="h-3 w-3 bg-blue-500 rounded-full animate-pulse"></div>
-                                <div>
-                                    <p className="text-sm font-medium text-blue-800">Management Portal</p>
-                                    <p className="text-xs text-blue-600">Active</p>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
+        <DashboardLayout
+            user={user}
+            setUser={setUser}
+            stats={dashboardStats}
+            quickActions={quickActions}
+            recentActivity={formattedRecentActivity}
+        />
     );
 }
