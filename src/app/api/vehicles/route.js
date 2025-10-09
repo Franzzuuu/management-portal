@@ -11,6 +11,50 @@ export async function GET(request) {
 
         const { searchParams } = new URL(request.url);
         const mine = searchParams.get('mine');
+        const pendingActions = searchParams.get('pendingActions');
+        const limit = searchParams.get('limit');
+
+        // If pendingActions=1, return vehicles needing admin action (approval or RFID assignment)
+        if (pendingActions === '1') {
+            // First get the count
+            const countQuery = `
+                SELECT COUNT(*) as count
+                FROM vehicles v
+                LEFT JOIN rfid_tags rt ON rt.vehicle_id = v.vehicle_id
+                JOIN user_profiles up ON up.usc_id = v.usc_id
+                WHERE v.approval_status = 'pending'
+                   OR (v.approval_status = 'approved' AND (rt.vehicle_id IS NULL OR v.sticker_status = 'unassigned'))
+            `;
+
+            const countResult = await queryMany(countQuery);
+            const totalCount = countResult[0]?.count || 0;
+
+            // Then get the items
+            const itemsQuery = `
+                SELECT v.vehicle_id, v.make, v.model, v.plate_number, v.approval_status, v.sticker_status,
+                       up.full_name AS owner_name, v.created_at, v.updated_at,
+                       CASE 
+                         WHEN v.approval_status = 'pending' THEN 'Needs Approval'
+                         WHEN v.approval_status = 'approved' AND rt.vehicle_id IS NULL THEN 'Needs RFID'
+                         WHEN v.approval_status = 'approved' AND v.sticker_status = 'unassigned' THEN 'Needs RFID'
+                       END AS pending_reason
+                FROM vehicles v
+                LEFT JOIN rfid_tags rt ON rt.vehicle_id = v.vehicle_id
+                JOIN user_profiles up ON up.usc_id = v.usc_id
+                WHERE v.approval_status = 'pending'
+                   OR (v.approval_status = 'approved' AND (rt.vehicle_id IS NULL OR v.sticker_status = 'unassigned'))
+                ORDER BY v.updated_at DESC, v.created_at DESC
+                ${limit ? `LIMIT ${parseInt(limit)}` : ''}
+            `;
+
+            const items = await queryMany(itemsQuery);
+
+            return Response.json({
+                success: true,
+                count: totalCount,
+                items: items || []
+            });
+        }
 
         // If mine=1, return user's own vehicles split by status
         if (mine === '1') {

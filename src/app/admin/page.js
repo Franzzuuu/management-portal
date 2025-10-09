@@ -17,6 +17,9 @@ export default function AdminDashboard() {
     });
     const [recentActivity, setRecentActivity] = useState([]);
     const [latestRegistrations, setLatestRegistrations] = useState([]);
+    const [entryExitActivity, setEntryExitActivity] = useState([]);
+    const [pendingVehicleApprovals, setPendingVehicleApprovals] = useState([]);
+    const [recentViolationAppeals, setRecentViolationAppeals] = useState([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -55,12 +58,60 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
         try {
             const response = await fetch('/api/dashboard/stats');
-            const data = await response.json();
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setStats(data.stats);
+                    setRecentActivity(data.recentActivity);
+                    setLatestRegistrations(data.latestRegistrations);
+                }
+            }
 
-            if (data.success) {
-                setStats(data.stats);
-                setRecentActivity(data.recentActivity);
-                setLatestRegistrations(data.latestRegistrations);
+            // Fetch entry/exit activity
+            try {
+                const accessLogsResponse = await fetch('/api/access-logs?limit=5');
+                if (accessLogsResponse.ok) {
+                    const accessLogsData = await accessLogsResponse.json();
+                    if (accessLogsData.success) {
+                        setEntryExitActivity(accessLogsData.logs || []);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch access logs:', error);
+                setEntryExitActivity([]);
+            }
+
+            // Fetch pending vehicle approvals - vehicles needing admin action (approval or RFID)
+            try {
+                const pendingVehiclesResponse = await fetch('/api/vehicles?pendingActions=1&limit=5');
+                if (pendingVehiclesResponse.ok) {
+                    const pendingVehiclesData = await pendingVehiclesResponse.json();
+                    if (pendingVehiclesData.success) {
+                        setPendingVehicleApprovals(pendingVehiclesData.items || []);
+                        // Update the pending approvals count in stats
+                        setStats(prevStats => ({
+                            ...prevStats,
+                            pendingApprovals: pendingVehiclesData.count || 0
+                        }));
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch pending vehicles:', error);
+                setPendingVehicleApprovals([]);
+            }
+
+            // Fetch recent violation appeals - using existing violations endpoint with appeal filter
+            try {
+                const violationAppealsResponse = await fetch('/api/violations?appealed=true&limit=5');
+                if (violationAppealsResponse.ok) {
+                    const violationAppealsData = await violationAppealsResponse.json();
+                    if (violationAppealsData.success) {
+                        setRecentViolationAppeals(violationAppealsData.violations || []);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch violation appeals:', error);
+                setRecentViolationAppeals([]);
             }
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
@@ -98,20 +149,20 @@ export default function AdminDashboard() {
             value: stats.totalVehicles,
             subtitle: 'Active registrations',
             iconPath: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z',
-            bgColor: '#FFD700',
-            iconColor: '#355E3B',
-            textColor: '#FFD700',
-            borderColor: '#FFD700'
+            bgColor: '#355E3B',
+            iconColor: '#FFD700',
+            textColor: '#355E3B',
+            borderColor: '#355E3B'
         },
         {
             title: 'Pending Approvals',
             value: stats.pendingApprovals,
-            subtitle: 'Awaiting review',
+            subtitle: 'Vehicles needing action',
             iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z',
-            bgColor: '#f97316',
-            iconColor: '#ffffff',
-            textColor: '#f97316',
-            borderColor: '#f97316'
+            bgColor: '#FFD700',
+            iconColor: '#355E3B',
+            textColor: '#FFD700',
+            borderColor: '#FFD700'
         },
         {
             title: 'Active Violations',
@@ -177,10 +228,10 @@ export default function AdminDashboard() {
         }
     ];
 
-    // Format recent activity for DashboardLayout
-    const formattedRecentActivity = recentActivity.map((activity, index) => ({
-        description: `${activity.plate_number} - ${activity.user_name} (${activity.entry_type.toUpperCase()})`,
-        timestamp: new Date(activity.timestamp).toLocaleString()
+    // Format recent violation appeals for DashboardLayout
+    const formattedRecentAppeals = (recentViolationAppeals || []).map((appeal) => ({
+        description: `${appeal.violation_type || appeal.type || 'Violation'} - ${appeal.owner_name || appeal.offender_name || 'Unknown'} (${appeal.status || 'pending'})`,
+        timestamp: new Date(appeal.appeal_date || appeal.updated_at || appeal.created_at).toLocaleString()
     }));
 
     return (
@@ -189,7 +240,117 @@ export default function AdminDashboard() {
             setUser={setUser}
             stats={dashboardStats}
             quickActions={quickActions}
-            recentActivity={formattedRecentActivity}
-        />
+            recentActivity={formattedRecentAppeals}
+            recentActivityTitle="Recent Violation Appeals"
+            recentActivitySubtitle="Latest violations submitted for appeal"
+        >
+            {/* Entry & Exit Activity + Pending Vehicle Approvals Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 sm:mb-8">
+                {/* Entry & Exit Activity */}
+                <div className="bg-white rounded-xl shadow-lg">
+                    <div className="px-6 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                        <h2 className="text-xl sm:text-xl font-semibold text-white">Entry & Exit Activity</h2>
+                        <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Latest gate access logs</p>
+                    </div>
+                    <div className="p-6 sm:p-6">
+                        {entryExitActivity && entryExitActivity.length > 0 ? (
+                            <div className="space-y-4 sm:space-y-4">
+                                {entryExitActivity.slice(0, 5).map((activity, index) => (
+                                    <div key={index} className="flex items-center p-4 sm:p-4 bg-gray-50 rounded-lg">
+                                        <div className="flex-shrink-0">
+                                            <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: (activity.entry_type || activity.action) === 'entry' ? '#10b981' : '#f97316' }}>
+                                                <svg className="h-4 w-4 sm:h-4 sm:w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    {(activity.entry_type || activity.action) === 'entry' ? (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                                    ) : (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l4 4m0 0l-4 4m4-4H3m14 0V7a3 3 0 00-3-3H7a3 3 0 00-3 3v4" />
+                                                    )}
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="ml-4 sm:ml-4 min-w-0 flex-1">
+                                            <p className="text-sm sm:text-sm font-medium text-gray-900">
+                                                {activity.location || 'Main Gate'} - {activity.plate_number || activity.plateNumber || 'Unknown Vehicle'}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {(activity.entry_type || activity.action || 'entry')?.toUpperCase()} • {new Date(activity.timestamp || activity.created_at || Date.now()).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 sm:py-8">
+                                <svg className="h-12 w-12 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                <p className="text-base sm:text-base text-gray-500">No recent entries or exits</p>
+                                <p className="text-sm sm:text-sm text-gray-400">Gate access logs will appear here</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Pending Vehicle Approvals */}
+                <div className="bg-white rounded-xl shadow-lg">
+                    <div className="px-6 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl sm:text-xl font-semibold text-white">Pending Vehicle Approvals</h2>
+                                <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Awaiting admin confirmation</p>
+                            </div>
+                            {stats.pendingApprovals > 0 && (
+                                <span className="bg-[#FFD700] text-[#355E3B] text-xs font-semibold px-2 py-1 rounded-full">
+                                    {stats.pendingApprovals}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-6 sm:p-6">
+                        {pendingVehicleApprovals && pendingVehicleApprovals.length > 0 ? (
+                            <div className="space-y-4 sm:space-y-4">
+                                {pendingVehicleApprovals.slice(0, 5).map((vehicle, index) => (
+                                    <div key={index} className="flex items-center justify-between p-4 sm:p-4 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center flex-1">
+                                            <div className="flex-shrink-0">
+                                                <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f97316' }}>
+                                                    <svg className="h-4 w-4 sm:h-4 sm:w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div className="ml-4 sm:ml-4 min-w-0 flex-1">
+                                                <p className="text-sm sm:text-sm font-medium text-gray-900">
+                                                    {(vehicle.make || 'Unknown Make')} {(vehicle.model || 'Unknown Model')} - {(vehicle.plate_number || vehicle.plateNumber || 'No Plate')}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {(vehicle.owner_name || vehicle.ownerName || 'Unknown Owner')} • Submitted {new Date(vehicle.updated_at || vehicle.created_at || Date.now()).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex-shrink-0 ml-2">
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${vehicle.pending_reason === 'Needs Approval'
+                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {vehicle.pending_reason || 'Needs Approval'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 sm:py-8">
+                                <svg className="h-12 w-12 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-base sm:text-base text-gray-500">No pending vehicle actions</p>
+                                <p className="text-sm sm:text-sm text-gray-400">Vehicles needing approval or RFID assignment will appear here</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </DashboardLayout>
     );
 }

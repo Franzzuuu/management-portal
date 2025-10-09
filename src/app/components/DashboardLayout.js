@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Header from './Header';
 
-export default function DashboardLayout({ children, user, setUser, stats, quickActions, recentActivity }) {
+export default function DashboardLayout({ children, user, setUser, stats, quickActions, recentActivity, recentActivityTitle = "Recent Activity", recentActivitySubtitle = "Your latest account activity" }) {
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -79,6 +79,9 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                     </div>
                 )}
 
+                {/* Custom content from children (inserted between stats and quick actions) */}
+                {children}
+
                 {/* Quick Actions */}
                 {quickActions && (
                     <div className="mb-8 sm:mb-8">
@@ -117,8 +120,8 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                 {/* Recent Activity */}
                 <div className="bg-white rounded-xl shadow-lg">
                     <div className="px-6 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h2 className="text-xl sm:text-xl font-semibold text-white">Recent Activity</h2>
-                        <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Your latest account activity</p>
+                        <h2 className="text-xl sm:text-xl font-semibold text-white">{recentActivityTitle}</h2>
+                        <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>{recentActivitySubtitle}</p>
                     </div>
                     <div className="p-6 sm:p-6">
                         {recentActivity && recentActivity.length > 0 ? (
@@ -145,14 +148,11 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>
                                 <p className="text-base sm:text-base text-gray-500">No recent activity</p>
-                                <p className="text-sm sm:text-sm text-gray-400">Your account activities will appear here</p>
+                                <p className="text-sm sm:text-sm text-gray-400">{recentActivityTitle.toLowerCase()} will appear here</p>
                             </div>
                         )}
                     </div>
                 </div>
-
-                {/* Custom content from children */}
-                {children}
             </main>
         </div>
     );
