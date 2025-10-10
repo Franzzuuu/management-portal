@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Header from '../../components/Header';
 
 export default function CarolinianViolations() {
     const [user, setUser] = useState(null);
@@ -172,52 +173,7 @@ export default function CarolinianViolations() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="shadow-lg" style={{ backgroundColor: '#355E3B' }}>
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex justify-between items-center py-4 px-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-white">My Violations</h1>
-                                <div className="flex items-center space-x-2 text-sm" style={{ color: '#FFD700' }}>
-                                    <span>Dashboard</span>
-                                    <span>›</span>
-                                    <span>Violations</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => router.push('/carolinian')}
-                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:cursor-pointer"
-                            >
-                                ← Back to Dashboard
-                            </button>
-                            <div className="text-right">
-                                <div className="text-white font-medium">
-                                    {user?.full_name || user?.username}
-                                </div>
-                                <div className="flex items-center justify-end mt-1">
-                                    <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
-                                        {user?.designation}
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg hover:cursor-pointer"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header user={user} onLogout={handleLogout} />
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

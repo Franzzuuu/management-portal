@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Header from '../../components/Header';
 
 export default function ViolationAppealsPage() {
     const router = useRouter();
+    const [user, setUser] = useState(null);
     const [contests, setContests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedStatus, setSelectedStatus] = useState('pending');
@@ -14,6 +16,30 @@ export default function ViolationAppealsPage() {
     const [reviewForm, setReviewForm] = useState({ action: '', notes: '' });
     const [submitting, setSubmitting] = useState(false);
     const [imagePreviewModal, setImagePreviewModal] = useState({ open: false, src: '', filename: '' });
+
+    const checkAuth = useCallback(async () => {
+        try {
+            const response = await fetch('/api/auth/me');
+            const data = await response.json();
+
+            if (data.success && data.user.designation === 'Admin') {
+                setUser(data.user);
+            } else {
+                router.push('/login');
+            }
+        } catch (error) {
+            router.push('/login');
+        }
+    }, [router]);
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    };
 
     const fetchContests = useCallback(async () => {
         setLoading(true);
@@ -32,6 +58,10 @@ export default function ViolationAppealsPage() {
             setLoading(false);
         }
     }, [selectedStatus]);
+
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
 
     useEffect(() => {
         fetchContests();
@@ -146,55 +176,7 @@ export default function ViolationAppealsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="shadow-lg" style={{ backgroundColor: '#355E3B' }}>
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex justify-between items-center py-4 px-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-white">Violation Appeals</h1>
-                                <div className="flex items-center space-x-2 text-sm" style={{ color: '#FFD700' }}>
-                                    <span>Dashboard</span>
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                    <span>Violations</span>
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                    <span>Appeals</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => router.back()}
-                                className="inline-flex items-center px-4 py-2 text-white hover:text-white border border-white border-opacity-30 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors duration-200"
-                            >
-                                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                </svg>
-                                Back to Violations
-                            </button>
-                            <button
-                                onClick={fetchContests}
-                                className="inline-flex items-center px-4 py-2 text-white hover:text-white border border-white border-opacity-30 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors duration-200"
-                            >
-                                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Refresh
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header user={user} onLogout={handleLogout} />
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">

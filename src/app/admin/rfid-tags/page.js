@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Header from '../../components/Header';
 import SearchableVehicleSelect from '../../components/SearchableVehicleSelect';
 
 export default function RFIDTagManagement() {
@@ -208,51 +209,7 @@ export default function RFIDTagManagement() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="shadow-lg border-b-2" style={{ backgroundColor: '#355E3B', borderBottomColor: '#FFD700' }}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center">
-                            <div>
-                                <img src="/images/usclogo.png" alt="Logo" className="mx-auto h-32 w-auto" />
-                            </div>
-                            <div className="ml-3">
-                                <h1 className="text-xl font-bold text-white">
-                                    RFID Vehicle Management Portal
-                                </h1>
-                                <p className="text-sm" style={{ color: '#FFD700' }}>
-                                    University of San Carlos - Talamban Campus
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => router.push('/admin')}
-                                className="text-white hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                            >
-                                ← Back to Dashboard
-                            </button>
-                            <div className="text-sm text-right">
-                                <div className="text-white">
-                                    Welcome, <span className="font-semibold">{user?.fullName || user?.email}</span>
-                                </div>
-                                <div className="flex items-center justify-end mt-1">
-                                    <span className="px-2 py-1 text-xs font-medium rounded-md" style={{ backgroundColor: '#FFD700', color: '#355E3B' }}>
-                                        {user?.designation}
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header user={user} onLogout={handleLogout} />
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

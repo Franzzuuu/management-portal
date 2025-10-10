@@ -51,6 +51,31 @@ export default function ViolationsManagement() {
 
     const router = useRouter();
 
+    const checkAuth = async () => {
+        try {
+            console.log('Checking authentication...');
+            const response = await fetch('/api/auth/me');
+            const data = await response.json();
+            console.log('Auth response:', data);
+
+            if (data.success && data.user.designation === 'Security') {
+                console.log('Authenticated as Security:', data.user);
+                setUser(data.user);
+                await Promise.all([
+                    fetchViolationTypes(),
+                    fetchNotifications()
+                ]);
+            } else {
+                console.log('Not authorized as Security:', data);
+                router.push('/login');
+            }
+        } catch (error) {
+            console.log('Authentication error:', error);
+            router.push('/login');
+        }
+        setLoading(false);
+    };
+
     useEffect(() => {
         checkAuth();
     }, []);
@@ -104,31 +129,6 @@ export default function ViolationsManagement() {
             generateStatistics();
         }
     }, [activeTab, violations, statsDateRange]);
-
-    const checkAuth = async () => {
-        try {
-            console.log('Checking authentication...');
-            const response = await fetch('/api/auth/me');
-            const data = await response.json();
-            console.log('Auth response:', data);
-
-            if (data.success && data.user.designation === 'Security') {
-                console.log('Authenticated as Security:', data.user);
-                setUser(data.user);
-                await Promise.all([
-                    fetchViolationTypes(),
-                    fetchNotifications()
-                ]);
-            } else {
-                console.log('Not authorized as Security:', data);
-                router.push('/login');
-            }
-        } catch (error) {
-            console.error('Auth error:', error);
-            router.push('/login');
-        }
-        setLoading(false);
-    };
 
     const fetchViolationTypes = async () => {
         try {

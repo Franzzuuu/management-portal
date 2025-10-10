@@ -92,6 +92,19 @@ export default function Header({ user, onLogout }) {
         setIsDropdownOpen(false);
     };
 
+    const handleLogoClick = () => {
+        let dashboardPath = '/carolinian'; // default
+
+        if (user?.designation === 'Admin') {
+            dashboardPath = '/admin';
+        } else if (user?.designation === 'Security') {
+            dashboardPath = '/security';
+        }
+
+        console.log('Logo clicked, navigating to:', dashboardPath);
+        router.push(dashboardPath);
+    };
+
     return (
         <header className="sticky top-0 z-40 shadow-md bg-[#355E3B] pt-[env(safe-area-inset-top)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -100,19 +113,32 @@ export default function Header({ user, onLogout }) {
 
                     {/* Branding Row */}
                     <div className="flex items-center gap-3">
-                        <Image
-                            src="/images/USC_seal.svg"
-                            alt="USC Seal"
-                            width={32}
-                            height={32}
-                            className="h-24 w-24 sm:h-24 sm:w-24 object-contain shrink-0"
-                        />
-                        <div className="min-w-0">
-                            <h1 className="font-bold text-white text-[clamp(1.125rem,2.5vw,1.5rem)] leading-tight">
-                                {getPortalTitle()}
-                            </h1>
-                            <div className="text-[clamp(0.75rem,1.5vw,0.875rem)] text-[#FFD700]">
-                                Dashboard
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleLogoClick();
+                                }}
+                                className="hover:opacity-80 transition-opacity duration-200 focus:outline-none rounded-lg p-1 cursor-pointer"
+                                aria-label="Navigate to main dashboard"
+                                type="button"
+                            >
+                                <Image
+                                    src="/images/USC_seal.svg"
+                                    alt="USC Seal"
+                                    width={32}
+                                    height={32}
+                                    className="h-24 w-24 sm:h-24 sm:w-24 object-contain shrink-0"
+                                />
+                            </button>
+                            <div className="min-w-0">
+                                <h1 className="font-bold text-white text-[clamp(1.125rem,2.5vw,1.5rem)] leading-tight">
+                                    {getPortalTitle()}
+                                </h1>
+                                <div className="text-[clamp(0.75rem,1.5vw,0.875rem)] text-[#FFD700]">
+                                    Dashboard
+                                </div>
                             </div>
                         </div>
                     </div>
