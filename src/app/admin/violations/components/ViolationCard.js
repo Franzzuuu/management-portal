@@ -112,7 +112,7 @@ export default function ViolationCard({ violation, onStatusUpdate, onView }) {
                             style={{ backgroundColor: '#355E3B' }}
                         >
                             <AlertTriangle className="h-4 w-4" />
-                            {violation.violation_type_name}
+                            {violation.violation_type}
                         </div>
                         {violation.same_violation_count > 1 && (
                             <span className="ml-2 text-sm text-orange-600">
@@ -321,7 +321,7 @@ export default function ViolationCard({ violation, onStatusUpdate, onView }) {
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-4 rounded-b-lg">
                             <h3 className="font-semibold">Violation Evidence</h3>
-                            <p className="text-sm">Violation #{violation.id} - {violation.violation_type_name}</p>
+                            <p className="text-sm">Violation #{violation.id} - {violation.violation_type}</p>
                             <p className="text-xs text-gray-300">Captured: {formatDate(violation.created_at)}</p>
                         </div>
                     </div>

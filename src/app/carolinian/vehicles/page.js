@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
+import { useRealtime } from '@/lib/useRealtime';
 
 export default function CarolinianVehicles() {
     const [user, setUser] = useState(null);
@@ -23,32 +24,17 @@ export default function CarolinianVehicles() {
     });
     const router = useRouter();
 
-    useEffect(() => {
-        fetchUserData();
-        fetchVehicles();
-        if (activeTab === 'logs') {
-            fetchAccessLogs();
-        }
-    }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // Add auto-refresh when page becomes visible
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (!document.hidden) {
-                fetchVehicles();
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
-
     const fetchUserData = async () => {
         try {
-            const response = await fetch('/api/auth/session');
+            const response = await fetch('/api/auth/me'); // Changed from /api/auth/session to /api/auth/me
             if (response.ok) {
-                const sessionData = await response.json();
-                setUser(sessionData.user);
+                const data = await response.json();
+                if (data.success) {
+                    setUser(data.user);
+                    console.log('User data loaded:', data.user); // Debug log
+                } else {
+                    router.push('/login');
+                }
             } else {
                 router.push('/login');
             }
@@ -58,7 +44,7 @@ export default function CarolinianVehicles() {
         }
     };
 
-    const fetchVehicles = async () => {
+    const fetchVehicles = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch('/api/vehicles?mine=1');
@@ -72,9 +58,9 @@ export default function CarolinianVehicles() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchAccessLogs = async () => {
+    const fetchAccessLogs = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch('/api/carolinian/access-logs');
@@ -87,7 +73,93 @@ export default function CarolinianVehicles() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchUserData();
+        fetchVehicles();
+        if (activeTab === 'logs') {
+            fetchAccessLogs();
+        }
+    }, [activeTab, fetchVehicles, fetchAccessLogs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Real-time event handler for vehicle updates
+    const handleRealtimeEvent = useCallback((channel, payload) => {
+        console.log('Vehicles page received real-time event:', channel, payload);
+        console.log('Current user uscId:', user?.uscId);
+
+        if (channel === 'vehicle_pending_updates') {
+            // Handle vehicle approval status changes
+            console.log('Comparing owner_id:', payload.owner_id, 'with user uscId:', user?.uscId);
+            if (payload.owner_id === user?.uscId) {
+                console.log('Match found! Updating vehicle status');
+                // Refresh vehicle data to get latest status
+                fetchVehicles();
+            }
+        } else if (channel === 'rfid_updates') {
+            // Handle sticker/RFID assignments
+            console.log('RFID update - comparing owner_id:', payload.owner_id, 'with user uscId:', user?.uscId);
+            if (payload.owner_id === user?.uscId) {
+                console.log('RFID match found! Updating vehicle sticker status');
+                // Update vehicle with new sticker status
+                setRegisteredVehicles(prevVehicles =>
+                    prevVehicles.map(vehicle =>
+                        vehicle.vehicle_id === payload.vehicle_id
+                            ? { ...vehicle, sticker_status: payload.sticker_status, rfid_tag_uid: payload.rfid_tag_uid }
+                            : vehicle
+                    )
+                );
+            }
+        } else if (channel === 'entry_exit_updates') {
+            // Handle access log updates
+            if (payload.owner_id === user?.uscId && activeTab === 'logs') {
+                fetchAccessLogs();
+            }
+        } else if (channel === 'poll') {
+            // Handle polling fallback - refresh all data
+            console.log('Poll data received:', payload);
+            if (payload.success !== false) {
+                // Update vehicles from snapshot data
+                if (payload.registered !== undefined) {
+                    setRegisteredVehicles(payload.registered);
+                }
+                if (payload.pending !== undefined) {
+                    setPendingVehicles(payload.pending);
+                }
+                // Refresh access logs if on logs tab
+                if (activeTab === 'logs') {
+                    fetchAccessLogs();
+                }
+            }
+        }
+    }, [user?.uscId, activeTab, fetchVehicles, fetchAccessLogs]);
+
+    // Setup real-time subscriptions
+    useRealtime({
+        channels: ['vehicle_pending_updates', 'rfid_updates', 'entry_exit_updates'],
+        onEvent: handleRealtimeEvent,
+        pollUrl: user?.uscId ? `/api/carolinian/vehicles/snapshot` : undefined
+    });
+
+    // Debug: Log when user changes
+    useEffect(() => {
+        if (user) {
+            console.log('User loaded in vehicles page:', user);
+            console.log('User uscId:', user.uscId);
+        }
+    }, [user]);
+
+    // Add auto-refresh when page becomes visible
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                fetchVehicles();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [fetchVehicles]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

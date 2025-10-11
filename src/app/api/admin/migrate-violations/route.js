@@ -125,8 +125,8 @@ async function runEnhancedViolationsMigration() {
 
         // Add indexes to vehicles table
         {
-            name: 'Add user_approval index to vehicles table',
-            sql: `ALTER TABLE vehicles ADD INDEX idx_vehicles_user_approval (user_id, approval_status)`
+            name: 'Add usc_approval index to vehicles table',
+            sql: `ALTER TABLE vehicles ADD INDEX idx_vehicles_usc_approval (usc_id, approval_status)`
         },
         {
             name: 'Add vehicle_type index to vehicles table',

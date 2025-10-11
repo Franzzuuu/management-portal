@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuthData } from '@/lib/client-auth';
 import DashboardLayout from '../components/DashboardLayout';
+import { useRealtime } from '@/lib/useRealtime';
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -67,46 +68,27 @@ export default function AdminDashboard() {
                 }
             }
 
-            // Fetch entry/exit activity
-            try {
-                const accessLogsResponse = await fetch('/api/access-logs?limit=5');
-                if (accessLogsResponse.ok) {
-                    const accessLogsData = await accessLogsResponse.json();
-                    if (accessLogsData.success) {
-                        setEntryExitActivity(accessLogsData.logs || []);
-                    }
+            // Fetch initial snapshot data
+            const snapshotResponse = await fetch('/api/admin/snapshot', { cache: 'no-store' });
+            if (snapshotResponse.ok) {
+                const snapshotData = await snapshotResponse.json();
+                if (snapshotData.success) {
+                    setEntryExitActivity(snapshotData.entryExit || []);
+                    setPendingVehicleApprovals(snapshotData.pendingVehicleApprovals || []);
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        pendingApprovals: snapshotData.pendingApprovalsCount || 0
+                    }));
                 }
-            } catch (error) {
-                console.error('Failed to fetch access logs:', error);
-                setEntryExitActivity([]);
             }
 
-            // Fetch pending vehicle approvals - vehicles needing admin action (approval or RFID)
+            // Fetch recent violation appeals - using violation contests endpoint
             try {
-                const pendingVehiclesResponse = await fetch('/api/vehicles?pendingActions=1&limit=5');
-                if (pendingVehiclesResponse.ok) {
-                    const pendingVehiclesData = await pendingVehiclesResponse.json();
-                    if (pendingVehiclesData.success) {
-                        setPendingVehicleApprovals(pendingVehiclesData.items || []);
-                        // Update the pending approvals count in stats
-                        setStats(prevStats => ({
-                            ...prevStats,
-                            pendingApprovals: pendingVehiclesData.count || 0
-                        }));
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to fetch pending vehicles:', error);
-                setPendingVehicleApprovals([]);
-            }
-
-            // Fetch recent violation appeals - using existing violations endpoint with appeal filter
-            try {
-                const violationAppealsResponse = await fetch('/api/violations?appealed=true&limit=5');
+                const violationAppealsResponse = await fetch('/api/admin/violation-contests?status=all');
                 if (violationAppealsResponse.ok) {
                     const violationAppealsData = await violationAppealsResponse.json();
                     if (violationAppealsData.success) {
-                        setRecentViolationAppeals(violationAppealsData.violations || []);
+                        setRecentViolationAppeals(violationAppealsData.contests?.slice(0, 5) || []);
                     }
                 }
             } catch (error) {
@@ -117,6 +99,49 @@ export default function AdminDashboard() {
             console.error('Failed to fetch dashboard data:', error);
         }
     };
+
+    // Real-time event handler
+    const handleRealtimeEvent = useCallback((channel, payload) => {
+        console.log('Admin dashboard received real-time event:', channel, payload);
+
+        if (channel === 'entry_exit_updates') {
+            // Prepend new entry/exit activity and cap to 5
+            setEntryExitActivity(prev => [payload, ...prev].slice(0, 5));
+        } else if (channel === 'vehicle_pending_updates') {
+            // Update pending count and refresh the list
+            if (payload.count !== undefined) {
+                setStats(prevStats => ({
+                    ...prevStats,
+                    pendingApprovals: payload.count
+                }));
+            }
+            // Optionally refresh the pending vehicles list
+            if (payload.vehicles) {
+                setPendingVehicleApprovals(payload.vehicles.slice(0, 5));
+            }
+        } else if (channel === 'poll') {
+            // Handle polling fallback data
+            if (payload.entryExit) {
+                setEntryExitActivity(payload.entryExit.slice(0, 5));
+            }
+            if (payload.pendingApprovalsCount !== undefined) {
+                setStats(prevStats => ({
+                    ...prevStats,
+                    pendingApprovals: payload.pendingApprovalsCount
+                }));
+            }
+            if (payload.pendingVehicleApprovals) {
+                setPendingVehicleApprovals(payload.pendingVehicleApprovals.slice(0, 5));
+            }
+        }
+    }, []);
+
+    // Setup real-time subscriptions
+    useRealtime({
+        channels: ['entry_exit_updates', 'vehicle_pending_updates'],
+        onEvent: handleRealtimeEvent,
+        pollUrl: '/api/admin/snapshot'
+    });
 
     if (loading) {
         return (
@@ -229,9 +254,9 @@ export default function AdminDashboard() {
     ];
 
     // Format recent violation appeals for DashboardLayout
-    const formattedRecentAppeals = (recentViolationAppeals || []).map((appeal) => ({
-        description: `${appeal.violation_type || appeal.type || 'Violation'} - ${appeal.owner_name || appeal.offender_name || 'Unknown'} (${appeal.status || 'pending'})`,
-        timestamp: new Date(appeal.appeal_date || appeal.updated_at || appeal.created_at).toLocaleString()
+    const formattedRecentAppeals = (recentViolationAppeals || []).map((contest) => ({
+        description: `${contest.violation_type || 'Violation'} Appeal - ${contest.user_name || contest.full_name || 'Unknown'} (${contest.contest_status || 'pending'})`,
+        timestamp: new Date(contest.contest_created_at || contest.created_at).toLocaleString()
     }));
 
     return (
@@ -296,7 +321,9 @@ export default function AdminDashboard() {
                     <div className="px-6 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <h2 className="text-xl sm:text-xl font-semibold text-white">Pending Vehicle Approvals</h2>
+                                <h2 className="text-xl sm:text-xl font-semibold text-white">
+                                    Pending Vehicle Approvals {stats.pendingApprovals > 0 && `(${stats.pendingApprovals})`}
+                                </h2>
                                 <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Awaiting admin confirmation</p>
                             </div>
                             {stats.pendingApprovals > 0 && (
@@ -330,8 +357,8 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="flex-shrink-0 ml-2">
                                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${vehicle.pending_reason === 'Needs Approval'
-                                                    ? 'bg-yellow-100 text-yellow-800'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {vehicle.pending_reason || 'Needs Approval'}
                                             </span>

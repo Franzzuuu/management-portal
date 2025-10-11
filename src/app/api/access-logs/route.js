@@ -1,5 +1,6 @@
 import { queryMany } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { emit } from '@/lib/realtime';
 
 export async function GET(request) {
     try {
@@ -103,6 +104,40 @@ export async function POST(request) {
             locationValue,
             gate_location || 'Main Gate'
         ]);
+
+        // Emit real-time update for entry/exit activity
+        try {
+            // Get vehicle details for the real-time payload
+            const vehicleQuery = `
+                SELECT 
+                    v.plate_number,
+                    v.make,
+                    v.model,
+                    v.owner_id,
+                    up.full_name as owner_name
+                FROM vehicles v
+                LEFT JOIN users u ON v.owner_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
+                WHERE v.id = ?
+            `;
+            const vehicleResult = await queryMany(vehicleQuery, [vehicle_id]);
+            const vehicle = vehicleResult?.[0];
+
+            emit('entry_exit_updates', {
+                id: Date.now(), // Temporary ID
+                entry_type,
+                timestamp: new Date().toISOString(),
+                plate_number: vehicle?.plate_number || 'Unknown',
+                location: gate_location || 'Main Gate',
+                vehicle_make: vehicle?.make,
+                vehicle_model: vehicle?.model,
+                owner_id: vehicle?.owner_id,
+                owner_name: vehicle?.owner_name,
+                created_at: new Date().toISOString()
+            });
+        } catch (emitError) {
+            console.warn('Failed to emit real-time update:', emitError);
+        }
 
         return Response.json({
             success: true,

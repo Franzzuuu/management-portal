@@ -1,5 +1,6 @@
 import { executeQuery } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { emit } from '@/lib/realtime';
 
 export async function POST(request) {
     try {
@@ -56,6 +57,38 @@ export async function POST(request) {
         const updateResult = await executeQuery(updateQuery, updateParams);
 
         console.log('Update result:', updateResult);
+
+        // Emit real-time update for vehicle pending status change
+        try {
+            // Get updated count of pending vehicles
+            const countQuery = `
+                SELECT COUNT(*) as count
+                FROM vehicles v
+                WHERE v.approval_status = 'pending' 
+                   OR (v.approval_status = 'approved' AND v.sticker_status = 'unassigned')
+            `;
+            const countResult = await executeQuery(countQuery);
+            const pendingCount = countResult[0]?.count || 0;
+
+            // Get the vehicle owner USC ID
+            const ownerQuery = `
+                SELECT v.usc_id 
+                FROM vehicles v 
+                WHERE v.vehicle_id = ?
+            `;
+            const ownerResult = await executeQuery(ownerQuery, [vehicleId]);
+            const ownerUscId = ownerResult[0]?.usc_id;
+
+            emit('vehicle_pending_updates', {
+                action: 'approval_update',
+                vehicleId,
+                approval_status: status,
+                owner_id: ownerUscId,
+                count: pendingCount
+            });
+        } catch (emitError) {
+            console.warn('Failed to emit real-time update:', emitError);
+        }
 
         return Response.json({
             success: true,

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, AlertCircle, CheckCircle, Clock, Users, Car, Calendar, MapPin, User } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { useRealtime } from '@/lib/useRealtime';
 
 const SecurityDashboard = () => {
     const router = useRouter();
@@ -51,51 +52,41 @@ const SecurityDashboard = () => {
         if (!user) return; // Don't fetch if no user
 
         try {
-            console.log('Fetching violations with user:', user);
-            // Fetch violations reported by the current security personnel
-            const violationsResponse = await fetch('/api/violations?securityFilter=true', {
+            console.log('Fetching security snapshot with user:', user);
+            // Use snapshot API for initial load and polling fallback
+            const snapshotResponse = await fetch(`/api/security/snapshot?userId=${user.uscId}`, {
+                cache: 'no-store',
                 headers: {
-                    'X-User-Role': 'Security',
-                    'X-User-Id': user?.uscId?.toString() || ''
+                    'Content-Type': 'application/json',
                 }
             });
 
-            // ✅ FIXED: Check if the response is OK before parsing JSON
-            if (!violationsResponse.ok) {
-                console.error('Violations API failed:', violationsResponse.status);
-                return; // Exit early if API fails
+            if (!snapshotResponse.ok) {
+                console.error('Security snapshot API failed:', snapshotResponse.status);
+                return;
             }
 
-            const violationsData = await violationsResponse.json();
+            const snapshotData = await snapshotResponse.json();
 
-            if (violationsData.success) {
-                const violations = violationsData.violations;
-                const now = new Date();
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-                const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+            if (snapshotData.success) {
+                setStats(snapshotData.stats);
+                setRecentViolations(snapshotData.recentViolations || []);
 
-                setStats({
-                    totalViolations: violations.length,
-                    pendingViolations: violations.filter(v => v.status === 'pending').length,
-                    resolvedViolations: violations.filter(v => v.status === 'resolved').length,
-                    contestedViolations: violations.filter(v => v.status === 'contested').length,
-                    todayViolations: violations.filter(v => new Date(v.created_at) >= today).length,
-                    weeklyViolations: violations.filter(v => new Date(v.created_at) >= weekAgo).length,
-                    monthlyViolations: violations.filter(v => new Date(v.created_at) >= monthAgo).length
+                // Set today's activity from the violations
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayViols = (snapshotData.violations || []).filter(v => {
+                    const violDate = new Date(v.created_at);
+                    violDate.setHours(0, 0, 0, 0);
+                    return violDate.getTime() === today.getTime();
                 });
-
-                // Get recent violations (last 5)
-                setRecentViolations(violations.slice(0, 5));
-
-                // Get today's activity
-                setTodayActivity(violations.filter(v => new Date(v.created_at) >= today));
+                setTodayActivity(todayViols);
             } else {
-                console.error('Violations API returned error:', violationsData.error);
+                console.error('Security snapshot API returned error:', snapshotData.error);
             }
 
         } catch (error) {
-            console.error('Failed to fetch dashboard data:', error);
+            console.error('Failed to fetch security dashboard data:', error);
             setStats({
                 totalViolations: 0,
                 pendingViolations: 0,
@@ -109,6 +100,84 @@ const SecurityDashboard = () => {
             setTodayActivity([]);
         }
     }, [user]);
+
+    // Real-time event handler
+    const handleRealtimeEvent = useCallback((channel, payload) => {
+        console.log('Security dashboard received real-time event:', channel, payload);
+
+        if (channel === 'violations_update') {
+            // Update violation stats and lists in real-time
+            if (payload.action === 'create' && payload.reported_by === user?.uscId) {
+                // New violation created by this security user
+                setStats(prevStats => ({
+                    ...prevStats,
+                    totalViolations: prevStats.totalViolations + 1,
+                    pendingViolations: prevStats.pendingViolations + (payload.status === 'pending' ? 1 : 0),
+                    todayViolations: prevStats.todayViolations + 1
+                }));
+
+                // Add to recent violations (prepend and cap to 5)
+                setRecentViolations(prev => [payload, ...prev].slice(0, 5));
+
+                // Add to today's activity if created today
+                const today = new Date();
+                const payloadDate = new Date(payload.created_at);
+                if (payloadDate.toDateString() === today.toDateString()) {
+                    setTodayActivity(prev => [payload, ...prev]);
+                }
+            } else if (payload.action === 'update' && payload.reported_by === user?.uscId) {
+                // Existing violation updated
+                setStats(prevStats => {
+                    const updatedStats = { ...prevStats };
+                    if (payload.old_status === 'pending' && payload.status !== 'pending') {
+                        updatedStats.pendingViolations = Math.max(0, updatedStats.pendingViolations - 1);
+                    } else if (payload.old_status !== 'pending' && payload.status === 'pending') {
+                        updatedStats.pendingViolations += 1;
+                    }
+
+                    if (payload.status === 'resolved') {
+                        updatedStats.resolvedViolations += 1;
+                    }
+                    if (payload.status === 'contested') {
+                        updatedStats.contestedViolations += 1;
+                    }
+
+                    return updatedStats;
+                });
+
+                // Update in recent violations list
+                setRecentViolations(prev =>
+                    prev.map(v => v.id === payload.id ? { ...v, ...payload } : v)
+                );
+            }
+        } else if (channel === 'poll') {
+            // Handle polling fallback data
+            if (payload.stats) {
+                setStats(payload.stats);
+            }
+            if (payload.recentViolations) {
+                setRecentViolations(payload.recentViolations);
+            }
+            if (payload.violations) {
+                // Update today's activity from poll data
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayViols = payload.violations.filter(v => {
+                    const violDate = new Date(v.created_at);
+                    violDate.setHours(0, 0, 0, 0);
+                    return violDate.getTime() === today.getTime();
+                });
+                setTodayActivity(todayViols);
+            }
+        }
+    }, [user?.uscId]);
+
+    // Setup real-time subscriptions
+    useRealtime({
+        channels: ['violations_update'],
+        onEvent: handleRealtimeEvent,
+        pollUrl: user?.uscId ? `/api/security/snapshot?userId=${user.uscId}` : undefined
+    });
 
     useEffect(() => {
         if (user) {

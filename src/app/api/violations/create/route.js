@@ -1,5 +1,6 @@
 import { queryMany, executeQuery } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { emit } from '@/lib/realtime';
 
 export async function POST(request) {
     try {
@@ -114,7 +115,48 @@ export async function POST(request) {
         console.log('Query parameters:', params.map(p => p === null ? 'null' : typeof p));
 
         // Execute the query with the parameters
-        await executeQuery(insertQuery, params);
+        const result = await executeQuery(insertQuery, params);
+        const violationId = result.insertId;
+
+        // Emit real-time update for new violation
+        try {
+            // Get violation details for real-time payload
+            const violationQuery = `
+                SELECT 
+                    v.id,
+                    v.status,
+                    v.created_at,
+                    v.reported_by,
+                    vt.name as violation_type,
+                    vh.plate_number as vehicle_plate,
+                    vh.owner_id,
+                    up.full_name as owner_name
+                FROM violations v
+                LEFT JOIN violation_types vt ON v.violation_type_id = vt.id
+                LEFT JOIN vehicles vh ON v.vehicle_id = vh.id
+                LEFT JOIN users u ON vh.owner_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
+                WHERE v.id = ?
+            `;
+            const violationResult = await executeQuery(violationQuery, [violationId]);
+            const violation = violationResult[0];
+
+            if (violation) {
+                emit('violations_update', {
+                    action: 'create',
+                    id: violation.id,
+                    violation_type: violation.violation_type,
+                    status: violation.status,
+                    vehicle_plate: violation.vehicle_plate,
+                    owner_id: violation.owner_id,
+                    owner_name: violation.owner_name,
+                    reported_by: violation.reported_by,
+                    created_at: violation.created_at
+                });
+            }
+        } catch (emitError) {
+            console.warn('Failed to emit real-time update:', emitError);
+        }
 
         return Response.json({
             success: true,
