@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
-import { useRealtime } from '@/lib/useRealtime';
+import useSocketChannel from '@/hooks/useSocketChannel';
 
 export default function CarolinianVehicles() {
     const [user, setUser] = useState(null);
@@ -83,25 +83,22 @@ export default function CarolinianVehicles() {
         }
     }, [activeTab, fetchVehicles, fetchAccessLogs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Real-time event handler for vehicle updates
-    const handleRealtimeEvent = useCallback((channel, payload) => {
-        console.log('Vehicles page received real-time event:', channel, payload);
-        console.log('Current user uscId:', user?.uscId);
-
-        if (channel === 'vehicle_pending_updates') {
-            // Handle vehicle approval status changes
-            console.log('Comparing owner_id:', payload.owner_id, 'with user uscId:', user?.uscId);
+    // Real-time vehicle updates for this user
+    const { connected } = useSocketChannel('vehicles', {
+        // Handle vehicle approval/status changes
+        pending_update: (payload) => {
+            console.log('Vehicles page received vehicles:pending_update:', payload);
             if (payload.owner_id === user?.uscId) {
-                console.log('Match found! Updating vehicle status');
-                // Refresh vehicle data to get latest status
+                console.log('Vehicle update for current user - refreshing data');
                 fetchVehicles();
             }
-        } else if (channel === 'rfid_updates') {
-            // Handle sticker/RFID assignments
-            console.log('RFID update - comparing owner_id:', payload.owner_id, 'with user uscId:', user?.uscId);
+        },
+
+        // Handle RFID/sticker assignments
+        rfid_update: (payload) => {
+            console.log('Vehicles page received vehicles:rfid_update:', payload);
             if (payload.owner_id === user?.uscId) {
-                console.log('RFID match found! Updating vehicle sticker status');
-                // Update vehicle with new sticker status
+                console.log('RFID update for current user - updating vehicle sticker status');
                 setRegisteredVehicles(prevVehicles =>
                     prevVehicles.map(vehicle =>
                         vehicle.vehicle_id === payload.vehicle_id
@@ -110,35 +107,28 @@ export default function CarolinianVehicles() {
                     )
                 );
             }
-        } else if (channel === 'entry_exit_updates') {
-            // Handle access log updates
-            if (payload.owner_id === user?.uscId && activeTab === 'logs') {
+        }
+    }, {
+        enablePollingFallback: true,
+        pollFn: () => {
+            console.log('Vehicles page polling fallback');
+            fetchVehicles();
+        },
+        pollIntervalMs: 12000
+    });
+
+    // Also subscribe to access logs if user is viewing the logs tab
+    const { connected: accessLogsConnected } = useSocketChannel('access_logs', {
+        // Handle new access log entries
+        update: (record) => {
+            console.log('Vehicles page received access_logs:update:', record);
+            if (record.user_id === user?.uscId && activeTab === 'logs') {
                 fetchAccessLogs();
             }
-        } else if (channel === 'poll') {
-            // Handle polling fallback - refresh all data
-            console.log('Poll data received:', payload);
-            if (payload.success !== false) {
-                // Update vehicles from snapshot data
-                if (payload.registered !== undefined) {
-                    setRegisteredVehicles(payload.registered);
-                }
-                if (payload.pending !== undefined) {
-                    setPendingVehicles(payload.pending);
-                }
-                // Refresh access logs if on logs tab
-                if (activeTab === 'logs') {
-                    fetchAccessLogs();
-                }
-            }
         }
-    }, [user?.uscId, activeTab, fetchVehicles, fetchAccessLogs]);
-
-    // Setup real-time subscriptions
-    useRealtime({
-        channels: ['vehicle_pending_updates', 'rfid_updates', 'entry_exit_updates'],
-        onEvent: handleRealtimeEvent,
-        pollUrl: user?.uscId ? `/api/carolinian/vehicles/snapshot` : undefined
+    }, {
+        enablePollingFallback: false,
+        autoSubscribe: activeTab === 'logs' // Only subscribe when viewing logs tab
     });
 
     // Debug: Log when user changes

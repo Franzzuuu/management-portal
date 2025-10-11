@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuthData } from '@/lib/client-auth';
 import DashboardLayout from '../components/DashboardLayout';
-import { useRealtime } from '@/lib/useRealtime';
+import useSocketChannel from '@/hooks/useSocketChannel';
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -100,47 +100,42 @@ export default function AdminDashboard() {
         }
     };
 
-    // Real-time event handler
-    const handleRealtimeEvent = useCallback((channel, payload) => {
-        console.log('Admin dashboard received real-time event:', channel, payload);
-
-        if (channel === 'entry_exit_updates') {
-            // Prepend new entry/exit activity and cap to 5
+    // Real-time dashboard updates using the standardized socket system
+    const { connected } = useSocketChannel('dashboard', {
+        // Handle entry/exit activity updates
+        entry_exit_update: (payload) => {
+            console.log('Dashboard received entry_exit_update:', payload);
             setEntryExitActivity(prev => [payload, ...prev].slice(0, 5));
-        } else if (channel === 'vehicle_pending_updates') {
-            // Update pending count and refresh the list
+        },
+
+        // Handle vehicle approval updates
+        vehicle_pending_update: (payload) => {
+            console.log('Dashboard received vehicle_pending_update:', payload);
             if (payload.count !== undefined) {
                 setStats(prevStats => ({
                     ...prevStats,
                     pendingApprovals: payload.count
                 }));
             }
-            // Optionally refresh the pending vehicles list
             if (payload.vehicles) {
                 setPendingVehicleApprovals(payload.vehicles.slice(0, 5));
             }
-        } else if (channel === 'poll') {
-            // Handle polling fallback data
-            if (payload.entryExit) {
-                setEntryExitActivity(payload.entryExit.slice(0, 5));
-            }
-            if (payload.pendingApprovalsCount !== undefined) {
-                setStats(prevStats => ({
-                    ...prevStats,
-                    pendingApprovals: payload.pendingApprovalsCount
-                }));
-            }
-            if (payload.pendingVehicleApprovals) {
-                setPendingVehicleApprovals(payload.pendingVehicleApprovals.slice(0, 5));
+        },
+
+        // Handle stats refresh
+        stats_refresh: (payload) => {
+            console.log('Dashboard received stats_refresh:', payload);
+            if (payload.stats) {
+                setStats(prevStats => ({ ...prevStats, ...payload.stats }));
             }
         }
-    }, []);
-
-    // Setup real-time subscriptions
-    useRealtime({
-        channels: ['entry_exit_updates', 'vehicle_pending_updates'],
-        onEvent: handleRealtimeEvent,
-        pollUrl: '/api/admin/snapshot'
+    }, {
+        enablePollingFallback: true,
+        pollFn: () => {
+            console.log('Dashboard polling fallback: fetching snapshot data');
+            fetchDashboardData();
+        },
+        pollIntervalMs: 5000 // 5 second polling for dashboard
     });
 
     if (loading) {

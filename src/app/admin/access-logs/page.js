@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
+import DeleteLogsModal from '../../components/DeleteLogsModal';
+import Toast from '../../components/Toast';
+import useSocketChannel from '../../../hooks/useSocketChannel';
 
 export default function AccessLogsPage() {
     const [user, setUser] = useState(null);
@@ -14,6 +17,8 @@ export default function AccessLogsPage() {
     const [dateFilter, setDateFilter] = useState('today');
     const [currentPage, setCurrentPage] = useState(1);
     const [logsPerPage] = useState(10);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const router = useRouter();
 
     // Function definitions
@@ -30,6 +35,43 @@ export default function AccessLogsPage() {
             console.error('Failed to fetch access logs:', error);
         }
     }, []);
+
+    // Real-time Socket.IO integration
+    const { connected } = useSocketChannel('access_logs', {
+        // Handle new log entries
+        update: (record) => {
+            console.log('Received access_logs:update:', record);
+            setAccessLogs(prevLogs => {
+                const existingIds = new Set(prevLogs.map(log => log.id));
+                if (!existingIds.has(record.id)) {
+                    return [record, ...prevLogs];
+                }
+                return prevLogs;
+            });
+        },
+
+        // Handle refresh requests (after deletions)
+        refresh: (data) => {
+            console.log('Received access_logs:refresh:', data);
+            fetchAccessLogs();
+
+            // Show success toast for deletion
+            if (data.action === 'bulk_delete') {
+                setToast({
+                    show: true,
+                    message: `Deleted ${data.deletedCount} logs (${data.method} method)`,
+                    type: 'success'
+                });
+            }
+        }
+    }, {
+        enablePollingFallback: true,
+        pollFn: () => {
+            console.log('Polling fallback: fetching access logs');
+            fetchAccessLogs();
+        },
+        pollIntervalMs: 5000
+    });
 
     const checkAuth = useCallback(async () => {
         try {
@@ -99,6 +141,22 @@ export default function AccessLogsPage() {
         } catch (error) {
             console.error('Logout failed:', error);
         }
+    };
+
+    const handleDeleteSuccess = (deleteResult) => {
+        setToast({
+            show: true,
+            message: `Deleted ${deleteResult.deleted} logs (${deleteResult.method} method)`,
+            type: 'success'
+        });
+    };
+
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
+    const hideToast = () => {
+        setToast(prev => ({ ...prev, show: false }));
     };
 
     useEffect(() => {
@@ -298,16 +356,32 @@ export default function AccessLogsPage() {
                                 <label className="block text-sm font-medium text-gray-700">
                                     Actions
                                 </label>
-                                <button
-                                    onClick={fetchAccessLogs}
-                                    className="w-full px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:opacity-90"
-                                    style={{ backgroundColor: '#355E3B' }}
-                                >
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    <span>Refresh Data</span>
-                                </button>
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={fetchAccessLogs}
+                                        className="flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:opacity-90"
+                                        style={{ backgroundColor: '#355E3B' }}
+                                    >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        <span>Refresh</span>
+                                    </button>
+
+                                    {/* Delete Logs Button - Admin Only */}
+                                    {user?.designation === 'Admin' && (
+                                        <button
+                                            onClick={() => setShowDeleteModal(true)}
+                                            className="flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:bg-red-700"
+                                            style={{ backgroundColor: '#dc2626' }}
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            <span>Delete Logs</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -442,6 +516,22 @@ export default function AccessLogsPage() {
                     )}
                 </div>
             </main>
+
+            {/* Delete Logs Modal */}
+            <DeleteLogsModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDeleteSuccess}
+            />
+
+            {/* Toast Notification */}
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.show}
+                onClose={hideToast}
+                duration={5000}
+            />
         </div>
     );
 }

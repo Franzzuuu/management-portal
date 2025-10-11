@@ -142,7 +142,7 @@ export async function POST(request) {
             const violation = violationResult[0];
 
             if (violation) {
-                emit('violations_update', {
+                emit('violations:update', {
                     action: 'create',
                     id: violation.id,
                     violation_type: violation.violation_type,

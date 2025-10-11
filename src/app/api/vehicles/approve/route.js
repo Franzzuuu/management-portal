@@ -79,7 +79,7 @@ export async function POST(request) {
             const ownerResult = await executeQuery(ownerQuery, [vehicleId]);
             const ownerUscId = ownerResult[0]?.usc_id;
 
-            emit('vehicle_pending_updates', {
+            emit('vehicles:pending_update', {
                 action: 'approval_update',
                 vehicleId,
                 approval_status: status,

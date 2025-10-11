@@ -113,7 +113,7 @@ export async function POST(request) {
             const vehicle = vehicleDetails[0];
 
             // Emit vehicle pending updates for admin dashboard
-            emit('vehicle_pending_updates', {
+            emit('vehicles:pending_update', {
                 action: 'rfid_assigned',
                 vehicleId,
                 owner_id: vehicle?.owner_id,
@@ -121,7 +121,7 @@ export async function POST(request) {
             });
 
             // Emit RFID updates for user dashboard
-            emit('rfid_updates', {
+            emit('vehicles:rfid_update', {
                 action: 'assigned',
                 vehicle_id: vehicleId,
                 plate_number: vehicle?.plate_number,

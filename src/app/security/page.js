@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, AlertCircle, CheckCircle, Clock, Users, Car, Calendar, MapPin, User } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { useRealtime } from '@/lib/useRealtime';
+import useSocketChannel from '@/hooks/useSocketChannel';
 
 const SecurityDashboard = () => {
     const router = useRouter();
@@ -101,12 +101,12 @@ const SecurityDashboard = () => {
         }
     }, [user]);
 
-    // Real-time event handler
-    const handleRealtimeEvent = useCallback((channel, payload) => {
-        console.log('Security dashboard received real-time event:', channel, payload);
+    // Real-time security dashboard updates
+    const { connected } = useSocketChannel('violations', {
+        // Handle violation updates
+        update: (payload) => {
+            console.log('Security dashboard received violations:update:', payload);
 
-        if (channel === 'violations_update') {
-            // Update violation stats and lists in real-time
             if (payload.action === 'create' && payload.reported_by === user?.uscId) {
                 // New violation created by this security user
                 setStats(prevStats => ({
@@ -150,33 +150,24 @@ const SecurityDashboard = () => {
                     prev.map(v => v.id === payload.id ? { ...v, ...payload } : v)
                 );
             }
-        } else if (channel === 'poll') {
-            // Handle polling fallback data
+        },
+
+        // Handle stats refresh
+        stats_refresh: (payload) => {
+            console.log('Security dashboard received violations:stats_refresh:', payload);
             if (payload.stats) {
                 setStats(payload.stats);
             }
-            if (payload.recentViolations) {
-                setRecentViolations(payload.recentViolations);
-            }
-            if (payload.violations) {
-                // Update today's activity from poll data
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const todayViols = payload.violations.filter(v => {
-                    const violDate = new Date(v.created_at);
-                    violDate.setHours(0, 0, 0, 0);
-                    return violDate.getTime() === today.getTime();
-                });
-                setTodayActivity(todayViols);
-            }
         }
-    }, [user?.uscId]);
-
-    // Setup real-time subscriptions
-    useRealtime({
-        channels: ['violations_update'],
-        onEvent: handleRealtimeEvent,
-        pollUrl: user?.uscId ? `/api/security/snapshot?userId=${user.uscId}` : undefined
+    }, {
+        enablePollingFallback: true,
+        pollFn: () => {
+            console.log('Security dashboard polling fallback');
+            if (user?.uscId) {
+                fetchDashboardData();
+            }
+        },
+        pollIntervalMs: 8000
     });
 
     useEffect(() => {

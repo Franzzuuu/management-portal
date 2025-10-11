@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import DashboardLayout from '../components/DashboardLayout';
-import { useRealtime } from '@/lib/useRealtime';
+import useSocketChannel from '@/hooks/useSocketChannel';
 
 export default function CarolinianDashboard() {
     const [user, setUser] = useState(null);
@@ -57,57 +57,42 @@ export default function CarolinianDashboard() {
         }
     };
 
-    // Real-time event handler
-    const handleRealtimeEvent = useCallback((channel, payload) => {
-        console.log('Carolinian dashboard received real-time event:', channel, payload);
-
-        if (channel === 'violations_update') {
-            // Update violation stats when violations change
-            setStats(prevStats => ({
-                ...prevStats,
-                totalViolations: prevStats.totalViolations + (payload.action === 'create' ? 1 : 0),
-                pendingAppeals: prevStats.pendingAppeals + (payload.status === 'pending' ? 1 : payload.status === 'resolved' ? -1 : 0)
-            }));
-        } else if (channel === 'entry_exit_updates') {
-            // Could add recent activity for entry/exit if relevant to user
-            if (payload.owner_id === user?.uscId) {
+    // Real-time carolinian dashboard updates
+    const { connected } = useSocketChannel('violations', {
+        // Handle violation updates for this user
+        update: (payload) => {
+            console.log('Carolinian dashboard received violations:update:', payload);
+            if (payload.user_id === user?.uscId || payload.owner_id === user?.uscId) {
                 setStats(prevStats => ({
                     ...prevStats,
-                    recentActivity: [
-                        {
-                            description: `Vehicle ${payload.entry_type} - ${payload.plate_number || 'Unknown'}`,
-                            timestamp: new Date(payload.timestamp).toLocaleString()
-                        },
-                        ...prevStats.recentActivity
-                    ].slice(0, 5)
+                    totalViolations: prevStats.totalViolations + (payload.action === 'create' ? 1 : 0),
+                    pendingAppeals: prevStats.pendingAppeals + (payload.status === 'pending' ? 1 : payload.status === 'resolved' ? -1 : 0)
                 }));
             }
-        } else if (channel === 'vehicle_pending_updates') {
-            // Update vehicle count if user's vehicle was approved
+        }
+    }, {
+        enablePollingFallback: true,
+        pollFn: () => {
+            console.log('Carolinian dashboard polling fallback');
+            fetchPersonalStats();
+        },
+        pollIntervalMs: 15000
+    });
+
+    // Also subscribe to vehicle updates for this user
+    const { connected: vehicleConnected } = useSocketChannel('vehicles', {
+        // Handle vehicle approval updates
+        approval_update: (payload) => {
+            console.log('Carolinian dashboard received vehicles:approval_update:', payload);
             if (payload.owner_id === user?.uscId && payload.approval_status === 'approved') {
                 setStats(prevStats => ({
                     ...prevStats,
                     registeredVehicles: prevStats.registeredVehicles + 1
                 }));
             }
-        } else if (channel === 'poll') {
-            // Handle polling fallback data - refresh stats with success check
-            if (payload.success !== false) {
-                setStats(prevStats => ({
-                    registeredVehicles: payload.registeredVehicles || prevStats.registeredVehicles,
-                    totalViolations: payload.totalViolations || prevStats.totalViolations,
-                    pendingAppeals: payload.pendingAppeals || prevStats.pendingAppeals,
-                    recentActivity: payload.recentActivity || prevStats.recentActivity
-                }));
-            }
         }
-    }, [user?.uscId]);
-
-    // Setup real-time subscriptions
-    useRealtime({
-        channels: ['violations_update', 'entry_exit_updates', 'vehicle_pending_updates'],
-        onEvent: handleRealtimeEvent,
-        pollUrl: user?.uscId ? `/api/carolinian/dashboard` : undefined
+    }, {
+        enablePollingFallback: false // Only poll for violations, not vehicles
     });
 
     // Configure stats for Carolinian dashboard

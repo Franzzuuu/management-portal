@@ -86,7 +86,7 @@ export async function POST(request) {
 
             if (updatedViolation && updatedViolation[0]) {
                 const viol = updatedViolation[0];
-                emit('violations_update', {
+                emit('violations:update', {
                     action: 'update',
                     id: viol.id,
                     status: viol.status,

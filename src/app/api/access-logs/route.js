@@ -107,34 +107,39 @@ export async function POST(request) {
 
         // Emit real-time update for entry/exit activity
         try {
-            // Get vehicle details for the real-time payload
-            const vehicleQuery = `
+            // Get the inserted log with full details for real-time updates
+            const logQuery = `
                 SELECT 
+                    al.id,
+                    al.vehicle_id,
+                    al.tag_uid,
+                    al.entry_type,
+                    al.timestamp,
+                    al.gate_location,
+                    al.success,
                     v.plate_number,
-                    v.make,
-                    v.model,
-                    v.owner_id,
-                    up.full_name as owner_name
-                FROM vehicles v
-                LEFT JOIN users u ON v.owner_id = u.id
-                LEFT JOIN user_profiles up ON u.id = up.user_id
-                WHERE v.id = ?
+                    v.make as vehicle_make,
+                    v.model as vehicle_model,
+                    v.color as vehicle_color,
+                    v.vehicle_type,
+                    up.full_name as user_name,
+                    u.designation,
+                    u.email
+                FROM access_logs al
+                JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+                JOIN users u ON v.usc_id = u.usc_id
+                JOIN user_profiles up ON u.usc_id = up.usc_id
+                WHERE al.vehicle_id = ? AND al.tag_uid = ?
+                ORDER BY al.timestamp DESC
+                LIMIT 1
             `;
-            const vehicleResult = await queryMany(vehicleQuery, [vehicle_id]);
-            const vehicle = vehicleResult?.[0];
 
-            emit('entry_exit_updates', {
-                id: Date.now(), // Temporary ID
-                entry_type,
-                timestamp: new Date().toISOString(),
-                plate_number: vehicle?.plate_number || 'Unknown',
-                location: gate_location || 'Main Gate',
-                vehicle_make: vehicle?.make,
-                vehicle_model: vehicle?.model,
-                owner_id: vehicle?.owner_id,
-                owner_name: vehicle?.owner_name,
-                created_at: new Date().toISOString()
-            });
+            const logResult = await queryMany(logQuery, [vehicle_id, tag_uid]);
+            const newLog = logResult?.[0];
+
+            if (newLog) {
+                emit('access_logs:update', newLog);
+            }
         } catch (emitError) {
             console.warn('Failed to emit real-time update:', emitError);
         }

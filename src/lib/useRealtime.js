@@ -39,33 +39,15 @@ export function useRealtime({ channels = [], onEvent, pollUrl, connectTries = 3 
                 socket.on(channel, handler);
             });
 
-            // Start polling fallback after connection errors
-            const startPolling = () => {
-                if (pollRef.current || !pollUrl) return;
-
-                console.log('Starting polling fallback for', channels);
-                pollRef.current = setInterval(async () => {
-                    try {
-                        const response = await fetch(pollUrl, {
-                            cache: 'no-store',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            }
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            onEvent('poll', data);
-                        }
-                    } catch (error) {
-                        console.warn('Polling failed:', error);
-                    }
-                }, 2000);
-            };
-
-            // Handle connection events
+            // Subscribe to channels (emit subscription events)
             socket.on('connect', () => {
-                console.log('Socket connected');
+                console.log('Socket connected, subscribing to channels:', channels);
+                channels.forEach(channel => {
+                    if (channel.includes(':')) {
+                        const [namespace] = channel.split(':');
+                        socket.emit(`${namespace}:subscribe`);
+                    }
+                });
                 triesRef.current = 0;
                 // Clear polling if socket reconnects
                 if (pollRef.current) {
@@ -93,6 +75,30 @@ export function useRealtime({ channels = [], onEvent, pollUrl, connectTries = 3 
             socket.on('disconnect', (reason) => {
                 console.log('Socket disconnected:', reason);
             });
+
+            // Start polling fallback after connection errors
+            const startPolling = () => {
+                if (pollRef.current || !pollUrl) return;
+
+                console.log('Starting polling fallback for', channels);
+                pollRef.current = setInterval(async () => {
+                    try {
+                        const response = await fetch(pollUrl, {
+                            cache: 'no-store',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            onEvent('poll', data);
+                        }
+                    } catch (error) {
+                        console.warn('Polling failed:', error);
+                    }
+                }, 2000);
+            };
 
         } catch (error) {
             console.error('Failed to initialize socket:', error);
@@ -126,6 +132,14 @@ export function useRealtime({ channels = [], onEvent, pollUrl, connectTries = 3 
         // Cleanup function
         return () => {
             if (socket && handlers) {
+                // Unsubscribe from channels before disconnecting
+                channels.forEach(channel => {
+                    if (channel.includes(':')) {
+                        const [namespace] = channel.split(':');
+                        socket.emit(`${namespace}:unsubscribe`);
+                    }
+                });
+
                 Object.entries(handlers).forEach(([channel, handler]) => {
                     if (handler) {
                         socket.off(channel, handler);
