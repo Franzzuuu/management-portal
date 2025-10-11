@@ -17,9 +17,10 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
         switch (type) {
             case 'success':
                 return {
-                    bg: 'bg-green-50',
-                    border: 'border-green-200',
-                    text: 'text-green-800',
+                    bg: 'bg-[#355E3B]/10',
+                    border: 'border-[#355E3B]/30',
+                    text: 'text-[#355E3B]',
+                    progressColor: 'bg-[#355E3B]',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -31,6 +32,7 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                     bg: 'bg-red-50',
                     border: 'border-red-200',
                     text: 'text-red-800',
+                    progressColor: 'bg-red-500',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -39,9 +41,10 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                 };
             case 'warning':
                 return {
-                    bg: 'bg-yellow-50',
-                    border: 'border-yellow-200',
-                    text: 'text-yellow-800',
+                    bg: 'bg-[#FFD700]/10',
+                    border: 'border-[#FFD700]/30',
+                    text: 'text-[#355E3B]',
+                    progressColor: 'bg-[#FFD700]',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
@@ -53,6 +56,7 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                     bg: 'bg-blue-50',
                     border: 'border-blue-200',
                     text: 'text-blue-800',
+                    progressColor: 'bg-blue-500',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -94,10 +98,7 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                 {duration > 0 && (
                     <div className="h-1 bg-gray-200">
                         <div
-                            className={`h-full transition-all ease-linear ${type === 'success' ? 'bg-green-500' :
-                                    type === 'error' ? 'bg-red-500' :
-                                        type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
-                                }`}
+                            className={`h-full transition-all ease-linear ${styles.progressColor}`}
                             style={{
                                 animation: `shrink ${duration}ms linear forwards`
                             }}

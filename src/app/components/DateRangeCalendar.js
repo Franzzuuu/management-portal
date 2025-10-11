@@ -14,9 +14,15 @@ export default function DateRangeCalendar({
     // Format date for input[type="datetime-local"]
     const formatForDateTimeLocal = (date) => {
         if (!date) return '';
-        const d = new Date(date);
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        return d.toISOString().slice(0, 16);
+        try {
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return ''; // Check for invalid date
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().slice(0, 16);
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return '';
+        }
     };
 
     // Parse datetime-local value back to Date
@@ -97,20 +103,44 @@ export default function DateRangeCalendar({
     };
 
     const quickPresets = [
-        { label: 'Today', start: new Date(), end: new Date() },
+        {
+            label: 'Today',
+            start: new Date(new Date().setHours(0, 0, 0, 0)),
+            end: new Date(new Date().setHours(23, 59, 59, 999))
+        },
         {
             label: 'Yesterday',
-            start: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            end: new Date(Date.now() - 24 * 60 * 60 * 1000)
+            start: (() => {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                yesterday.setHours(0, 0, 0, 0);
+                return yesterday;
+            })(),
+            end: (() => {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                yesterday.setHours(23, 59, 59, 999);
+                return yesterday;
+            })()
         },
         {
             label: 'Last 7 Days',
-            start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            start: (() => {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+                sevenDaysAgo.setHours(0, 0, 0, 0);
+                return sevenDaysAgo;
+            })(),
             end: new Date()
         },
         {
             label: 'Last 30 Days',
-            start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            start: (() => {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+                thirtyDaysAgo.setHours(0, 0, 0, 0);
+                return thirtyDaysAgo;
+            })(),
             end: new Date()
         },
     ];
@@ -149,7 +179,7 @@ export default function DateRangeCalendar({
                             type="datetime-local"
                             value={formatForDateTimeLocal(startDate)}
                             onChange={(e) => onStartDateChange(parseFromDateTimeLocal(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent text-sm text-gray-900"
                             style={{ '--tw-ring-color': '#355E3B' }}
                         />
                     </div>
@@ -161,7 +191,7 @@ export default function DateRangeCalendar({
                             type="datetime-local"
                             value={formatForDateTimeLocal(endDate)}
                             onChange={(e) => onEndDateChange(parseFromDateTimeLocal(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent text-sm text-gray-900"
                             style={{ '--tw-ring-color': '#355E3B' }}
                             min={formatForDateTimeLocal(startDate)}
                         />
@@ -202,8 +232,8 @@ export default function DateRangeCalendar({
                         <button
                             onClick={() => setSelectedView('start')}
                             className={`px-3 py-1 text-sm font-medium transition-colors ${selectedView === 'start'
-                                    ? 'text-white'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                ? 'text-white'
+                                : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                             style={selectedView === 'start' ? { backgroundColor: '#355E3B' } : {}}
                         >
@@ -212,8 +242,8 @@ export default function DateRangeCalendar({
                         <button
                             onClick={() => setSelectedView('end')}
                             className={`px-3 py-1 text-sm font-medium transition-colors ${selectedView === 'end'
-                                    ? 'text-white'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                ? 'text-white'
+                                : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                             style={selectedView === 'end' ? { backgroundColor: '#355E3B' } : {}}
                         >

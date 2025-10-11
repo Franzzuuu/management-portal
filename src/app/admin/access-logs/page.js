@@ -59,7 +59,7 @@ export default function AccessLogsPage() {
             if (data.action === 'bulk_delete') {
                 setToast({
                     show: true,
-                    message: `Deleted ${data.deletedCount} logs (${data.method} method)`,
+                    message: `Successfully deleted ${data.deletedCount} access log${data.deletedCount !== 1 ? 's' : ''} using ${data.method}`,
                     type: 'success'
                 });
             }
@@ -146,7 +146,7 @@ export default function AccessLogsPage() {
     const handleDeleteSuccess = (deleteResult) => {
         setToast({
             show: true,
-            message: `Deleted ${deleteResult.deleted} logs (${deleteResult.method} method)`,
+            message: `Successfully deleted ${deleteResult.deleted} access log${deleteResult.deleted !== 1 ? 's' : ''} using ${deleteResult.method}`,
             type: 'success'
         });
     };
@@ -303,7 +303,7 @@ export default function AccessLogsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {/* Search Input */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-900">
                                     Search Records
                                 </label>
                                 <input
@@ -311,21 +311,20 @@ export default function AccessLogsPage() {
                                     placeholder="Search by plate, name, or tag UID"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#355E3B] focus:border-transparent hover:border-gray-400 transition-colors"
+
                                 />
                             </div>
 
                             {/* Entry Type Filter */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-900">
                                     Entry Type
                                 </label>
                                 <select
                                     value={selectedFilter}
                                     onChange={(e) => setSelectedFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#355E3B] focus:border-transparent hover:border-gray-400 transition-colors text-gray-700"
                                 >
                                     <option value="all">All Types</option>
                                     <option value="entry">Entry Only</option>
@@ -335,14 +334,13 @@ export default function AccessLogsPage() {
 
                             {/* Date Filter */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-900">
                                     Date Range
                                 </label>
                                 <select
                                     value={dateFilter}
                                     onChange={(e) => setDateFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#355E3B] focus:border-transparent hover:border-gray-400 transition-colors text-gray-700"
                                 >
                                     <option value="all">All Time</option>
                                     <option value="today">Today</option>
@@ -353,35 +351,18 @@ export default function AccessLogsPage() {
 
                             {/* Refresh Button */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-900">
                                     Actions
                                 </label>
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={fetchAccessLogs}
-                                        className="flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:opacity-90"
-                                        style={{ backgroundColor: '#355E3B' }}
-                                    >
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
-                                        <span>Refresh</span>
-                                    </button>
-
-                                    {/* Delete Logs Button - Admin Only */}
-                                    {user?.designation === 'Admin' && (
-                                        <button
-                                            onClick={() => setShowDeleteModal(true)}
-                                            className="flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:bg-red-700"
-                                            style={{ backgroundColor: '#dc2626' }}
-                                        >
-                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                            <span>Delete Logs</span>
-                                        </button>
-                                    )}
-                                </div>
+                                <button
+                                    onClick={fetchAccessLogs}
+                                    title="Refresh data"
+                                    className="w-full h-10 bg-[#355E3B] text-white rounded-lg transition-all duration-200 flex items-center justify-center hover:bg-[#2d4f32]"
+                                >
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -390,8 +371,25 @@ export default function AccessLogsPage() {
                 {/* Access Logs Table */}
                 <div className="bg-white rounded-xl shadow-lg">
                     <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h3 className="text-lg font-semibold text-white">Vehicle Access Records</h3>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>Real-time entry and exit monitoring</p>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-white">Vehicle Access Records</h3>
+                                <p className="text-sm" style={{ color: '#FFD700' }}>Real-time entry and exit monitoring</p>
+                            </div>
+
+                            {/* Delete Logs Button - Admin Only */}
+                            {user?.designation === 'Admin' && (
+                                <button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    title="Delete access logs"
+                                    className="p-2 text-white/80 hover:text-white hover:bg-red-600/20 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#FFD700] focus:ring-offset-2 focus:ring-offset-[#355E3B]"
+                                >
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -530,7 +528,7 @@ export default function AccessLogsPage() {
                 type={toast.type}
                 isVisible={toast.show}
                 onClose={hideToast}
-                duration={5000}
+                duration={4500}
             />
         </div>
     );
