@@ -295,6 +295,7 @@ export default function CarolinianVehicles() {
         }
     };
 
+
     const renderVehicleCard = (vehicle, isRegistered = true) => (
         <div key={vehicle.vehicle_id} className="border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200">
             <div className="flex items-center justify-between mb-4">
