@@ -96,13 +96,15 @@ export async function POST(request) {
         `;
 
         const locationValue = entry_type === 'entry' ? 'entrance' : 'exit';
+        // Default gate_location based on entry_type if not provided
+        const defaultGateLocation = entry_type === 'entry' ? 'Gate 3' : 'Gate 1';
 
         await queryMany(insertQuery, [
             vehicle_id,
             tag_uid,
             entry_type,
             locationValue,
-            gate_location || 'Main Gate'
+            gate_location || defaultGateLocation
         ]);
 
         // Emit real-time update for entry/exit activity
