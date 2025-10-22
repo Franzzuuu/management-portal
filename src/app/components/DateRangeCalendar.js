@@ -97,22 +97,10 @@ export default function DateRangeCalendar({
     };
 
     const quickPresets = [
-        { label: 'Today', start: new Date(), end: new Date() },
-        {
-            label: 'Yesterday',
-            start: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            end: new Date(Date.now() - 24 * 60 * 60 * 1000)
-        },
-        {
-            label: 'Last 7 Days',
-            start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            end: new Date()
-        },
-        {
-            label: 'Last 30 Days',
-            start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            end: new Date()
-        },
+        { label: 'Today', start: new Date(new Date().setHours(0, 0, 0, 0)), end: new Date() },
+        { label: 'Yesterday', start: new Date(new Date(new Date().setDate(new Date().getDate() - 1)).setHours(0, 0, 0, 0)), end: new Date(new Date(new Date().setDate(new Date().getDate() - 1)).setHours(23, 59, 59, 999)) },
+        { label: 'Last 7 Days', start: new Date(new Date().setDate(new Date().getDate() - 6)), end: new Date() },
+        { label: 'Last 30 Days', start: new Date(new Date().setDate(new Date().getDate() - 29)), end: new Date() },
     ];
 
     const applyPreset = (preset) => {
@@ -124,13 +112,13 @@ export default function DateRangeCalendar({
         <div className={`bg-white rounded-lg shadow-lg border border-gray-200 ${className}`}>
             {/* Quick Presets */}
             <div className="p-4 border-b border-gray-200">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Select</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Quick Select</h4>
                 <div className="grid grid-cols-2 gap-2">
                     {quickPresets.map((preset, index) => (
                         <button
                             key={index}
                             onClick={() => applyPreset(preset)}
-                            className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                            className="px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md hover:border-[#355E3B] hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-[#355E3B] focus:outline-none"
                         >
                             {preset.label}
                         </button>
@@ -142,27 +130,25 @@ export default function DateRangeCalendar({
             {showTime && (
                 <div className="p-4 border-b border-gray-200 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
                             Start Date & Time
                         </label>
                         <input
                             type="datetime-local"
                             value={formatForDateTimeLocal(startDate)}
                             onChange={(e) => onStartDateChange(parseFromDateTimeLocal(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent text-sm"
-                            style={{ '--tw-ring-color': '#355E3B' }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-[#355E3B] focus:outline-none text-sm"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
                             End Date & Time
                         </label>
                         <input
                             type="datetime-local"
                             value={formatForDateTimeLocal(endDate)}
                             onChange={(e) => onEndDateChange(parseFromDateTimeLocal(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent text-sm"
-                            style={{ '--tw-ring-color': '#355E3B' }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-[#355E3B] focus:outline-none text-sm"
                             min={formatForDateTimeLocal(startDate)}
                         />
                     </div>
@@ -202,8 +188,8 @@ export default function DateRangeCalendar({
                         <button
                             onClick={() => setSelectedView('start')}
                             className={`px-3 py-1 text-sm font-medium transition-colors ${selectedView === 'start'
-                                    ? 'text-white'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                ? 'text-white'
+                                : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                             style={selectedView === 'start' ? { backgroundColor: '#355E3B' } : {}}
                         >
@@ -212,8 +198,8 @@ export default function DateRangeCalendar({
                         <button
                             onClick={() => setSelectedView('end')}
                             className={`px-3 py-1 text-sm font-medium transition-colors ${selectedView === 'end'
-                                    ? 'text-white'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                ? 'text-white'
+                                : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                             style={selectedView === 'end' ? { backgroundColor: '#355E3B' } : {}}
                         >

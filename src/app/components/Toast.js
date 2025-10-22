@@ -17,9 +17,10 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
         switch (type) {
             case 'success':
                 return {
-                    bg: 'bg-green-50',
-                    border: 'border-green-200',
-                    text: 'text-green-800',
+                    bg: 'bg-gradient-to-r from-[#355E3B] to-[#2d4f32]',
+                    border: 'border-[#355E3B]',
+                    text: 'text-white',
+                    accent: 'text-[#FFD700]',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -31,6 +32,7 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                     bg: 'bg-red-50',
                     border: 'border-red-200',
                     text: 'text-red-800',
+                    accent: 'text-red-600',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -42,6 +44,7 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                     bg: 'bg-yellow-50',
                     border: 'border-yellow-200',
                     text: 'text-yellow-800',
+                    accent: 'text-yellow-600',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
@@ -53,6 +56,7 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                     bg: 'bg-blue-50',
                     border: 'border-blue-200',
                     text: 'text-blue-800',
+                    accent: 'text-blue-600',
                     icon: (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -65,24 +69,24 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
     const styles = getToastStyles();
 
     return (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-            <div className={`max-w-sm w-full ${styles.bg} ${styles.border} border rounded-lg shadow-lg overflow-hidden`}>
+        <div className="fixed top-5 right-5 z-50 animate-in slide-in-from-top-2 duration-300">
+            <div className={`max-w-md w-full ${styles.bg} ${styles.border} border rounded-lg shadow-xl overflow-hidden`}>
                 <div className="p-4">
                     <div className="flex items-start">
-                        <div className={`flex-shrink-0 ${styles.text}`}>
+                        <div className={`flex-shrink-0 ${styles.accent || styles.text}`}>
                             {styles.icon}
                         </div>
-                        <div className="ml-3 w-0 flex-1">
-                            <p className={`text-sm font-medium ${styles.text}`}>
+                        <div className="ml-4 w-0 flex-1">
+                            <p className={`text-sm font-medium leading-relaxed ${styles.text} whitespace-pre-wrap`}>
                                 {message}
                             </p>
                         </div>
                         <div className="ml-4 flex-shrink-0 flex">
                             <button
                                 onClick={onClose}
-                                className={`inline-flex ${styles.text} hover:opacity-70 transition-opacity`}
+                                className={`inline-flex ${styles.text} hover:opacity-70 transition-opacity rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-[#355E3B]`}
                             >
-                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
@@ -92,11 +96,11 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
 
                 {/* Progress bar */}
                 {duration > 0 && (
-                    <div className="h-1 bg-gray-200">
+                    <div className="h-1 bg-black/10">
                         <div
-                            className={`h-full transition-all ease-linear ${type === 'success' ? 'bg-green-500' :
-                                    type === 'error' ? 'bg-red-500' :
-                                        type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                            className={`h-full transition-all ease-linear ${type === 'success' ? 'bg-[#FFD700]' :
+                                type === 'error' ? 'bg-red-500' :
+                                    type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
                                 }`}
                             style={{
                                 animation: `shrink ${duration}ms linear forwards`

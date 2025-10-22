@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuthData } from '@/lib/client-auth';
 import DashboardLayout from '../components/DashboardLayout';
+import AccessLogsSuccessPie from '../components/AccessLogsSuccessPie';
 import useSocketChannel from '@/hooks/useSocketChannel';
 
 export default function AdminDashboard() {
@@ -260,9 +261,9 @@ export default function AdminDashboard() {
             setUser={setUser}
             stats={dashboardStats}
             quickActions={quickActions}
-            recentActivity={formattedRecentAppeals}
-            recentActivityTitle="Recent Violation Appeals"
-            recentActivitySubtitle="Latest violations submitted for appeal"
+            recentActivity={null} // No recent activity at bottom since we have custom layout
+            recentActivityTitle=""
+            recentActivitySubtitle=""
         >
             {/* Entry & Exit Activity + Pending Vehicle Approvals Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 sm:mb-8">
@@ -368,6 +369,49 @@ export default function AdminDashboard() {
                                 </svg>
                                 <p className="text-base sm:text-base text-gray-500">No pending vehicle actions</p>
                                 <p className="text-sm sm:text-sm text-gray-400">Vehicles needing approval or RFID assignment will appear here</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Access Logs Success Rate + Recent Violation Appeals Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 sm:mb-8 items-stretch">
+                {/* Access Logs Success Rate Pie Chart */}
+                <AccessLogsSuccessPie />
+
+                {/* Recent Violation Appeals */}
+                <div className="bg-white rounded-xl shadow-lg h-full flex flex-col">
+                    <div className="px-6 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                        <h2 className="text-xl sm:text-xl font-semibold text-white">Recent Violation Appeals</h2>
+                        <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Latest violations submitted for appeal</p>
+                    </div>
+                    <div className="p-6 sm:p-6 flex-1">
+                        {formattedRecentAppeals && formattedRecentAppeals.length > 0 ? (
+                            <div className="space-y-4 sm:space-y-4">
+                                {formattedRecentAppeals.map((activity, index) => (
+                                    <div key={index} className="flex items-center p-4 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                                        <div className="flex-shrink-0">
+                                            <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                                <svg className="h-4 w-4 sm:h-4 sm:w-4" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="ml-4 sm:ml-4 min-w-0 flex-1">
+                                            <p className="text-sm sm:text-sm font-medium text-gray-900">{activity.description}</p>
+                                            <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full">
+                                <svg className="h-12 w-12 sm:h-12 sm:w-12 text-gray-400 mb-4 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                <p className="text-base sm:text-base text-gray-500">No recent violation appeals</p>
+                                <p className="text-sm sm:text-sm text-gray-400">Latest violations submitted for appeal will appear here</p>
                             </div>
                         )}
                     </div>

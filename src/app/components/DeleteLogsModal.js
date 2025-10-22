@@ -106,33 +106,39 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-            {/* Backdrop */}
+            {/* Custom Background with Image */}
             <div
-                className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+                className="fixed inset-0 bg-cover bg-center bg-no-repeat transition-opacity"
+                style={{
+                    backgroundImage: "url('/ismisbg.jpg')",
+                }}
                 onClick={handleClose}
-            />
+            >
+                {/* Dark overlay for readability */}
+                <div className="absolute inset-0 bg-black/60"></div>
+            </div>
 
             {/* Modal */}
-            <div className="flex min-h-full items-center justify-center p-4">
-                <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex min-h-full items-center justify-center p-4 relative z-10">
+                <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in fade-in-0 duration-300">
                     {/* Header */}
-                    <div className="px-6 py-4 border-b border-gray-200" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                    <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-[#355E3B] to-[#2d4f32]">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                    <svg className="h-5 w-5" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="h-10 w-10 bg-[#FFD700] rounded-lg flex items-center justify-center">
+                                    <svg className="h-5 w-5 text-[#355E3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </div>
                                 <div className="ml-3">
                                     <h3 className="text-lg font-semibold text-white">Delete Access Logs</h3>
-                                    <p className="text-sm" style={{ color: '#FFD700' }}>Permanently remove access log records</p>
+                                    <p className="text-sm text-[#FFD700]">Permanently remove access log records</p>
                                 </div>
                             </div>
                             <button
                                 onClick={handleClose}
                                 disabled={isDeleting}
-                                className="text-white hover:text-gray-200 transition-colors disabled:opacity-50"
+                                className="text-white hover:text-gray-200 transition-colors disabled:opacity-50 focus:ring-2 focus:ring-[#FFD700] focus:outline-none rounded"
                             >
                                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -160,7 +166,7 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
 
                         {/* Scope Selection */}
                         <div className="mb-6">
-                            <h4 className="text-sm font-medium text-gray-700 mb-3">Select Time Range</h4>
+                            <h4 className="text-sm font-medium text-gray-900 mb-3">Select Time Range</h4>
                             <div className="space-y-3">
                                 <label className="flex items-center cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                     <input
@@ -169,13 +175,13 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
                                         value="past_hour"
                                         checked={scope === 'past_hour'}
                                         onChange={(e) => setScope(e.target.value)}
-                                        className="mr-3"
+                                        className="mr-3 focus:ring-[#355E3B]"
                                         style={{ accentColor: '#355E3B' }}
                                         disabled={isDeleting}
                                     />
                                     <div>
                                         <div className="font-medium text-gray-900">Past Hour</div>
-                                        <div className="text-sm text-gray-500">Delete logs from the last 60 minutes</div>
+                                        <div className="text-sm text-gray-700">Delete logs from the last 60 minutes</div>
                                     </div>
                                 </label>
 
@@ -186,13 +192,13 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
                                         value="range"
                                         checked={scope === 'range'}
                                         onChange={(e) => setScope(e.target.value)}
-                                        className="mr-3"
+                                        className="mr-3 focus:ring-[#355E3B]"
                                         style={{ accentColor: '#355E3B' }}
                                         disabled={isDeleting}
                                     />
                                     <div>
                                         <div className="font-medium text-gray-900">Custom Range</div>
-                                        <div className="text-sm text-gray-500">Select specific start and end dates</div>
+                                        <div className="text-sm text-gray-700">Select specific start and end dates</div>
                                     </div>
                                 </label>
 
@@ -203,7 +209,7 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
                                         value="all_time"
                                         checked={scope === 'all_time'}
                                         onChange={(e) => setScope(e.target.value)}
-                                        className="mr-3"
+                                        className="mr-3 focus:ring-red-500"
                                         style={{ accentColor: '#dc2626' }}
                                         disabled={isDeleting}
                                     />
@@ -218,7 +224,7 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
                         {/* Date Range Calendar (only show when range is selected) */}
                         {scope === 'range' && (
                             <div className="mb-6">
-                                <h4 className="text-sm font-medium text-gray-700 mb-3">Select Date Range</h4>
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">Select Date Range</h4>
                                 <DateRangeCalendar
                                     startDate={startDate}
                                     endDate={endDate}
@@ -229,19 +235,9 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
                             </div>
                         )}
 
-                        {/* Description */}
-                        <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <p className="text-sm text-gray-700">
-                                <strong>Action:</strong> {getScopeDescription()}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                                <strong>Affected:</strong> {getEstimatedCount()}
-                            </p>
-                        </div>
-
                         {/* Confirmation Input */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-900 mb-2">
                                 Type <span className="font-bold text-red-600">DELETE</span> to confirm
                             </label>
                             <input
@@ -249,8 +245,7 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
                                 value={confirmationText}
                                 onChange={(e) => setConfirmationText(e.target.value)}
                                 placeholder="Type DELETE to confirm"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent text-sm"
-                                style={{ '--tw-ring-color': '#355E3B' }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#355E3B] focus:outline-none text-sm"
                                 disabled={isDeleting}
                             />
                         </div>
@@ -261,14 +256,14 @@ export default function DeleteLogsModal({ isOpen, onClose, onConfirm }) {
                         <button
                             onClick={handleClose}
                             disabled={isDeleting}
-                            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-[#355E3B] focus:outline-none"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleConfirm}
                             disabled={isConfirmDisabled()}
-                            className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                            className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 focus:ring-2 focus:ring-red-500 focus:outline-none"
                         >
                             {isDeleting && (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

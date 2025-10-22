@@ -111,23 +111,31 @@ export default function AccessLogsPage() {
             filtered = filtered.filter(log => log.entry_type === selectedFilter);
         }
 
-        // Date filter
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
+        // Fixed date presets for accurate filtering
+        const quickPresets = [
+            { label: 'Today', start: new Date(new Date().setHours(0, 0, 0, 0)), end: new Date() },
+            { label: 'Yesterday', start: new Date(new Date(new Date().setDate(new Date().getDate() - 1)).setHours(0, 0, 0, 0)), end: new Date(new Date(new Date().setDate(new Date().getDate() - 1)).setHours(23, 59, 59, 999)) },
+            { label: 'Last 7 Days', start: new Date(new Date().setDate(new Date().getDate() - 6)), end: new Date() },
+            { label: 'Last 30 Days', start: new Date(new Date().setDate(new Date().getDate() - 29)), end: new Date() },
+        ];
 
-        if (dateFilter === 'today') {
-            filtered = filtered.filter(log => new Date(log.timestamp) >= today);
-        } else if (dateFilter === 'yesterday') {
-            filtered = filtered.filter(log => {
-                const logDate = new Date(log.timestamp);
-                return logDate >= yesterday && logDate < today;
-            });
-        } else if (dateFilter === 'week') {
-            filtered = filtered.filter(log => new Date(log.timestamp) >= weekAgo);
+        // Apply date filter using corrected presets
+        if (dateFilter !== 'all') {
+            let preset;
+            if (dateFilter === 'week') {
+                preset = quickPresets.find(p => p.label === 'Last 7 Days');
+            } else if (dateFilter === 'month') {
+                preset = quickPresets.find(p => p.label === 'Last 30 Days');
+            } else {
+                preset = quickPresets.find(p => p.label.toLowerCase() === dateFilter);
+            }
+
+            if (preset) {
+                filtered = filtered.filter(log => {
+                    const logDate = new Date(log.timestamp);
+                    return logDate >= preset.start && logDate <= preset.end;
+                });
+            }
         }
 
         setFilteredLogs(filtered);
@@ -204,11 +212,11 @@ export default function AccessLogsPage() {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 {/* Page Header */}
-                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                <div className="mb-8 p-6 rounded-xl shadow-lg bg-gradient-to-br from-[#355E3B] to-[#2d4f32]">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="h-12 w-12 bg-[#FFD700] rounded-lg flex items-center justify-center">
+                                <svg className="h-6 w-6 text-[#355E3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                             </div>
@@ -222,10 +230,10 @@ export default function AccessLogsPage() {
 
                 {/* Quick Statistics */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderLeftColor: '#355E3B' }}>
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-[#355E3B]">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                <div className="h-12 w-12 bg-[#355E3B] rounded-lg flex items-center justify-center">
                                     <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
@@ -233,7 +241,7 @@ export default function AccessLogsPage() {
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Total Logs</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>{filteredLogs.length}</p>
+                                <p className="text-3xl font-bold text-[#355E3B]">{filteredLogs.length}</p>
                             </div>
                         </div>
                     </div>
@@ -274,18 +282,18 @@ export default function AccessLogsPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4" style={{ borderLeftColor: '#FFD700' }}>
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-[#FFD700]">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                    <svg className="h-6 w-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="h-12 w-12 bg-[#FFD700] rounded-lg flex items-center justify-center">
+                                    <svg className="h-6 w-6 text-[#355E3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                 </div>
                             </div>
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Unique Vehicles</h3>
-                                <p className="text-3xl font-bold" style={{ color: '#FFD700' }}>
+                                <p className="text-3xl font-bold text-[#FFD700]">
                                     {new Set(filteredLogs.map(log => log.plate_number)).size}
                                 </p>
                             </div>
@@ -295,15 +303,28 @@ export default function AccessLogsPage() {
 
                 {/* Quick Actions - Filters */}
                 <div className="bg-white rounded-xl shadow-lg mb-8">
-                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h2 className="text-xl font-semibold text-white">Quick Filters</h2>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>Search and filter vehicle access records</p>
+                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl bg-gradient-to-r from-[#355E3B] to-[#2d4f32] flex items-center justify-between">
+                        <div>
+                            <h2 className="text-xl font-semibold text-white">Quick Filters</h2>
+                            <p className="text-sm text-[#FFD700]">Search and filter vehicle access records</p>
+                        </div>
+                        {/* Refresh Icon - Right Aligned */}
+                        <button
+                            onClick={fetchAccessLogs}
+                            className="p-2 text-white rounded-lg transition-all duration-200 hover:opacity-70 focus:ring-2 focus:ring-[#355E3B] focus:outline-none"
+                            title="Refresh"
+                            aria-label="Refresh access logs"
+                        >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
                     </div>
                     <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {/* Search Input */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-900">
                                     Search Records
                                 </label>
                                 <input
@@ -311,21 +332,19 @@ export default function AccessLogsPage() {
                                     placeholder="Search by plate, name, or tag UID"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#355E3B] focus:outline-none"
                                 />
                             </div>
 
                             {/* Entry Type Filter */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-900">
                                     Entry Type
                                 </label>
                                 <select
                                     value={selectedFilter}
                                     onChange={(e) => setSelectedFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#355E3B] focus:outline-none"
                                 >
                                     <option value="all">All Types</option>
                                     <option value="entry">Entry Only</option>
@@ -335,53 +354,20 @@ export default function AccessLogsPage() {
 
                             {/* Date Filter */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-900">
                                     Date Range
                                 </label>
                                 <select
                                     value={dateFilter}
                                     onChange={(e) => setDateFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                                    style={{ focusRingColor: '#355E3B' }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#355E3B] focus:outline-none"
                                 >
                                     <option value="all">All Time</option>
                                     <option value="today">Today</option>
                                     <option value="yesterday">Yesterday</option>
                                     <option value="week">Last 7 Days</option>
+                                    <option value="month">Last 30 Days</option>
                                 </select>
-                            </div>
-
-                            {/* Refresh Button */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Actions
-                                </label>
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={fetchAccessLogs}
-                                        className="flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:opacity-90"
-                                        style={{ backgroundColor: '#355E3B' }}
-                                    >
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
-                                        <span>Refresh</span>
-                                    </button>
-
-                                    {/* Delete Logs Button - Admin Only */}
-                                    {user?.designation === 'Admin' && (
-                                        <button
-                                            onClick={() => setShowDeleteModal(true)}
-                                            className="flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 hover:bg-red-700"
-                                            style={{ backgroundColor: '#dc2626' }}
-                                        >
-                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                            <span>Delete Logs</span>
-                                        </button>
-                                    )}
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -389,9 +375,23 @@ export default function AccessLogsPage() {
 
                 {/* Access Logs Table */}
                 <div className="bg-white rounded-xl shadow-lg">
-                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h3 className="text-lg font-semibold text-white">Vehicle Access Records</h3>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>Real-time entry and exit monitoring</p>
+                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl bg-gradient-to-r from-[#355E3B] to-[#2d4f32] flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold text-white">Vehicle Access Records</h3>
+                            <p className="text-sm text-[#FFD700]">Real-time entry and exit monitoring</p>
+                        </div>
+                        {/* Delete Logs Button - Admin Only */}
+                        {user?.designation === 'Admin' && (
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="p-2 text-white rounded-lg transition-all duration-200 hover:bg-red-600 focus:ring-2 focus:ring-[#FFD700] focus:outline-none"
+                                title="Delete Access Logs"
+                            >
+                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        )}
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -530,7 +530,7 @@ export default function AccessLogsPage() {
                 type={toast.type}
                 isVisible={toast.show}
                 onClose={hideToast}
-                duration={5000}
+                duration={4500}
             />
         </div>
     );
