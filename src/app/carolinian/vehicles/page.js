@@ -46,10 +46,7 @@ export default function CarolinianVehicles() {
 
     const fetchVehicles = useCallback(async () => {
         try {
-            // Only show loading if we don't have any data yet
-            if (registeredVehicles.length === 0 && pendingVehicles.length === 0) {
-                setLoading(true);
-            }
+            setLoading(true);
             const response = await fetch('/api/vehicles?mine=1');
             if (response.ok) {
                 const data = await response.json();
@@ -61,14 +58,11 @@ export default function CarolinianVehicles() {
         } finally {
             setLoading(false);
         }
-    }, [registeredVehicles.length, pendingVehicles.length]);
+    }, []);
 
     const fetchAccessLogs = useCallback(async () => {
         try {
-            // Only show loading if we don't have any access logs yet
-            if (accessLogs.length === 0) {
-                setLoading(true);
-            }
+            setLoading(true);
             const response = await fetch('/api/carolinian/access-logs');
             if (response.ok) {
                 const data = await response.json();
@@ -79,7 +73,7 @@ export default function CarolinianVehicles() {
         } finally {
             setLoading(false);
         }
-    }, [accessLogs.length]);
+    }, []);
 
     useEffect(() => {
         fetchUserData();
@@ -95,30 +89,8 @@ export default function CarolinianVehicles() {
         pending_update: (payload) => {
             console.log('Vehicles page received vehicles:pending_update:', payload);
             if (payload.owner_id === user?.uscId) {
-                console.log('Vehicle update for current user - updating state directly');
-
-                // Update registered vehicles if this vehicle was approved
-                if (payload.approval_status === 'approved') {
-                    // Move from pending to registered
-                    setPendingVehicles(prev => prev.filter(v => v.vehicle_id !== payload.vehicle_id));
-                    setRegisteredVehicles(prev => {
-                        const exists = prev.find(v => v.vehicle_id === payload.vehicle_id);
-                        if (!exists) {
-                            return [...prev, payload];
-                        }
-                        return prev.map(v => v.vehicle_id === payload.vehicle_id ? payload : v);
-                    });
-                } else if (payload.approval_status === 'rejected') {
-                    // Update the vehicle in pending list
-                    setPendingVehicles(prev =>
-                        prev.map(v => v.vehicle_id === payload.vehicle_id ? payload : v)
-                    );
-                } else {
-                    // Update pending vehicles
-                    setPendingVehicles(prev =>
-                        prev.map(v => v.vehicle_id === payload.vehicle_id ? payload : v)
-                    );
-                }
+                console.log('Vehicle update for current user - refreshing data');
+                fetchVehicles();
             }
         },
 
@@ -142,7 +114,7 @@ export default function CarolinianVehicles() {
             console.log('Vehicles page polling fallback');
             fetchVehicles();
         },
-        pollIntervalMs: 30000 // Reduced frequency for polling fallback
+        pollIntervalMs: 12000
     });
 
     // Also subscribe to access logs if user is viewing the logs tab
@@ -151,16 +123,7 @@ export default function CarolinianVehicles() {
         update: (record) => {
             console.log('Vehicles page received access_logs:update:', record);
             if (record.user_id === user?.uscId && activeTab === 'logs') {
-                console.log('Access log update for current user - adding to state');
-                setAccessLogs(prevLogs => {
-                    // Check if this log already exists to prevent duplicates
-                    const exists = prevLogs.find(log => log.id === record.id);
-                    if (!exists) {
-                        // Add new log at the beginning of the array (most recent first)
-                        return [record, ...prevLogs];
-                    }
-                    return prevLogs;
-                });
+                fetchAccessLogs();
             }
         }
     }, {
@@ -176,26 +139,17 @@ export default function CarolinianVehicles() {
         }
     }, [user]);
 
-    // Add auto-refresh when page becomes visible (but without loading state)
+    // Add auto-refresh when page becomes visible
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (!document.hidden) {
-                // Silently refresh data without showing loading
-                fetch('/api/vehicles?mine=1')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.registered || data.pending) {
-                            setRegisteredVehicles(data.registered || []);
-                            setPendingVehicles(data.pending || []);
-                        }
-                    })
-                    .catch(error => console.error('Failed to refresh vehicles:', error));
+                fetchVehicles();
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
+    }, [fetchVehicles]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -222,16 +176,8 @@ export default function CarolinianVehicles() {
                     color: '',
                     plateNumber: ''
                 });
-                // Refresh vehicle list silently
-                fetch('/api/vehicles?mine=1')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.registered || data.pending) {
-                            setRegisteredVehicles(data.registered || []);
-                            setPendingVehicles(data.pending || []);
-                        }
-                    })
-                    .catch(error => console.error('Failed to refresh vehicles:', error));
+                // Refresh vehicle list
+                fetchVehicles();
             } else {
                 alert(result.error || 'Failed to submit vehicle registration');
             }
@@ -294,7 +240,6 @@ export default function CarolinianVehicles() {
                 return null;
         }
     };
-
 
     const renderVehicleCard = (vehicle, isRegistered = true) => (
         <div key={vehicle.vehicle_id} className="border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200">

@@ -95,8 +95,6 @@ export async function POST(request) {
             ) VALUES (?, ?, ?, NOW(), ?, ?, TRUE)
         `;
 
-        const locationValue = entry_type === 'entry' ? 'entrance' : 'exit';
-        // Default gate_location based on entry_type if not provided
         const defaultGateLocation = entry_type === 'entry' ? 'Gate 3' : 'Gate 1';
 
         await queryMany(insertQuery, [
