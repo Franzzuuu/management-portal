@@ -1,5 +1,6 @@
 import { queryOne, queryMany } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { CacheManager, CacheConfig } from '@/lib/cache';
 
 export async function GET(request) {
     try {
@@ -16,6 +17,22 @@ export async function GET(request) {
 
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
+
+        // Create cache key based on filters
+        const cacheKey = CacheManager.generateOverviewCacheKey({ startDate, endDate, page, limit });
+
+        // Try to get cached data
+        if (CacheConfig.SYSTEM_OVERVIEW.enabled) {
+            const cachedData = CacheManager.getCachedReportData('overview', { startDate, endDate, page, limit });
+            if (cachedData) {
+                console.log('Returning cached report data');
+                return Response.json({
+                    success: true,
+                    ...cachedData,
+                    fromCache: true
+                });
+            }
+        }
 
         const dateFilter = startDate && endDate
             ? 'WHERE DATE(al.timestamp) BETWEEN ? AND ?'
@@ -95,13 +112,22 @@ export async function GET(request) {
             recentLogs: recentLogs || []
         };
 
-        return Response.json({
-            success: true,
+        const responseData = {
             reportData,
             totalEntries: accessLogsCount?.count || 0,
             currentPage: page,
             entriesPerPage: limit,
             totalPages: Math.ceil((accessLogsCount?.count || 0) / limit)
+        };
+
+        // Cache the data
+        if (CacheConfig.SYSTEM_OVERVIEW.enabled) {
+            CacheManager.cacheReportData('overview', { startDate, endDate, page, limit }, responseData, CacheConfig.SYSTEM_OVERVIEW.ttl);
+        }
+
+        return Response.json({
+            success: true,
+            ...responseData
         });
 
     } catch (error) {
