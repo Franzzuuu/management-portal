@@ -101,7 +101,14 @@ export async function findUserByUscId(uscId) {
 
 // Generate default password for USC ID
 export function generateDefaultPassword(uscId) {
-    return `${uscId}Usc$`;
+    // If USC ID contains "@", extract username part before "@"
+    if (uscId.includes('@')) {
+        const username = uscId.split('@')[0];
+        return `${username}Usc$2025`;
+    }
+
+    // For numeric USC IDs, use the existing format
+    return `${uscId}Usc$2025`;
 }
 
 // Enhanced createUser function with USC ID support and auto-generated password

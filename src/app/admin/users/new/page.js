@@ -12,11 +12,11 @@ function generateDefaultPassword(uscId) {
     // If USC ID contains "@", extract username part before "@"
     if (uscId.includes('@')) {
         const username = uscId.split('@')[0];
-        return `${username}Usc$`;
+        return `${username}Usc$2025`;
     }
 
     // For numeric USC IDs, use the existing format
-    return `${uscId}Usc$`;
+    return `${uscId}Usc$2025`;
 }
 
 export default function AddNewUser() {
