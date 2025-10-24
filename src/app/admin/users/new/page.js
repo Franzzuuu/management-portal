@@ -56,10 +56,18 @@ export default function AddNewUser() {
         }
     }, [activeTab]);
 
-    // Initialize password preview when USC ID is already present
+    // Initialize password preview and email when USC ID is already present
     useEffect(() => {
         setPreviewPassword(generateDefaultPassword(formData.uscId));
-    }, [formData.uscId]);
+
+        // Also initialize email if USC ID exists but email is empty
+        if (formData.uscId && !formData.email && !formData.uscId.includes('@')) {
+            setFormData(prev => ({
+                ...prev,
+                email: `${formData.uscId}@usc.edu.ph`
+            }));
+        }
+    }, [formData.uscId, formData.email]);
 
     const checkAuth = async () => {
         try {
@@ -127,12 +135,26 @@ export default function AddNewUser() {
             [e.target.name]: e.target.value
         };
 
-        setFormData(updatedFormData);
-
-        // Update password preview when USC ID changes
+        // Auto-populate email field when USC ID changes
         if (e.target.name === 'uscId') {
-            setPreviewPassword(generateDefaultPassword(e.target.value));
+            const uscId = e.target.value.trim();
+
+            // Update password preview
+            setPreviewPassword(generateDefaultPassword(uscId));
+
+            // Auto-complete email if USC ID is provided and doesn't already contain @
+            if (uscId && !uscId.includes('@')) {
+                updatedFormData.email = `${uscId}@usc.edu.ph`;
+            } else if (uscId.includes('@')) {
+                // If USC ID already has @, use it as is for email
+                updatedFormData.email = uscId;
+            } else {
+                // Clear email if USC ID is empty
+                updatedFormData.email = '';
+            }
         }
+
+        setFormData(updatedFormData);
     };
 
     const handleSubmit = async (e) => {
