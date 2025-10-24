@@ -5,6 +5,20 @@ import { useRouter } from 'next/navigation';
 import { clearAuthData } from '@/lib/client-auth';
 import Header from '../../../components/Header';
 
+// Helper function to generate default password based on USC ID
+function generateDefaultPassword(uscId) {
+    if (!uscId) return '';
+
+    // If USC ID contains "@", extract username part before "@"
+    if (uscId.includes('@')) {
+        const username = uscId.split('@')[0];
+        return `${username}Usc$`;
+    }
+
+    // For numeric USC IDs, use the existing format
+    return `${uscId}Usc$`;
+}
+
 export default function AddNewUser() {
     const [formData, setFormData] = useState({
         uscId: '',
@@ -27,6 +41,8 @@ export default function AddNewUser() {
     const [passwordAction, setPasswordAction] = useState(''); // 'reset' or 'change'
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [previewPassword, setPreviewPassword] = useState('');
+    const [copied, setCopied] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -39,6 +55,11 @@ export default function AddNewUser() {
             fetchUsers();
         }
     }, [activeTab]);
+
+    // Initialize password preview when USC ID is already present
+    useEffect(() => {
+        setPreviewPassword(generateDefaultPassword(formData.uscId));
+    }, [formData.uscId]);
 
     const checkAuth = async () => {
         try {
@@ -101,10 +122,17 @@ export default function AddNewUser() {
     };
 
     const handleInputChange = (e) => {
-        setFormData({
+        const updatedFormData = {
             ...formData,
             [e.target.name]: e.target.value
-        });
+        };
+
+        setFormData(updatedFormData);
+
+        // Update password preview when USC ID changes
+        if (e.target.name === 'uscId') {
+            setPreviewPassword(generateDefaultPassword(e.target.value));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -125,7 +153,8 @@ export default function AddNewUser() {
             const data = await response.json();
 
             if (data.success) {
-                setSuccess(`User ${formData.fullName} created successfully with default password: ${formData.uscId}Usc$`);
+                const defaultPassword = generateDefaultPassword(formData.uscId);
+                setSuccess(`User ${formData.fullName} created successfully with default password: ${defaultPassword}`);
                 setFormData({
                     uscId: '',
                     email: '',
@@ -134,6 +163,7 @@ export default function AddNewUser() {
                     phoneNumber: '',
                     gender: ''
                 });
+                setPreviewPassword('');
                 if (activeTab === 'manage') {
                     fetchUsers(); // Refresh user list if on manage tab
                 }
@@ -192,6 +222,12 @@ export default function AddNewUser() {
         setLoading(false);
     };
 
+    const handleCopy = () => {
+        navigator.clipboard.writeText(previewPassword);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500); // reset after 1.5s
+    };
+
     const handlePasswordReset = async (uscId) => {
         setLoading(true);
         try {
@@ -203,7 +239,8 @@ export default function AddNewUser() {
 
             const data = await response.json();
             if (data.success) {
-                setSuccess(`Password reset successfully. New password: ${uscId}Usc$`);
+                const defaultPassword = generateDefaultPassword(uscId);
+                setSuccess(`Password reset successfully. New password: ${defaultPassword}`);
                 setShowPasswordModal(false);
             } else {
                 setError(data.error || 'Failed to reset password');
@@ -356,7 +393,7 @@ export default function AddNewUser() {
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-400 text-gray-900"
                                         style={{ '--tw-ring-color': '#355E3B' }}
-                                        placeholder="Enter USC ID (e.g., 22104086)"
+                                        placeholder="Enter USC ID"
                                         value={formData.uscId}
                                         onChange={handleInputChange}
                                     />
@@ -456,9 +493,28 @@ export default function AddNewUser() {
                             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <h4 className="text-sm font-medium text-blue-900 mb-2">Default Password Information</h4>
                                 <p className="text-sm text-blue-700">
-                                    A default password will be automatically generated using the format: <strong>&lt;USC_ID&gt;Usc$</strong>
+                                    A default password will be automatically generated based on the USC ID:
                                 </p>
-                                <p className="text-sm text-blue-600 mt-1">
+
+                                {/* Password Preview */}
+                                {previewPassword && (
+                                    <div className="mt-3 p-3 bg-white border border-blue-300 rounded-lg">
+                                        <p className="text-sm font-medium text-blue-900">Generated Password:</p>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <p className="text-sm font-mono bg-gray-100 px-2 py-1 rounded text-gray-800 break-all">
+                                                {previewPassword}
+                                            </p>
+                                            <button
+                                                onClick={handleCopy}
+                                                className="ml-2 px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 transition"
+                                            >
+                                                {copied ? "Copied!" : "Copy"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <p className="text-sm text-blue-600 mt-2">
                                     The user must contact an administrator to change their password.
                                 </p>
                             </div>
@@ -719,7 +775,7 @@ export default function AddNewUser() {
                         {passwordAction === 'reset' ? (
                             <div>
                                 <p className="text-sm text-gray-600 mb-4">
-                                    This will reset the password to the default format: <strong>{selectedUser.usc_id}Usc$</strong>
+                                    This will reset the password to the default format: <strong>{generateDefaultPassword(selectedUser.usc_id)}</strong>
                                 </p>
                                 <div className="flex space-x-3">
                                     <button
