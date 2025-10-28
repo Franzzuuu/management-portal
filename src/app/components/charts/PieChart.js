@@ -31,13 +31,20 @@ export default function PieChart({ data, title, colors = [] }) {
 
                 const chartColors = colors.length > 0 ? colors : defaultColors;
 
+                // Use individual item colors if available, otherwise fall back to provided colors or defaults
+                const backgroundColors = data.map((item, index) => {
+                    if (item.color) return item.color;
+                    if (colors[index]) return colors[index];
+                    return defaultColors[index % defaultColors.length];
+                });
+
                 chartInstance.current = new Chart.default(ctx, {
                     type: 'pie',
                     data: {
                         labels: data.map(item => item.label),
                         datasets: [{
                             data: data.map(item => item.value),
-                            backgroundColor: chartColors.slice(0, data.length),
+                            backgroundColor: backgroundColors,
                             borderWidth: 2,
                             borderColor: '#ffffff',
                             hoverBorderWidth: 3,
