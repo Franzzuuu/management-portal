@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '../../components/Header';
+import BackButton from '../../components/BackButton';
 
 export default function AdminProfile() {
     const [user, setUser] = useState(null);
@@ -218,6 +219,11 @@ export default function AdminProfile() {
 
             {/* Main Content */}
             <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Dashboard" fallbackPath="/admin" />
+                </div>
+
                 {/* Page Header */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex items-center">
