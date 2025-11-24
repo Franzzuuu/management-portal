@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
+import BackButton from '../../components/BackButton';
 
 export default function CarolinianViolations() {
     const [user, setUser] = useState(null);
@@ -177,6 +178,11 @@ export default function CarolinianViolations() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Dashboard" fallbackPath="/carolinian" />
+                </div>
+
                 {/* Page Header with Tabs */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -442,15 +448,7 @@ export default function CarolinianViolations() {
 
             {/* Contest Modal */}
             {contestModal.open && (
-                <div
-                    className="fixed inset-0 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
-                    style={{
-                        backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/ismisbg.jpg')",
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat'
-                    }}
-                >
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm overflow-y-auto p-4">
                     <div className="relative bg-gray-50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
                         {/* Modal Header */}
                         <div className="sticky top-0 bg-gray-50 border-b border-gray-200 px-6 py-4 rounded-t-2xl">

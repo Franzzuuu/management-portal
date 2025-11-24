@@ -78,6 +78,7 @@ export default function ViolationsManagement() {
 
     useEffect(() => {
         checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Refetch violations when user changes
@@ -122,12 +123,14 @@ export default function ViolationsManagement() {
 
     useEffect(() => {
         filterViolations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm, statusFilter, typeFilter, designationFilter, vehicleTypeFilter, dateFilter, customDateRange, violations]);
 
     useEffect(() => {
         if (activeTab === 'stats') {
             generateStatistics();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, violations, statsDateRange]);
 
     const fetchViolationTypes = async () => {

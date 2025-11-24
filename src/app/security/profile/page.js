@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '../../components/Header';
+import BackButton from '../../components/BackButton';
 
 export default function SecurityProfile() {
     const [user, setUser] = useState(null);
@@ -118,6 +119,11 @@ export default function SecurityProfile() {
                 if (profile.full_name !== originalProfile.full_name) {
                     setUser(prev => ({ ...prev, full_name: profile.full_name }));
                 }
+
+                // Navigate to security dashboard after 1.5 seconds
+                setTimeout(() => {
+                    router.push('/security');
+                }, 1500);
             } else {
                 const error = await response.json();
                 setMessage({ type: 'error', text: error.message || 'Failed to update profile' });
@@ -200,8 +206,8 @@ export default function SecurityProfile() {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto" style={{ borderColor: '#355E3B' }}></div>
-                    <p className="mt-4 text-gray-600">Loading profile...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-green-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600 font-medium">Loading profile...</p>
                 </div>
             </div>
         );
@@ -213,6 +219,11 @@ export default function SecurityProfile() {
 
             {/* Main Content */}
             <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Dashboard" fallbackPath="/security" />
+                </div>
+
                 {/* Page Header */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex items-center">
@@ -229,7 +240,7 @@ export default function SecurityProfile() {
                 </div>
 
                 {/* Profile Form */}
-                <div className="bg-white rounded-xl shadow-lg">
+                <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
                     <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
                         <h3 className="text-lg font-semibold text-white">Personal Information</h3>
                         <p className="text-sm" style={{ color: '#FFD700' }}>Keep your information up to date</p>
@@ -307,7 +318,7 @@ export default function SecurityProfile() {
                                     name="full_name"
                                     value={profile.full_name || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 transition-all duration-200"
                                     required
                                 />
                             </div>
@@ -323,7 +334,7 @@ export default function SecurityProfile() {
                                     name="email"
                                     value={profile.email || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 transition-all duration-200"
                                     required
                                 />
                             </div>
@@ -339,7 +350,7 @@ export default function SecurityProfile() {
                                     name="phone"
                                     value={profile.phone || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 transition-all duration-200"
                                 />
                             </div>
 
@@ -354,7 +365,7 @@ export default function SecurityProfile() {
                                     name="department"
                                     value={profile.department || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 transition-all duration-200"
                                 />
                             </div>
 
@@ -369,7 +380,7 @@ export default function SecurityProfile() {
                                     name="employee_id"
                                     value={profile.employee_id || ''}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 transition-all duration-200"
                                 />
                             </div>
 
@@ -400,17 +411,24 @@ export default function SecurityProfile() {
                             <button
                                 type="submit"
                                 disabled={!hasChanges || saving}
-                                className="px-6 py-2 text-white rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{ backgroundColor: '#355E3B' }}
+                                className="px-6 py-2 text-white rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transform hover:scale-105"
+                                style={{ backgroundColor: saving ? '#6B7280' : '#355E3B' }}
                             >
-                                {saving ? 'Saving...' : 'Save Changes'}
+                                {saving ? (
+                                    <span className="flex items-center">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                        Saving...
+                                    </span>
+                                ) : (
+                                    'Save Changes'
+                                )}
                             </button>
                         </div>
                     </form>
                 </div>
 
                 {/* Account Information */}
-                <div className="mt-8 bg-white rounded-xl shadow-lg">
+                <div className="mt-8 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
                     <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
                         <h3 className="text-lg font-semibold text-white">Account Information</h3>
                         <p className="text-sm" style={{ color: '#FFD700' }}>Read-only account details</p>

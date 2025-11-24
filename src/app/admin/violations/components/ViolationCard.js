@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import {
     User,
     Car,
@@ -314,9 +315,11 @@ export default function ViolationCard({ violation, onStatusUpdate, onView }) {
                         >
                             <X className="h-8 w-8" />
                         </button>
-                        <img
+                        <Image
                             src={`data:${violation.image_mime_type};base64,${violation.image_data}`}
                             alt="Violation evidence"
+                            width={800}
+                            height={600}
                             className="max-w-full max-h-full object-contain rounded-lg"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-4 rounded-b-lg">

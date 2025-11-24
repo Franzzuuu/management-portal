@@ -162,7 +162,7 @@ export default function useSocketChannel(channel, handlers = {}, options = {}) {
                 console.debug(`🧹 Cleaned up channel: ${channel}`);
             }
         };
-    }, [channel, startPolling, stopPolling, autoSubscribe]);
+    }, [channel, startPolling, stopPolling, autoSubscribe, handlers]);
 
     // Manual subscribe/unsubscribe methods
     const subscribe = useCallback(() => {

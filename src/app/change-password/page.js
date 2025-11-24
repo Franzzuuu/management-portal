@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuthData } from '@/lib/client-auth';
+import BackButton from '../components/BackButton';
 
 export default function ChangePasswordPage() {
     const [formData, setFormData] = useState({
@@ -210,6 +211,11 @@ export default function ChangePasswordPage() {
 
             {/* Main Content */}
             <main className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Login" fallbackPath="/login" />
+                </div>
+
                 {/* Page Header */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex items-center">

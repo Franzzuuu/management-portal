@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import DeleteLogsModal from '../../components/DeleteLogsModal';
 import Toast from '../../components/Toast';
+import BackButton from '../../components/BackButton';
 import useSocketChannel from '../../../hooks/useSocketChannel';
 
 export default function AccessLogsPage() {
@@ -211,6 +212,11 @@ export default function AccessLogsPage() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Admin Dashboard" fallbackPath="/admin" />
+                </div>
+
                 {/* Page Header */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg bg-gradient-to-br from-[#355E3B] to-[#2d4f32]">
                     <div className="flex items-center justify-between">

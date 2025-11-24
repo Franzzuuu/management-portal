@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Header from '../../components/Header';
+import BackButton from '../../components/BackButton';
 
 export default function ViolationsManagement() {
     const [user, setUser] = useState(null);
@@ -129,10 +131,12 @@ export default function ViolationsManagement() {
 
     useEffect(() => {
         checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         filterViolations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm, statusFilter, typeFilter, designationFilter, vehicleTypeFilter, dateFilter, customDateRange, violations]);
 
     useEffect(() => {
@@ -141,6 +145,7 @@ export default function ViolationsManagement() {
         } else if (activeTab === 'contested') {
             fetchContestedViolations();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, violations, statsDateRange]);
 
     const fetchContestedViolations = async () => {
@@ -491,6 +496,11 @@ export default function ViolationsManagement() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Admin Dashboard" fallbackPath="/admin" />
+                </div>
+
                 {/* Page Header with Tabs */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -1491,7 +1501,7 @@ export default function ViolationsManagement() {
                 {/* Image Modal */}
                 {showImageModal && (
                     <div
-                        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
                         onClick={handleCloseImageModal}
                     >
                         <div
@@ -1506,9 +1516,11 @@ export default function ViolationsManagement() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
-                            <img
+                            <Image
                                 src={selectedImage}
                                 alt="Violation Evidence"
+                                width={800}
+                                height={600}
                                 className="max-w-full max-h-full object-contain rounded-lg"
                             />
                         </div>

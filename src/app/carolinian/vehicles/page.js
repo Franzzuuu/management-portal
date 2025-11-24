@@ -14,6 +14,7 @@ export default function CarolinianVehicles() {
     const [accessLogs, setAccessLogs] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [formLoading, setFormLoading] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
     const [formData, setFormData] = useState({
         vehicleType: '',
         make: '',
@@ -75,6 +76,20 @@ export default function CarolinianVehicles() {
         }
     }, []);
 
+    // Auto-clear message after 3 seconds
+    useEffect(() => {
+        if (message.text) {
+            const timer = setTimeout(() => {
+                setMessage({ type: '', text: '' });
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [message.text]);
+
+
+
+
+
     useEffect(() => {
         fetchUserData();
         fetchVehicles();
@@ -117,18 +132,16 @@ export default function CarolinianVehicles() {
         pollIntervalMs: 12000
     });
 
-    // Also subscribe to access logs if user is viewing the logs tab
+    // Subscribe to access logs when viewing the logs tab
     const { connected: accessLogsConnected } = useSocketChannel('access_logs', {
-        // Handle new access log entries
         update: (record) => {
-            console.log('Vehicles page received access_logs:update:', record);
             if (record.user_id === user?.uscId && activeTab === 'logs') {
                 fetchAccessLogs();
             }
         }
     }, {
         enablePollingFallback: false,
-        autoSubscribe: activeTab === 'logs' // Only subscribe when viewing logs tab
+        autoSubscribe: activeTab === 'logs'
     });
 
     // Debug: Log when user changes
@@ -338,6 +351,38 @@ export default function CarolinianVehicles() {
     return (
         <div className="min-h-screen bg-gray-50">
             <Header user={user} onLogout={handleLogout} />
+
+            {/* Toast Message */}
+            {message.text && (
+                <div className="fixed top-4 right-4 z-50">
+                    <div className={`px-6 py-3 rounded-lg shadow-lg border-l-4 max-w-sm transform transition-all duration-300 ${
+                        message.type === 'success' 
+                            ? 'bg-green-50 border-green-400 text-green-700' 
+                            : 'bg-red-50 border-red-400 text-red-700'
+                    }`}>
+                        <div className="flex items-center">
+                            {message.type === 'success' ? (
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            )}
+                            <span className="font-medium">{message.text}</span>
+                            <button
+                                onClick={() => setMessage({ type: '', text: '' })}
+                                className="ml-3 text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -576,9 +621,25 @@ export default function CarolinianVehicles() {
                 ) : (
                     /* Access Logs */
                     <div className="bg-white rounded-xl shadow-lg">
-                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                            <h3 className="text-lg font-semibold text-white">Vehicle Access Logs</h3>
-                            <p className="text-sm" style={{ color: '#FFD700' }}>Track your vehicle entry and exit history</p>
+                        <div 
+                            className="px-6 py-4 border-b border-gray-200 rounded-t-xl flex items-center justify-between"
+                            style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}
+                        >
+                            <div>
+                                <h3 className="text-lg font-semibold text-white">Vehicle Access Logs</h3>
+                                <p className="text-sm" style={{ color: '#FFD700' }}>Track your vehicle entry and exit history</p>
+                            </div>
+                            
+                            {/* Download button */}
+                            <button
+                                onClick={() => router.push('/carolinian/vehicles/download')}
+                                className="text-white hover:text-yellow-300 transition-colors duration-200 p-2 rounded-lg hover:bg-white hover:bg-opacity-10"
+                                title="Download Access Logs"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </button>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -664,6 +725,8 @@ export default function CarolinianVehicles() {
                     </div>
                 )}
             </main>
+
+
         </div>
     );
 }

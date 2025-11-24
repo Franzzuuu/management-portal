@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuthData } from '@/lib/client-auth';
 import Header from '../../../components/Header';
+import BackButton from '../../../components/BackButton';
 
 // Helper function to generate default password based on USC ID
 function generateDefaultPassword(uscId) {
@@ -338,6 +339,11 @@ export default function AddNewUser() {
 
             {/* Main Content */}
             <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Admin Dashboard" fallbackPath="/admin" />
+                </div>
+
                 {/* Page Header with Tabs */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex items-center justify-between">
@@ -879,7 +885,7 @@ export default function AddNewUser() {
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && selectedUser && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
                         <div className="flex items-center mb-4">
                             <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center mr-3">

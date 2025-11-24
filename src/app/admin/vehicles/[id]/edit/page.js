@@ -4,6 +4,7 @@ import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchableUserSelect from '../../../../components/SearchableUserSelect';
 import Header from '../../../../components/Header';
+import BackButton from '../../../../components/BackButton';
 
 export default function EditVehicle({ params }) {
     const [vehicle, setVehicle] = useState(null);
@@ -186,6 +187,11 @@ export default function EditVehicle({ params }) {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Vehicles" fallbackPath="/admin/vehicles" />
+                </div>
+
                 {/* Page Header */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex items-center justify-between">
@@ -388,8 +394,8 @@ export default function EditVehicle({ params }) {
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (
-                <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-fade-in-up">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 mx-4 animate-fade-in-up">
                         <div className="flex items-center justify-center mb-4 text-red-600">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

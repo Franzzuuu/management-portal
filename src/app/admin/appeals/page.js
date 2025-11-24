@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Header from '../../components/Header';
+import BackButton from '../../components/BackButton';
 
 export default function ViolationAppealsPage() {
     const router = useRouter();
@@ -180,6 +182,10 @@ export default function ViolationAppealsPage() {
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Dashboard" fallbackPath="/admin" />
+                </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -426,9 +432,11 @@ export default function ViolationAppealsPage() {
                                                                             <div className="flex-shrink-0">
                                                                                 {file.mime_type.startsWith('image/') ? (
                                                                                     <div className="w-16 h-16 rounded-lg overflow-hidden border">
-                                                                                        <img
+                                                                                        <Image
                                                                                             src={`data:${file.mime_type};base64,${file.file_data}`}
                                                                                             alt={file.filename}
+                                                                                            width={64}
+                                                                                            height={64}
                                                                                             className="w-full h-full object-cover cursor-pointer"
                                                                                             onClick={() => openImagePreview(`data:${file.mime_type};base64,${file.file_data}`, file.filename)}
                                                                                             style={{ cursor: 'pointer' }}
@@ -559,7 +567,7 @@ export default function ViolationAppealsPage() {
 
                 {/* Review Modal */}
                 {reviewModal.open && (
-                    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm overflow-y-auto p-4">
                         <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                             <div className="sticky top-0 border-b border-gray-200 px-6 py-4 rounded-t-lg" style={{ backgroundColor: '#355E3B' }}>
                                 <div className="flex items-center justify-between">
@@ -651,9 +659,11 @@ export default function ViolationAppealsPage() {
                                                         <div className="flex-shrink-0">
                                                             {file.mime_type.startsWith('image/') ? (
                                                                 <div className="w-12 h-12 rounded-lg overflow-hidden border">
-                                                                    <img
+                                                                    <Image
                                                                         src={`data:${file.mime_type};base64,${file.file_data}`}
                                                                         alt={file.filename}
+                                                                        width={48}
+                                                                        height={48}
                                                                         className="w-full h-full object-cover cursor-pointer"
                                                                         onClick={() => openImagePreview(`data:${file.mime_type};base64,${file.file_data}`, file.filename)}
                                                                     />
@@ -836,9 +846,11 @@ export default function ViolationAppealsPage() {
                                 </svg>
                             </button>
                             <div className="text-center">
-                                <img
+                                <Image
                                     src={imagePreviewModal.src}
                                     alt={imagePreviewModal.filename}
+                                    width={800}
+                                    height={600}
                                     className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
                                     onClick={(e) => e.stopPropagation()}
                                 />

@@ -193,118 +193,491 @@ export async function GET(request) {
             // Use puppeteer to generate PDF from HTML
             const puppeteer = await import('puppeteer');
 
-            // Create HTML content for PDF
+            // Format dates for human readability
+            const formatDate = (dateStr) => {
+                if (!dateStr) return new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            };
+
+            const formatDateTime = () => {
+                return new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
+            };
+
+            // Get enhanced data for PDF
+            const [userDetails, vehicleDetails, accessDetails, violationDetails] = await Promise.all([
+                queryMany(`
+                    SELECT u.designation, COUNT(*) as count 
+                    FROM users u 
+                    WHERE u.status = 'active' 
+                    GROUP BY u.designation 
+                    ORDER BY count DESC
+                `),
+                queryMany(`
+                    SELECT v.vehicle_type, COUNT(*) as count 
+                    FROM vehicles v 
+                    GROUP BY v.vehicle_type 
+                    ORDER BY count DESC
+                `),
+                queryMany(`
+                    SELECT 
+                        al.timestamp,
+                        al.entry_type,
+                        v.plate_number,
+                        up.full_name as user_name
+                    FROM access_logs al
+                    JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+                    JOIN users u ON v.usc_id = u.usc_id
+                    JOIN user_profiles up ON u.usc_id = up.usc_id
+                    WHERE DATE(al.timestamp) BETWEEN ? AND ?
+                    ORDER BY al.timestamp DESC
+                    LIMIT 20
+                `, [startDate, endDate]),
+                queryMany(`
+                    SELECT 
+                        vi.created_at,
+                        vt.name as violation_type,
+                        vi.status,
+                        v.plate_number,
+                        up.full_name as violator_name
+                    FROM violations vi
+                    JOIN violation_types vt ON vi.violation_type_id = vt.id
+                    JOIN vehicles v ON vi.vehicle_id = v.vehicle_id
+                    JOIN users u ON v.usc_id = u.usc_id
+                    JOIN user_profiles up ON u.usc_id = up.usc_id
+                    WHERE DATE(vi.created_at) BETWEEN ? AND ?
+                    ORDER BY vi.created_at DESC
+                    LIMIT 10
+                `, [startDate, endDate])
+            ]);
+
+            // Calculate summary statistics
+            const totalUsers = data.find(d => d.metric === 'Total Users')?.value || 0;
+            const totalVehicles = data.find(d => d.metric === 'Total Vehicles')?.value || 0;
+            const periodAccessLogs = data.find(d => d.metric === 'Access Logs (Period)')?.value || 0;
+            const periodViolations = data.find(d => d.metric === 'Violations (Period)')?.value || 0;
+
+            const entriesCount = accessDetails.filter(log => log.entry_type === 'entry').length;
+            const exitsCount = accessDetails.filter(log => log.entry_type === 'exit').length;
+
+            // Calculate peak hours
+            const entryHours = accessDetails
+                .filter(log => log.entry_type === 'entry')
+                .map(log => new Date(log.timestamp).getHours());
+            const exitHours = accessDetails
+                .filter(log => log.entry_type === 'exit')
+                .map(log => new Date(log.timestamp).getHours());
+
+            const peakEntryHour = entryHours.length > 0 
+                ? entryHours.reduce((a, b, i, arr) => 
+                    arr.filter(v => v === a).length >= arr.filter(v => v === b).length ? a : b
+                ) : 'N/A';
+
+            const peakExitHour = exitHours.length > 0 
+                ? exitHours.reduce((a, b, i, arr) => 
+                    arr.filter(v => v === a).length >= arr.filter(v => v === b).length ? a : b
+                ) : 'N/A';
+
+            // Create comprehensive HTML content for PDF
             let htmlContent = `
                 <!DOCTYPE html>
                 <html>
                 <head>
                     <meta charset="utf-8">
-                    <title>Report</title>
+                    <title>RFID Vehicle Management System - Overview Report</title>
                     <style>
                         body { 
-                            font-family: Arial, sans-serif; 
-                            margin: 20px; 
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                            margin: 0; 
+                            padding: 20px; 
                             color: #333;
+                            line-height: 1.6;
+                            font-size: 12px;
                         }
+                        
                         .header { 
                             text-align: center; 
-                            color: #355E3B; 
                             margin-bottom: 30px;
+                            border-bottom: 3px solid #355E3B;
+                            padding-bottom: 20px;
                         }
+                        
+                        .header h1 { 
+                            color: #355E3B; 
+                            margin: 0 0 10px 0;
+                            font-size: 24px;
+                            font-weight: bold;
+                        }
+                        
+                        .header h2 { 
+                            color: #355E3B; 
+                            margin: 0 0 15px 0;
+                            font-size: 18px;
+                            font-weight: normal;
+                        }
+                        
+                        .meta-info { 
+                            background: #f8f9fa; 
+                            padding: 15px; 
+                            border-radius: 8px;
+                            margin-bottom: 25px;
+                            border-left: 4px solid #FFD700;
+                        }
+                        
+                        .meta-info .info-row {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 5px;
+                        }
+                        
+                        .meta-info .info-row:last-child {
+                            margin-bottom: 0;
+                        }
+                        
                         .summary { 
                             margin-bottom: 30px; 
                             background: #f9f9f9; 
-                            padding: 15px; 
-                            border-radius: 5px;
+                            padding: 20px; 
+                            border-radius: 8px;
+                            border: 1px solid #ddd;
                         }
+                        
                         .summary h3 { 
                             color: #355E3B; 
-                            margin-top: 0;
+                            margin: 0 0 15px 0;
+                            font-size: 16px;
+                            border-bottom: 2px solid #355E3B;
+                            padding-bottom: 5px;
                         }
+                        
+                        .summary-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 15px;
+                        }
+                        
+                        .summary-item {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 8px 0;
+                            border-bottom: 1px dotted #ccc;
+                        }
+                        
+                        .summary-item .label {
+                            font-weight: 600;
+                            color: #555;
+                        }
+                        
+                        .summary-item .value {
+                            font-weight: bold;
+                            color: #355E3B;
+                        }
+                        
+                        .section { 
+                            margin-bottom: 25px; 
+                            page-break-inside: avoid;
+                        }
+                        
+                        .section h3 { 
+                            color: #355E3B; 
+                            font-size: 16px;
+                            margin: 0 0 15px 0;
+                            padding: 10px 15px;
+                            background: linear-gradient(90deg, #355E3B, #2d4f32);
+                            color: white;
+                            border-radius: 5px;
+                        }
+                        
                         table { 
                             width: 100%; 
                             border-collapse: collapse; 
-                            margin-top: 20px;
+                            margin-top: 10px;
+                            background: white;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
                         }
+                        
                         th { 
                             background-color: #355E3B; 
                             color: white; 
-                            padding: 10px; 
+                            padding: 12px 8px; 
                             text-align: left; 
-                            font-size: 12px;
-                        }
-                        td { 
-                            padding: 8px; 
-                            border-bottom: 1px solid #ddd; 
                             font-size: 11px;
+                            font-weight: 600;
                         }
+                        
+                        td { 
+                            padding: 10px 8px; 
+                            border-bottom: 1px solid #eee; 
+                            font-size: 10px;
+                            vertical-align: top;
+                        }
+                        
                         tr:nth-child(even) { 
-                            background-color: #f9f9f9; 
+                            background-color: #f8f9fa; 
                         }
-                        .meta { 
-                            font-size: 12px; 
-                            color: #666; 
+                        
+                        tr:hover { 
+                            background-color: #e8f5e8; 
+                        }
+                        
+                        .no-data {
+                            text-align: center;
+                            padding: 20px;
+                            color: #666;
+                            font-style: italic;
+                        }
+                        
+                        .stats-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr 1fr;
+                            gap: 15px;
                             margin-bottom: 20px;
+                        }
+                        
+                        .stat-card {
+                            background: white;
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                            padding: 15px;
+                            text-align: center;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }
+                        
+                        .stat-card .number {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #355E3B;
+                            margin-bottom: 5px;
+                        }
+                        
+                        .stat-card .label {
+                            font-size: 11px;
+                            color: #666;
+                        }
+                        
+                        .footer {
+                            margin-top: 40px;
+                            padding-top: 20px;
+                            border-top: 1px solid #ddd;
+                            text-align: center;
+                            color: #666;
+                            font-size: 10px;
+                        }
+                        
+                        @media print {
+                            body { margin: 0; }
+                            .section { page-break-inside: avoid; }
                         }
                     </style>
                 </head>
                 <body>
                     <div class="header">
                         <h1>RFID Vehicle Management System</h1>
-                        <h2>${reportType.toUpperCase()} REPORT</h2>
+                        <h2>Overview Report</h2>
                     </div>
                     
-                    <div class="meta">
-                        <strong>Generated:</strong> ${new Date().toLocaleDateString()}<br>
-                        <strong>Date Range:</strong> ${startDate} to ${endDate}
+                    <div class="meta-info">
+                        <div class="info-row">
+                            <strong>Generated:</strong>
+                            <span>${formatDateTime()}</span>
+                        </div>
+                        <div class="info-row">
+                            <strong>Date Range:</strong>
+                            <span>${formatDate(startDate)} to ${formatDate(endDate)}</span>
+                        </div>
+                        <div class="info-row">
+                            <strong>Report Type:</strong>
+                            <span>System Overview</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary">
+                        <h3>Summary Statistics</h3>
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span class="label">Total Users</span>
+                                <span class="value">${totalUsers}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Total Vehicles</span>
+                                <span class="value">${totalVehicles}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Period Access Logs</span>
+                                <span class="value">${periodAccessLogs}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Period Violations</span>
+                                <span class="value">${periodViolations}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Period Entries</span>
+                                <span class="value">${entriesCount}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Period Exits</span>
+                                <span class="value">${exitsCount}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Peak Entry Hour</span>
+                                <span class="value">${peakEntryHour !== 'N/A' ? `${String(peakEntryHour).padStart(2, '0')}:00` : peakEntryHour}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Peak Exit Hour</span>
+                                <span class="value">${peakExitHour !== 'N/A' ? `${String(peakExitHour).padStart(2, '0')}:00` : peakExitHour}</span>
+                            </div>
+                        </div>
                     </div>
             `;
 
-            // Add summary section
-            if (summaryData) {
+            // Add Users Section
+            htmlContent += `
+                <div class="section">
+                    <h3>Users</h3>
+                    <div class="stats-grid">
+            `;
+            
+            userDetails.forEach(user => {
                 htmlContent += `
-                    <div class="summary">
-                        <h3>Summary</h3>
+                    <div class="stat-card">
+                        <div class="number">${user.count}</div>
+                        <div class="label">${user.designation}</div>
+                    </div>
                 `;
-                Object.entries(summaryData).forEach(([key, value]) => {
-                    htmlContent += `<div><strong>${key.replace(/_/g, ' ').toUpperCase()}:</strong> ${value}</div>`;
-                });
-                htmlContent += `</div>`;
-            }
+            });
 
-            // Add data table
-            if (data.length > 0) {
+            htmlContent += `
+                    </div>
+                </div>
+            `;
+
+            // Add Vehicles Section
+            htmlContent += `
+                <div class="section">
+                    <h3>Vehicles</h3>
+                    <div class="stats-grid">
+            `;
+            
+            vehicleDetails.forEach(vehicle => {
+                htmlContent += `
+                    <div class="stat-card">
+                        <div class="number">${vehicle.count}</div>
+                        <div class="label">${vehicle.vehicle_type}</div>
+                    </div>
+                `;
+            });
+
+            htmlContent += `
+                    </div>
+                </div>
+            `;
+
+            // Add Access Logs Section
+            htmlContent += `
+                <div class="section">
+                    <h3>Access Logs (Period)</h3>
+            `;
+
+            if (accessDetails.length > 0) {
                 htmlContent += `
                     <table>
                         <thead>
                             <tr>
-                `;
-                columns.forEach(col => {
-                    htmlContent += `<th>${col.replace(/_/g, ' ').toUpperCase()}</th>`;
-                });
-                htmlContent += `
+                                <th>Date & Time</th>
+                                <th>Type</th>
+                                <th>Vehicle</th>
+                                <th>User</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
 
-                data.slice(0, 100).forEach(row => { // Limit to 100 rows
-                    htmlContent += '<tr>';
-                    columns.forEach(col => {
-                        let value = row[col];
-                        if (value === null || value === undefined) value = '';
-                        htmlContent += `<td>${String(value).substring(0, 50)}</td>`;
-                    });
-                    htmlContent += '</tr>';
+                accessDetails.forEach(log => {
+                    const logDate = new Date(log.timestamp);
+                    htmlContent += `
+                        <tr>
+                            <td>${logDate.toLocaleDateString()} ${logDate.toLocaleTimeString()}</td>
+                            <td style="color: ${log.entry_type === 'entry' ? '#22c55e' : '#ef4444'}; font-weight: bold;">${log.entry_type.toUpperCase()}</td>
+                            <td>${log.plate_number}</td>
+                            <td>${log.user_name}</td>
+                        </tr>
+                    `;
                 });
 
                 htmlContent += `
                         </tbody>
                     </table>
                 `;
+            } else {
+                htmlContent += `<div class="no-data">No access logs found in this period</div>`;
+            }
+
+            htmlContent += `</div>`;
+
+            // Add Violations Section
+            htmlContent += `
+                <div class="section">
+                    <h3>Violations (Period)</h3>
+            `;
+
+            if (violationDetails.length > 0) {
+                htmlContent += `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Violation Type</th>
+                                <th>Vehicle</th>
+                                <th>Violator</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                violationDetails.forEach(violation => {
+                    const violationDate = new Date(violation.created_at);
+                    htmlContent += `
+                        <tr>
+                            <td>${violationDate.toLocaleDateString()} ${violationDate.toLocaleTimeString()}</td>
+                            <td>${violation.violation_type}</td>
+                            <td>${violation.plate_number}</td>
+                            <td>${violation.violator_name}</td>
+                            <td style="color: ${violation.status === 'resolved' ? '#22c55e' : '#f59e0b'}; font-weight: bold;">${violation.status.toUpperCase()}</td>
+                        </tr>
+                    `;
+                });
+
+                htmlContent += `
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                htmlContent += `<div class="no-data">No violations found in this period</div>`;
             }
 
             htmlContent += `
+                </div>
+                
+                <div class="footer">
+                    <p>This report was generated by the RFID Vehicle Management System</p>
+                    <p>For questions or concerns, please contact the system administrator</p>
+                </div>
                 </body>
                 </html>
             `;
@@ -320,13 +693,14 @@ export async function GET(request) {
 
             const pdfBuffer = await page.pdf({
                 format: 'A4',
-                landscape: true,
+                landscape: false,
                 margin: {
-                    top: '20mm',
-                    right: '10mm',
-                    bottom: '20mm',
-                    left: '10mm'
-                }
+                    top: '15mm',
+                    right: '15mm',
+                    bottom: '15mm',
+                    left: '15mm'
+                },
+                printBackground: true
             });
 
             await browser.close();
@@ -334,7 +708,7 @@ export async function GET(request) {
             return new Response(pdfBuffer, {
                 headers: {
                     'Content-Type': 'application/pdf',
-                    'Content-Disposition': `attachment; filename="${reportType}-report-${startDate}-to-${endDate}.pdf"`
+                    'Content-Disposition': `attachment; filename="overview-report-${formatDate(startDate).replace(/[\s,]/g, '-')}-to-${formatDate(endDate).replace(/[\s,]/g, '-')}.pdf"`
                 }
             });
         }

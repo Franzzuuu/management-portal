@@ -1,11 +1,24 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Header from '../../components/Header';
+import BackButton from '../../components/BackButton';
 
 export default function ProfilePictureMigrationPage() {
     const [isRunning, setIsRunning] = useState(false);
     const [result, setResult] = useState('');
     const [error, setError] = useState('');
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    };
 
     const runMigration = async () => {
         setIsRunning(true);
@@ -35,8 +48,15 @@ export default function ProfilePictureMigrationPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen bg-gray-50">
+            <Header user={{ designation: 'Admin' }} onLogout={handleLogout} />
+            
+            <div className="max-w-4xl mx-auto py-8 px-4">
+                {/* Navigation */}
+                <div className="mb-6">
+                    <BackButton text="Back to Dashboard" fallbackPath="/admin" />
+                </div>
+                
                 <div className="bg-white rounded-xl shadow-lg p-8">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold mb-4" style={{ color: '#355E3B' }}>
