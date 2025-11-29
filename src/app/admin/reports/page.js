@@ -800,17 +800,6 @@ export default function ReportsPage() {
                                     <span className="text-green-800 font-medium">Generating PDF...</span>
                                 </div>
                             )}
-                            
-                            {/* Cancel Button */}
-                            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
-                                <button
-                                    onClick={() => { setShowExportModal(false); setPreviewDateRange(null); }}
-                                    disabled={isExporting}
-                                    className="px-6 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium border border-gray-300 hover:border-gray-400"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
