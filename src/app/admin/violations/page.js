@@ -172,7 +172,7 @@ export default function ViolationsManagement() {
                 const searchLower = searchTerm.toLowerCase();
                 return (
                     (violation.owner_name || '').toLowerCase().includes(searchLower) ||
-                    (violation.plate_number || '').toLowerCase().includes(searchLower) ||
+                    (violation.vehicle_plate || '').toLowerCase().includes(searchLower) ||
                     (violation.violation_type || '').toLowerCase().includes(searchLower) ||
                     (violation.description || '').toLowerCase().includes(searchLower)
                 );
@@ -252,8 +252,8 @@ export default function ViolationsManagement() {
                     bValue = b.status.toLowerCase();
                     break;
                 case 'plate_number':
-                    aValue = (a.plate_number || '').toLowerCase();
-                    bValue = (b.plate_number || '').toLowerCase();
+                    aValue = (a.vehicle_plate || '').toLowerCase();
+                    bValue = (b.vehicle_plate || '').toLowerCase();
                     break;
                 default:
                     aValue = a[sortField];
@@ -311,8 +311,8 @@ export default function ViolationsManagement() {
         // Top violators
         const violatorCounts = {};
         dataToAnalyze.forEach(violation => {
-            if (violation.owner_name && violation.plate_number) {
-                const key = `${violation.owner_name} • ${violation.plate_number}`;
+            if (violation.owner_name && violation.vehicle_plate) {
+                const key = `${violation.owner_name} • ${violation.vehicle_plate}`;
                 violatorCounts[key] = (violatorCounts[key] || 0) + 1;
             }
         });
@@ -1043,21 +1043,21 @@ export default function ViolationsManagement() {
 
                             {/* History Summary Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-                                    <div className="text-2xl font-bold">{violations.length}</div>
-                                    <div className="text-sm opacity-90">Total Violations</div>
+                                <div className="bg-blue-600 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-white">{violations.length}</div>
+                                    <div className="text-sm text-blue-100">Total Violations</div>
                                 </div>
-                                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-4 text-white">
-                                    <div className="text-2xl font-bold">{violations.filter(v => v.status === 'pending').length}</div>
-                                    <div className="text-sm opacity-90">Pending</div>
+                                <div className="bg-yellow-600 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-white">{violations.filter(v => v.status === 'pending').length}</div>
+                                    <div className="text-sm text-yellow-100">Pending</div>
                                 </div>
-                                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-                                    <div className="text-2xl font-bold">{violations.filter(v => v.status === 'resolved').length}</div>
-                                    <div className="text-sm opacity-90">Resolved</div>
+                                <div className="bg-green-600 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-white">{violations.filter(v => v.status === 'resolved').length}</div>
+                                    <div className="text-sm text-green-100">Resolved</div>
                                 </div>
-                                <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-4 text-white">
-                                    <div className="text-2xl font-bold">{violations.filter(v => v.status === 'contested').length}</div>
-                                    <div className="text-sm opacity-90">Contested</div>
+                                <div className="bg-red-600 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-white">{violations.filter(v => v.status === 'contested').length}</div>
+                                    <div className="text-sm text-red-100">Contested</div>
                                 </div>
                             </div>
 
@@ -1097,7 +1097,7 @@ export default function ViolationsManagement() {
                                                             {violation.owner_name}
                                                         </div>
                                                         <div className="text-sm text-gray-500">
-                                                            {violation.plate_number} • {violation.vehicle_make} {violation.vehicle_model}
+                                                            {violation.vehicle_plate} • {violation.brand} {violation.model}
                                                         </div>
                                                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDesignationColor(violation.owner_designation)}`}>
                                                             {violation.owner_designation}
@@ -1113,7 +1113,9 @@ export default function ViolationsManagement() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{violation.reported_by_name}</div>
+                                                    <div className="text-sm text-gray-900">
+                                                        {violation.reporter_name || violation.reported_by || 'Unknown'}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>

@@ -118,7 +118,7 @@ async function getSecurityViolations(securityUscId, dateFrom, dateTo) {
         JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
         JOIN users u ON vh.usc_id = u.usc_id
         JOIN user_profiles up ON u.usc_id = up.usc_id
-        LEFT JOIN users reporter ON v.reported_by = reporter.usc_id
+        LEFT JOIN users reporter ON v.reported_by = reporter.id
         LEFT JOIN user_profiles reporter_profile ON reporter.usc_id = reporter_profile.usc_id
         WHERE v.reported_by = ? ${dateCondition}
         ORDER BY v.created_at DESC
@@ -182,9 +182,9 @@ async function getAllViolations(dateFrom, dateTo) {
         JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
         JOIN users u ON vh.usc_id = u.usc_id
         JOIN user_profiles up ON u.usc_id = up.usc_id
-        LEFT JOIN users reporter ON v.reported_by = reporter.usc_id
+        LEFT JOIN users reporter ON v.reported_by = reporter.id
         LEFT JOIN user_profiles reporter_profile ON reporter.usc_id = reporter_profile.usc_id
-        LEFT JOIN users updater ON v.updated_by = updater.usc_id
+        LEFT JOIN users updater ON v.updated_by = updater.id
         LEFT JOIN user_profiles updater_profile ON updater.usc_id = updater_profile.usc_id
         WHERE 1=1 ${dateCondition}
         ORDER BY v.created_at DESC
@@ -192,9 +192,32 @@ async function getAllViolations(dateFrom, dateTo) {
 
     const violations = await queryMany(query, params);
 
+    // Post-process to get reporter names for records where JOIN didn't work
+    const processedViolations = await Promise.all(
+        violations.map(async (violation) => {
+            if (violation.reported_by && !violation.reporter_name) {
+                try {
+                    const reporterQuery = `
+                        SELECT up.full_name 
+                        FROM users u 
+                        JOIN user_profiles up ON u.usc_id = up.usc_id 
+                        WHERE u.id = ?
+                    `;
+                    const reporterResult = await queryMany(reporterQuery, [violation.reported_by]);
+                    if (reporterResult && reporterResult[0]) {
+                        violation.reporter_name = reporterResult[0].full_name;
+                    }
+                } catch (error) {
+                    console.error('Error fetching reporter name:', error);
+                }
+            }
+            return violation;
+        })
+    );
+
     return Response.json({
         success: true,
-        violations: violations || []
+        violations: processedViolations || []
     });
 }
 
@@ -230,7 +253,7 @@ async function getUserViolations(uscId) {
         JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
         JOIN users u ON vh.usc_id = u.usc_id
         JOIN user_profiles up ON u.usc_id = up.usc_id
-        LEFT JOIN users reporter ON v.reported_by = reporter.usc_id
+        LEFT JOIN users reporter ON v.reported_by = reporter.id
         LEFT JOIN user_profiles reporter_profile ON reporter.usc_id = reporter_profile.usc_id
         WHERE u.usc_id = ?
         ORDER BY v.created_at DESC
