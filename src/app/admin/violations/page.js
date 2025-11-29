@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '../../components/Header';
 import BackButton from '../../components/BackButton';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 
 export default function ViolationsManagement() {
     const [user, setUser] = useState(null);
@@ -28,17 +29,21 @@ export default function ViolationsManagement() {
     const [typeFilter, setTypeFilter] = useState('all');
     const [designationFilter, setDesignationFilter] = useState('all');
     const [vehicleTypeFilter, setVehicleTypeFilter] = useState('all');
-    const [sortField, setSortField] = useState('created_at');
-    const [sortDirection, setSortDirection] = useState('desc');
     const [dateFilter, setDateFilter] = useState('all');
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+    
+    // New sorting state for Owner and Date only
+    const [sortConfig, setSortConfig] = useState({
+        key: 'date',        // 'owner' | 'date'
+        direction: 'desc',  // 'asc' | 'desc'
+    });
 
     // Statistics States
     const [statsData, setStatsData] = useState({
         totalViolations: 0,
-        monthlyStats: [],
+        monthlyTrends: [],
         violationTypeStats: [],
-        designationStats: [],
+        userTypeStats: [],
         statusStats: [],
         topViolators: []
     });
@@ -137,7 +142,7 @@ export default function ViolationsManagement() {
     useEffect(() => {
         filterViolations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchTerm, statusFilter, typeFilter, designationFilter, vehicleTypeFilter, dateFilter, customDateRange, violations]);
+    }, [searchTerm, statusFilter, typeFilter, designationFilter, vehicleTypeFilter, dateFilter, customDateRange, violations, sortConfig]);
 
     useEffect(() => {
         if (activeTab === 'stats') {
@@ -230,39 +235,36 @@ export default function ViolationsManagement() {
             }
         }
 
-        // Sorting
+        // Sorting - only Owner and Date are sortable
         filtered.sort((a, b) => {
             let aValue, bValue;
 
-            switch (sortField) {
-                case 'created_at':
+            switch (sortConfig.key) {
+                case 'owner':
+                    // Extract first name from full name for sorting
+                    const aFirstName = (a.owner_name || '').trim().split(' ')[0].toLowerCase();
+                    const bFirstName = (b.owner_name || '').trim().split(' ')[0].toLowerCase();
+                    aValue = aFirstName;
+                    bValue = bFirstName;
+                    break;
+                case 'date':
                     aValue = new Date(a.created_at);
                     bValue = new Date(b.created_at);
                     break;
-                case 'owner_name':
-                    aValue = a.owner_name.toLowerCase();
-                    bValue = b.owner_name.toLowerCase();
-                    break;
-                case 'violation_type':
-                    aValue = a.violation_type.toLowerCase();
-                    bValue = b.violation_type.toLowerCase();
-                    break;
-                case 'status':
-                    aValue = a.status.toLowerCase();
-                    bValue = b.status.toLowerCase();
-                    break;
-                case 'plate_number':
-                    aValue = (a.vehicle_plate || '').toLowerCase();
-                    bValue = (b.vehicle_plate || '').toLowerCase();
-                    break;
                 default:
-                    aValue = a[sortField];
-                    bValue = b[sortField];
+                    // No sorting for other columns
+                    return 0;
             }
 
-            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-            return 0;
+            // String comparison for owner, date comparison for dates
+            if (sortConfig.key === 'owner') {
+                const comparison = aValue.localeCompare(bValue);
+                return sortConfig.direction === 'asc' ? comparison : -comparison;
+            } else {
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            }
         });
 
         setFilteredViolations(filtered);
@@ -278,6 +280,34 @@ export default function ViolationsManagement() {
                 return violationDate >= new Date(statsDateRange.start) &&
                     violationDate <= new Date(statsDateRange.end);
             });
+        }
+
+        // If no data, provide sample data structure for charts
+        if (dataToAnalyze.length === 0) {
+            setStatsData({
+                totalViolations: 0,
+                monthlyTrends: [
+                    { month: 'Jan 2024', violations: 0 },
+                    { month: 'Feb 2024', violations: 0 },
+                    { month: 'Mar 2024', violations: 0 },
+                    { month: 'Apr 2024', violations: 0 },
+                    { month: 'May 2024', violations: 0 },
+                    { month: 'Jun 2024', violations: 0 },
+                ],
+                violationTypeStats: [],
+                userTypeStats: [
+                    { user_type: 'Student', count: 0 },
+                    { user_type: 'Faculty', count: 0 },
+                    { user_type: 'Admin', count: 0 }
+                ],
+                statusStats: [
+                    { status: 'pending', count: 0 },
+                    { status: 'resolved', count: 0 },
+                    { status: 'contested', count: 0 }
+                ],
+                topViolators: []
+            });
+            return;
         }
 
         // Monthly statistics
@@ -324,38 +354,57 @@ export default function ViolationsManagement() {
 
         setStatsData({
             totalViolations: dataToAnalyze.length,
-            monthlyStats: Object.entries(monthlyStats).map(([month, count]) => ({ month, count })),
-            violationTypeStats: Object.entries(typeStats).map(([type, count]) => ({ type, count })),
-            designationStats: Object.entries(designationStats).map(([designation, count]) => ({ designation, count })),
+            monthlyTrends: Object.entries(monthlyStats).map(([month, violations]) => ({ month, violations })),
+            violationTypeStats: Object.entries(typeStats).map(([name, count]) => ({ name, count })),
+            userTypeStats: Object.entries(designationStats).map(([user_type, count]) => ({ user_type, count })),
             statusStats: Object.entries(statusStats).map(([status, count]) => ({ status, count })),
             topViolators
         });
     };
 
     const handleSort = (field) => {
-        if (sortField === field) {
-            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        // Only allow sorting for Owner and Date columns
+        if (field !== 'owner_name' && field !== 'created_at') {
+            return;
+        }
+        
+        const key = field === 'owner_name' ? 'owner' : 'date';
+        
+        if (sortConfig.key === key) {
+            setSortConfig({
+                key,
+                direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'
+            });
         } else {
-            setSortField(field);
-            setSortDirection('asc');
+            setSortConfig({
+                key,
+                direction: key === 'owner' ? 'asc' : 'desc'
+            });
         }
     };
 
     const getSortIcon = (field) => {
-        if (sortField !== field) {
+        // Only show sort icons for Owner and Date columns
+        if (field !== 'owner_name' && field !== 'created_at') {
+            return null;
+        }
+        
+        const key = field === 'owner_name' ? 'owner' : 'date';
+        
+        if (sortConfig.key !== key) {
             return (
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                 </svg>
             );
         }
-        return sortDirection === 'asc' ? (
+        return sortConfig.direction === 'asc' ? (
             <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4l6 6h4l6-6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
         ) : (
             <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 20l-6-6H9l-6 6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
         );
     };
@@ -495,18 +544,18 @@ export default function ViolationsManagement() {
             <Header user={user} onLogout={handleLogout} />
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <main className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 {/* Navigation */}
                 <div className="mb-6">
                     <BackButton text="Back to Admin Dashboard" fallbackPath="/admin" />
                 </div>
 
                 {/* Page Header with Tabs */}
-                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                <div className="mb-6 p-6 rounded-xl shadow-lg border border-gray-200" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                         <div className="mb-4 lg:mb-0">
-                            <h2 className="text-3xl font-bold text-white mb-2">Violations System</h2>
-                            <p className="text-green-100">Manage, track, and analyze traffic violations</p>
+                            <h1 className="text-3xl font-bold text-white mb-2">Violations System</h1>
+                            <p className="text-green-100 text-lg">Manage, track, and analyze traffic violations</p>
                         </div>
 
                         {/* Tab Navigation */}
@@ -557,64 +606,65 @@ export default function ViolationsManagement() {
 
                 {/* Tab Content */}
                 {activeTab === 'manage' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="max-w-6xl mx-auto px-4">
                             <button
                                 onClick={() => setShowAddForm(true)}
-                                className="inline-flex items-center justify-center px-8 py-4 text-white font-semibold rounded-xl shadow-lg hover:cursor-pointer"
-                                style={{ backgroundColor: '#355E3B' }}
+                                className="inline-flex items-center px-5 py-2.5 rounded-lg bg-green-700 hover:bg-green-800 text-white text-sm font-medium shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1"
                             >
-                                <span className="text-lg">Report New Violation</span>
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span>Report New Violation</span>
                             </button>
+                            <p className="text-sm text-gray-500 mt-2">Use this to manually file a new violation record.</p>
                         </div>
 
                         {/* Advanced Filters */}
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <h3 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
+                        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                            <h3 className="text-lg font-semibold mb-4 text-gray-900">
                                 Advanced Filters & Search
                             </h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 {/* Search */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Search</label>
                                     <input
                                         type="text"
                                         placeholder="Name, plate, type, description..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg 
-                                                 text-black placeholder:text-gray-400
-                                                   focus:ring-2 focus:ring-green-800 focus:border-transparent focus:outline-none"
-                                        style={{ focusRingColor: '#355E3B' }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                     />
                                 </div>
 
                                 {/* Status Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Status</label>
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
-                                        style={{ focusRingColor: '#355E3B' }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                     >
-                                        <option value="all" className="text-gray-400">All Statuses</option>
-                                        <option value="pending" className="text-gray-400">Pending</option>
-                                        <option value="resolved" className="text-gray-400">Resolved</option>
-                                        <option value="contested" className="text-gray-400">Contested</option>
+                                        <option value="all">All Statuses</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="contested">Contested</option>
                                     </select>
                                 </div>
 
                                 {/* Violation Type Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Violation Type</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Violation Type</label>
                                     <select
                                         value={typeFilter}
                                         onChange={(e) => setTypeFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
-                                        style={{ focusRingColor: '#355E3B' }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                     >
                                         <option value="all">All Types</option>
                                         {violationTypes.map(type => (
@@ -623,31 +673,30 @@ export default function ViolationsManagement() {
                                     </select>
                                 </div>
 
-                                {/* Designation Filter */}
+                                {/* User Type Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">User Type</label>
                                     <select
                                         value={designationFilter}
                                         onChange={(e) => setDesignationFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
-                                        style={{ focusRingColor: '#355E3B' }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                     >
                                         <option value="all">All Users</option>
                                         <option value="Student">Students</option>
                                         <option value="Faculty">Faculty</option>
-                                        <option value="Staff">Staff</option>
                                         <option value="Admin">Admins</option>
                                     </select>
                                 </div>
 
                                 {/* Vehicle Type Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Vehicle Type</label>
                                     <select
                                         value={vehicleTypeFilter}
                                         onChange={(e) => setVehicleTypeFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
-                                        style={{ focusRingColor: '#355E3B' }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                     >
                                         <option value="all">All Vehicles</option>
                                         <option value="2-wheel">2-Wheel</option>
@@ -655,14 +704,14 @@ export default function ViolationsManagement() {
                                     </select>
                                 </div>
 
-                                {/* Date Filter */}
+                                {/* Date Range Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Date Range</label>
                                     <select
                                         value={dateFilter}
                                         onChange={(e) => setDateFilter(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-400"
-                                        style={{ focusRingColor: '#355E3B' }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
                                     >
                                         <option value="all">All Time</option>
                                         <option value="today">Today</option>
@@ -676,23 +725,23 @@ export default function ViolationsManagement() {
                                 {dateFilter === 'custom' && (
                                     <>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date</label>
                                             <input
                                                 type="date"
                                                 value={customDateRange.start}
                                                 onChange={(e) => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
-                                                style={{ focusRingColor: '#355E3B' }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
                                             <input
                                                 type="date"
                                                 value={customDateRange.end}
                                                 onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
-                                                style={{ focusRingColor: '#355E3B' }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
+                                                style={{ '--tw-ring-color': '#355E3B' }}
                                             />
                                         </div>
                                     </>
@@ -710,8 +759,11 @@ export default function ViolationsManagement() {
                                             setDateFilter('all');
                                             setCustomDateRange({ start: '', end: '' });
                                         }}
-                                        className="w-full px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200 hover:cursor-pointer "
+                                        className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors duration-200 hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
                                     >
+                                        <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
                                         Clear Filters
                                     </button>
                                 </div>
@@ -719,90 +771,67 @@ export default function ViolationsManagement() {
                         </div>
 
                         {/* Results Summary */}
-                        <div className="bg-white rounded-xl shadow-lg p-4">
-                            <div className="flex items-center justify-between">
-                                <p className="text-gray-600">
-                                    Showing <span className="font-semibold">{filteredViolations.length}</span> of{' '}
-                                    <span className="font-semibold">{violations.length}</span> violations
-                                </p>
-                                <div className="text-sm text-gray-500">
-                                    Sort by: <span className="font-medium capitalize">{sortField.replace('_', ' ')}</span> ({sortDirection})
-                                </div>
-                            </div>
+                        <div className="flex items-center justify-between text-xs text-gray-500 mb-2 px-1">
+                            <span>Showing <strong className="text-gray-700">{filteredViolations.length}</strong> of <strong className="text-gray-700">{violations.length}</strong> violations</span>
+                            <span>Sort by: <strong className="text-gray-700">
+                                {sortConfig.key === 'owner' 
+                                    ? `Owner (${sortConfig.direction === 'asc' ? 'A–Z' : 'Z–A'})` 
+                                    : `Date (${sortConfig.direction === 'desc' ? 'Recent → Old' : 'Old → Recent'})`
+                                }
+                            </strong></span>
                         </div>
 
                         {/* Violations Table */}
-                        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                            <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
-                                <table className="min-w-full divide-y divide-gray-200 table-fixed">
-                                    <thead style={{ backgroundColor: '#355E3B' }}>
+                        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-green-800 border-b border-green-900">
                                         <tr>
                                             <th
                                                 onClick={() => handleSort('owner_name')}
-                                                className="w-[15%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
+                                                className="px-6 py-4 text-left text-xs font-semibold text-gray-100 uppercase tracking-wide cursor-pointer hover:bg-green-700/70 transition-colors duration-200"
                                             >
                                                 <div className="flex items-center space-x-1">
                                                     <span>Owner</span>
                                                     {getSortIcon('owner_name')}
                                                 </div>
                                             </th>
-                                            <th
-                                                onClick={() => handleSort('plate_number')}
-                                                className="w-[15%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
-                                            >
-                                                <div className="flex items-center space-x-1">
-                                                    <span>Vehicle</span>
-                                                    {getSortIcon('plate_number')}
-                                                </div>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-100 uppercase tracking-wide">
+                                                Vehicle
                                             </th>
-                                            <th
-                                                onClick={() => handleSort('violation_type')}
-                                                className="w-[15%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
-                                            >
-                                                <div className="flex items-center space-x-1">
-                                                    <span>Violation Type</span>
-                                                    {getSortIcon('violation_type')}
-                                                </div>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-100 uppercase tracking-wide">
+                                                Violation Type
                                             </th>
-                                            <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-100 uppercase tracking-wide">
                                                 Description
                                             </th>
-                                            <th
-                                                onClick={() => handleSort('status')}
-                                                className="w-[8%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
-                                            >
-                                                <div className="flex items-center space-x-1">
-                                                    <span>Status</span>
-                                                    {getSortIcon('status')}
-                                                </div>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-100 uppercase tracking-wide">
+                                                Status
                                             </th>
                                             <th
                                                 onClick={() => handleSort('created_at')}
-                                                className="w-[8%] px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
+                                                className="px-6 py-4 text-left text-xs font-semibold text-gray-100 uppercase tracking-wide cursor-pointer hover:bg-green-700/70 transition-colors duration-200"
                                             >
                                                 <div className="flex items-center space-x-1">
                                                     <span>Date</span>
                                                     {getSortIcon('created_at')}
                                                 </div>
                                             </th>
-                                            <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-100 uppercase tracking-wide">
                                                 Supporting Image
-                                            </th>
-                                            <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-                                                Actions
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {filteredViolations.map((violation) => (
-                                            <tr key={violation.id} className="hover:bg-gray-50 transition-colors duration-200">
+                                            <tr key={violation.id} className="hover:bg-green-50 transition-colors duration-200 border-t border-gray-200">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                        <div className="text-sm font-semibold text-gray-900">
                                                             {violation.owner_name}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">
-                                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDesignationColor(violation.owner_designation)}`}>
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getDesignationColor(violation.owner_designation)}`}>
                                                                 {violation.owner_designation}
                                                             </span>
                                                         </div>
@@ -810,11 +839,11 @@ export default function ViolationsManagement() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
-                                                        <div className="text-base font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg inline-block">
+                                                        <div className="text-sm font-semibold text-gray-900 bg-gray-100 px-3 py-1 rounded-md inline-block">
                                                             {violation.vehicle_plate || 'No Plate'}
                                                         </div>
-                                                        <div className="text-sm text-gray-600 mt-1 font-medium flex items-center">
-                                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <div className="text-xs text-gray-600 mt-1 font-medium flex items-center">
+                                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                             </svg>
                                                             {violation.brand} {violation.model}
@@ -822,7 +851,7 @@ export default function ViolationsManagement() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{violation.violation_type}</div>
+                                                    <div className="text-sm font-medium text-gray-900">{violation.violation_type}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="text-sm text-gray-900 max-w-xs truncate">
@@ -830,55 +859,31 @@ export default function ViolationsManagement() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(violation.status)}`}>
+                                                    <span className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${
+                                                        violation.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                                        violation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                        violation.status === 'contested' ? 'bg-red-100 text-red-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }`}>
                                                         {violation.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {new Date(violation.created_at).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
                                                     {violation.has_image && (
                                                         <button
                                                             onClick={() => handleViewImage(violation.id)}
-                                                            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200 mx-auto hover:cursor-pointer"
+                                                            className="inline-flex items-center px-3 py-1 text-xs rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-200 hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                                                         >
-                                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                             </svg>
                                                             View
                                                         </button>
                                                     )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                                    <div className="inline-block w-44 relative">
-                                                        <select
-                                                            value={violation.status}
-                                                            onChange={(e) => updateViolationStatus(violation.id, e.target.value)}
-                                                            className="appearance-none w-full text-sm font-medium border-2 border-gray-300 rounded-lg pl-3 pr-10 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-400 transition-colors duration-200 cursor-pointer shadow-sm hover:cursor-pointer"
-                                                            style={{
-                                                                backgroundColor: violation.status === 'pending' ? '#FEF9C3' :
-                                                                    violation.status === 'resolved' ? '#DCFCE7' :
-                                                                        violation.status === 'contested' ? '#FEE2E2' : 'white',
-                                                                color: violation.status === 'pending' ? '#854D0E' :
-                                                                    violation.status === 'resolved' ? '#166534' :
-                                                                        violation.status === 'contested' ? '#991B1B' : 'black'
-                                                            }}
-                                                        >
-                                                            <option value="pending" className="bg-yellow-50 text-yellow-800 font-medium">⏳ Pending</option>
-                                                            <option value="resolved" className="bg-green-50 text-green-800 font-medium">✓ Resolved</option>
-                                                            <option value="contested" className="bg-red-50 text-red-800 font-medium">⚠ Contested</option>
-                                                        </select>
-                                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-                                                            <svg className="w-5 h-5" style={{
-                                                                color: violation.status === 'pending' ? '#854D0E' :
-                                                                    violation.status === 'resolved' ? '#166534' :
-                                                                        violation.status === 'contested' ? '#991B1B' : '#6B7280'
-                                                            }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -887,17 +892,32 @@ export default function ViolationsManagement() {
                             </div>
 
                             {filteredViolations.length === 0 && (
-                                <div className="text-center py-12">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    <h3 className="mt-2 text-sm font-medium text-gray-900">No violations found</h3>
-                                    <p className="mt-1 text-sm text-gray-500">
+                                <div className="text-center py-16 bg-gray-50 rounded-lg mx-6 mb-6">
+                                    <div className="text-6xl mb-4">🎉</div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No violations found</h3>
+                                    <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
                                         {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                                            ? 'Try adjusting your filters or search criteria.'
-                                            : 'Get started by reporting a new violation.'
+                                            ? 'Try changing your filters or date range to see more results.'
+                                            : 'Great job! No violations have been reported yet.'
                                         }
                                     </p>
+                                    <button
+                                        onClick={() => {
+                                            setSearchTerm('');
+                                            setStatusFilter('all');
+                                            setTypeFilter('all');
+                                            setDesignationFilter('all');
+                                            setVehicleTypeFilter('all');
+                                            setDateFilter('all');
+                                            setCustomDateRange({ start: '', end: '' });
+                                        }}
+                                        className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors duration-200 hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                                    >
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Clear all filters
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -907,19 +927,27 @@ export default function ViolationsManagement() {
                 {/* Contested Violations Tab */}
                 {activeTab === 'contested' && (
                     <div className="space-y-6">
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
-                                        Contested Violations Appeals
-                                    </h3>
-                                    <p className="text-gray-600 mt-1">
-                                        Review and manage violation appeals submitted by students and faculty
-                                    </p>
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                            {/* Section Header & Appeals Count */}
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-lg bg-yellow-100 flex items-center justify-center">
+                                        <svg className="h-5 w-5 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-gray-900">
+                                            Contested Violations Appeals
+                                        </h3>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Review and manage violation appeals submitted by students and faculty
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-                                    {contestedViolations.length} Appeals
-                                </div>
+                                <span className="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                                    {contestedViolations.length === 1 ? '1 Appeal' : `${contestedViolations.length} Appeals`}
+                                </span>
                             </div>
 
                             {loadingContested ? (
@@ -928,97 +956,114 @@ export default function ViolationsManagement() {
                                     <span className="ml-3 text-gray-600">Loading contested violations...</span>
                                 </div>
                             ) : contestedViolations.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <div className="text-gray-400 mb-4">
-                                        <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No Contested Violations</h3>
-                                    <p className="text-gray-600">
-                                        No violation appeals have been submitted yet.
+                                <div className="py-10 text-center text-gray-600">
+                                    <div className="text-4xl mb-3">🎉</div>
+                                    <p className="text-base font-semibold">No contested violations</p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        All appeals have been reviewed. You'll see new appeals here as they are filed.
                                     </p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Appeal Details
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Violation Info
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Appellant
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Actions
-                                                </th>
+                                <div className="mt-4 overflow-x-auto">
+                                    <table className="min-w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-green-800 text-gray-100 text-xs font-semibold uppercase tracking-wide">
+                                                <th className="px-6 py-3 text-left">Appeal Details</th>
+                                                <th className="px-6 py-3 text-left">Violation Info</th>
+                                                <th className="px-6 py-3 text-left">Appellant</th>
+                                                <th className="px-6 py-3 text-left">Status</th>
+                                                <th className="px-6 py-3 text-right">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        <tbody className="bg-white">
                                             {contestedViolations.map((contest) => (
-                                                <tr key={contest.contest_id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm">
-                                                            <div className="font-medium text-gray-900">Appeal #{contest.contest_id}</div>
-                                                            <div className="text-gray-600">
-                                                                Submitted: {new Date(contest.contest_created_at).toLocaleDateString()}
+                                                <tr key={contest.contest_id} className="border-b border-gray-100 hover:bg-green-50 transition-colors">
+                                                    {/* Appeal Details Column */}
+                                                    <td className="px-6 py-4">
+                                                        <div className="border-l-2 border-green-600 pl-3">
+                                                            <div className="text-sm font-bold text-gray-900">Appeal #{contest.contest_id}</div>
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                Submitted: {new Date(contest.contest_created_at).toLocaleDateString('en-US', {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                })}
                                                             </div>
-                                                            <div className="text-gray-500 text-xs mt-1 max-w-xs truncate">
-                                                                {contest.contest_notes}
+                                                            <div className="text-xs text-gray-600 mt-1 line-clamp-2" style={{ 
+                                                                display: '-webkit-box',
+                                                                WebkitLineClamp: 2,
+                                                                WebkitBoxOrient: 'vertical',
+                                                                overflow: 'hidden'
+                                                            }}>
+                                                                {contest.contest_notes && contest.contest_notes.length > 80 
+                                                                    ? contest.contest_notes.substring(0, 80) + '...' 
+                                                                    : contest.contest_notes || 'No message provided'}
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm">
-                                                            <div className="font-medium text-gray-900">Violation #{contest.violation_id}</div>
-                                                            <div className="text-gray-600">{contest.violation_type}</div>
-                                                            <div className="text-gray-500">{contest.vehicle_info}</div>
+
+                                                    {/* Violation Info Column */}
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm font-semibold text-gray-900">
+                                                            Violation #{contest.violation_id}
+                                                        </div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            {contest.violation_type}
+                                                        </div>
+                                                        <div className="text-xs text-gray-600">
+                                                            {contest.vehicle_info || 'Vehicle info not available'}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm">
-                                                            <div className="font-medium text-gray-900">{contest.user_name}</div>
-                                                            <div className="text-gray-600">{contest.email}</div>
-                                                            <div className="text-gray-500">{contest.designation}</div>
+
+                                                    {/* Appellant Column */}
+                                                    <td className="px-6 py-4 whitespace-normal">
+                                                        <div className="text-sm font-semibold text-gray-900">
+                                                            {contest.user_name}
+                                                        </div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            {contest.email}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {contest.designation}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${contest.contest_status === 'pending'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : contest.contest_status === 'approved'
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : contest.contest_status === 'denied'
-                                                                    ? 'bg-red-100 text-red-800'
-                                                                    : 'bg-blue-100 text-blue-800'
-                                                            }`}>
-                                                            {contest.contest_status}
+
+                                                    {/* Status Column */}
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${
+                                                            contest.contest_status === 'pending'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : contest.contest_status === 'approved'
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : contest.contest_status === 'denied'
+                                                                        ? 'bg-red-100 text-red-800'
+                                                                        : 'bg-blue-100 text-blue-800'
+                                                        }`}>
+                                                            {contest.contest_status.charAt(0).toUpperCase() + contest.contest_status.slice(1)}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                        <button
-                                                            onClick={() => window.location.href = `/admin/appeals?appeal=${contest.contest_id}`}
-                                                            className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                        >
-                                                            Review
-                                                        </button>
-                                                        {contest.violation_image && (
+
+                                                    {/* Actions Column */}
+                                                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                        <div className="flex items-center justify-end gap-3">
                                                             <button
-                                                                onClick={() => {
-                                                                    setSelectedImage(`data:${contest.violation_image_mime};base64,${contest.violation_image}`);
-                                                                    setShowImageModal(true);
-                                                                }}
-                                                                className="text-blue-600 hover:text-blue-900"
+                                                                onClick={() => window.location.href = `/admin/appeals?appeal=${contest.contest_id}`}
+                                                                className="text-sm font-medium text-blue-700 hover:text-blue-900 underline"
                                                             >
-                                                                View Evidence
+                                                                Review
                                                             </button>
-                                                        )}
+                                                            {contest.violation_image && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedImage(`data:${contest.violation_image_mime};base64,${contest.violation_image}`);
+                                                                        setShowImageModal(true);
+                                                                    }}
+                                                                    className="inline-flex items-center px-2 py-1 text-xs rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                                                >
+                                                                    View Evidence
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1139,205 +1184,352 @@ export default function ViolationsManagement() {
 
                 {/* Statistics Tab */}
                 {activeTab === 'stats' && (
-                    <div className="space-y-6">
-                        {/* Stats Date Range Filter */}
+                    <div className="space-y-8">
+                        {/* Date Range Filter */}
                         <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>
-                                    Violation Statistics & Analytics
-                                </h3>
-                                <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="space-y-4">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Analytics Date Range</h3>
+                                    <p className="text-gray-600 text-sm">Filter violation statistics by date range</p>
+                                </div>
+                                <div className="flex flex-wrap items-end gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                                         <input
                                             type="date"
                                             value={statsDateRange.start}
                                             onChange={(e) => setStatsDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
-                                            style={{ focusRingColor: '#355E3B' }}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-gray-700"
+                                            style={{ '--tw-ring-color': '#355E3B' }}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                                         <input
                                             type="date"
                                             value={statsDateRange.end}
                                             onChange={(e) => setStatsDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent focus:outline-none"
-                                            style={{ focusRingColor: '#355E3B' }}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-gray-700"
+                                            style={{ '--tw-ring-color': '#355E3B' }}
                                         />
                                     </div>
-                                    <div className="flex items-end">
-                                        <button
-                                            onClick={() => setStatsDateRange({ start: '', end: '' })}
-                                            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200 hover:cursor-pointer   "
-                                        >
-                                            Clear
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => setStatsDateRange({ start: '', end: '' })}
+                                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
+                                    >
+                                        Clear
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Overview Stats */}
+                        {/* KPI Summary Row */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-white rounded-xl shadow-lg p-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
+                                 style={{ borderLeftColor: '#355E3B' }}>
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                                             style={{ backgroundColor: '#355E3B' }}>
+                                            <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4">
-                                        <div className="text-2xl font-bold text-gray-900">{statsData.totalViolations}</div>
-                                        <div className="text-sm text-gray-500">Total Violations</div>
+                                    <div className="ml-4 flex-1">
+                                        <h3 className="text-lg font-semibold text-gray-900">Total Violations</h3>
+                                        <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>
+                                            {statsData.totalViolations}
+                                        </p>
+                                        <p className="text-sm text-gray-500">All recorded violations</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-lg p-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
+                                 style={{ borderLeftColor: '#F59E0B' }}>
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
-                                            <svg className="w-6 h-6" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                                             style={{ backgroundColor: '#F59E0B' }}>
+                                            <svg className="h-6 w-6" style={{ color: '#FFF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4">
-                                        <div className="text-2xl font-bold text-gray-900">
+                                    <div className="ml-4 flex-1">
+                                        <h3 className="text-lg font-semibold text-gray-900">Pending Resolution</h3>
+                                        <p className="text-3xl font-bold" style={{ color: '#F59E0B' }}>
                                             {statsData.statusStats.find(s => s.status === 'pending')?.count || 0}
-                                        </div>
-                                        <div className="text-sm text-gray-500">Pending Resolution</div>
+                                        </p>
+                                        <p className="text-sm text-gray-500">Awaiting action</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-lg p-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
+                                 style={{ borderLeftColor: '#10B981' }}>
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                                             style={{ backgroundColor: '#10B981' }}>
+                                            <svg className="h-6 w-6" style={{ color: '#FFF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4">
-                                        <div className="text-2xl font-bold text-gray-900">
+                                    <div className="ml-4 flex-1">
+                                        <h3 className="text-lg font-semibold text-gray-900">Resolved Cases</h3>
+                                        <p className="text-3xl font-bold" style={{ color: '#10B981' }}>
                                             {statsData.statusStats.find(s => s.status === 'resolved')?.count || 0}
-                                        </div>
-                                        <div className="text-sm text-gray-500">Resolved</div>
+                                        </p>
+                                        <p className="text-sm text-gray-500">Successfully completed</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-lg p-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
+                                 style={{ borderLeftColor: '#DC2626' }}>
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                                             style={{ backgroundColor: '#DC2626' }}>
+                                            <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4">
-                                        <div className="text-2xl font-bold text-gray-900">
+                                    <div className="ml-4 flex-1">
+                                        <h3 className="text-lg font-semibold text-gray-900">Contested Appeals</h3>
+                                        <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>
                                             {statsData.statusStats.find(s => s.status === 'contested')?.count || 0}
-                                        </div>
-                                        <div className="text-sm text-gray-500">Contested</div>
+                                        </p>
+                                        <p className="text-sm text-gray-500">Under review</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Charts Row 1 */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Monthly Trends */}
-                            <div className="bg-white rounded-xl shadow-lg p-6">
-                                <h4 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
-                                    Monthly Violation Trends
-                                </h4>
-                                <div className="h-64">
-                                    <BarChart data={statsData.monthlyStats} />
+                        {/* Charts Row 1 - Trends and Types */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <div className="bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" 
+                                     style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Monthly Violation Trends</h3>
+                                    <p className="text-sm" style={{ color: '#FFD700' }}>Track violation patterns over time</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={statsData.monthlyTrends}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+                                                <XAxis 
+                                                    dataKey="month" 
+                                                    stroke="#6b7280" 
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                />
+                                                <YAxis 
+                                                    stroke="#6b7280" 
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                />
+                                                <Tooltip 
+                                                    contentStyle={{
+                                                        backgroundColor: '#355E3B',
+                                                        border: 'none',
+                                                        borderRadius: '8px',
+                                                        color: 'white',
+                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                                    }}
+                                                />
+                                                <Line 
+                                                    type="monotone" 
+                                                    dataKey="violations" 
+                                                    stroke="#355E3B" 
+                                                    strokeWidth={3}
+                                                    dot={{ fill: '#FFD700', strokeWidth: 2, r: 6 }}
+                                                    activeDot={{ r: 8, stroke: '#355E3B', fill: '#FFD700' }}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Violation Types */}
-                            <div className="bg-white rounded-xl shadow-lg p-6">
-                                <h4 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
-                                    Violations by Type
-                                </h4>
-                                <div className="h-64">
-                                    <BarChart data={statsData.violationTypeStats} />
+                            <div className="bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" 
+                                     style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Violations by Type</h3>
+                                    <p className="text-sm" style={{ color: '#FFD700' }}>Distribution of different violation categories</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={statsData.violationTypeStats}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                    outerRadius={100}
+                                                    fill="#8884d8"
+                                                    dataKey="count"
+                                                >
+                                                    {statsData.violationTypeStats.map((entry, index) => {
+                                                        const colors = ['#355E3B', '#FFD700', '#DC2626', '#10B981', '#F59E0B', '#6366F1', '#8B5CF6', '#EC4899'];
+                                                        return (
+                                                            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                                                        );
+                                                    })}
+                                                </Pie>
+                                                <Tooltip 
+                                                    contentStyle={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #e5e7eb',
+                                                        borderRadius: '8px',
+                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                                    }}
+                                                />
+                                                <Legend 
+                                                    verticalAlign="bottom" 
+                                                    height={36}
+                                                    iconType="circle"
+                                                    wrapperStyle={{ fontSize: '12px', color: '#6b7280' }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Charts Row 2 */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* User Designations */}
-                            <div className="bg-white rounded-xl shadow-lg p-6">
-                                <h4 className="text-lg font-semibold mb-4" style={{ color: '#355E3B' }}>
-                                    Violations by User Type
-                                </h4>
-                                <div className="h-64">
-                                    <BarChart data={statsData.designationStats} />
+                        {/* Charts Row 2 - User Types and Top Violators */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <div className="bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" 
+                                     style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Violations by User Type</h3>
+                                    <p className="text-sm" style={{ color: '#FFD700' }}>Breakdown by student, faculty, and staff</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={statsData.userTypeStats}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+                                                <XAxis 
+                                                    dataKey="user_type" 
+                                                    stroke="#6b7280" 
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                />
+                                                <YAxis 
+                                                    stroke="#6b7280" 
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                />
+                                                <Tooltip 
+                                                    contentStyle={{
+                                                        backgroundColor: '#355E3B',
+                                                        border: 'none',
+                                                        borderRadius: '8px',
+                                                        color: 'white',
+                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                                    }}
+                                                />
+                                                <Bar 
+                                                    dataKey="count" 
+                                                    fill="#355E3B"
+                                                    radius={[4, 4, 0, 0]}
+                                                >
+                                                    {statsData.userTypeStats.map((entry, index) => {
+                                                        const colors = {
+                                                            'Student': '#355E3B',
+                                                            'Faculty': '#FFD700', 
+                                                            'Admin': '#DC2626'
+                                                        };
+                                                        return (
+                                                            <Cell key={`cell-${index}`} fill={colors[entry.user_type] || '#6b7280'} />
+                                                        );
+                                                    })}
+                                                </Bar>
+                                                <Legend 
+                                                    verticalAlign="bottom" 
+                                                    height={36}
+                                                    iconType="rect"
+                                                    wrapperStyle={{ fontSize: '12px', color: '#6b7280' }}
+                                                />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Top Violators */}
-                            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                                <div className="p-6 border-b border-gray-100">
-                                    <h4 className="text-lg font-semibold flex items-center" style={{ color: '#355E3B' }}>
-                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                                        </svg>
-                                        Top Violators
-                                    </h4>
+                            <div className="bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" 
+                                     style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Top Violators Leaderboard</h3>
+                                    <p className="text-sm" style={{ color: '#FFD700' }}>Most frequent violation offenders</p>
                                 </div>
-                                <div className="divide-y divide-gray-50">
-                                    {statsData.topViolators.slice(0, 8).map((violator, index) => (
-                                        <div
-                                            key={index}
-                                            className={`flex items-center justify-between p-4 ${index < 3 ? 'bg-green-50/30' : ''
-                                                } hover:bg-gray-50 transition-colors duration-200`}
-                                        >
-                                            <div className="flex items-center space-x-4">
-                                                <div className="flex-shrink-0">
-                                                    {index < 3 ? (
-                                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                                                            style={{
-                                                                backgroundColor: '#FFD700',
-                                                                color: '#355E3B',
-                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                                                            }}>
-                                                            <span className="text-sm font-bold">#{index + 1}</span>
+                                <div className="p-6">
+                                    <div className="space-y-3">
+                                        {statsData.topViolators.slice(0, 8).map((violator, index) => (
+                                            <div
+                                                key={index}
+                                                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 hover:shadow-sm transition-shadow duration-200"
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="flex-shrink-0">
+                                                        {index < 3 ? (
+                                                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shadow-sm"
+                                                                style={{
+                                                                    backgroundColor: index === 0 ? '#FFD700' :
+                                                                                   index === 1 ? '#C0C0C0' :
+                                                                                   '#CD7F32'
+                                                                }}>
+                                                                <span style={{ color: index === 0 ? '#355E3B' : '#FFF' }}>
+                                                                    {index + 1}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-200 text-gray-600 font-semibold">
+                                                                {index + 1}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-semibold text-gray-900">
+                                                            {violator.name || 'Unknown User'}
                                                         </div>
-                                                    ) : (
-                                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-600">
-                                                            <span className="text-sm">{index + 1}</span>
+                                                        <div className="text-sm text-gray-500">
+                                                            {index < 3 ? 'Top Offender' : 'Frequent Violator'}
                                                         </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {violator.name || 'Unknown User'}
                                                     </div>
                                                 </div>
+                                                <div className="flex items-center">
+                                                    <span className={`px-3 py-1 text-sm font-semibold rounded-lg ${
+                                                        index < 3 
+                                                            ? 'bg-red-100 text-red-700' 
+                                                            : 'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {violator.count || 0} violations
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center">
-                                                <span className="px-3 py-1 text-sm font-medium rounded-full"
-                                                    style={{
-                                                        backgroundColor: index < 3 ? '#355E3B' : '#E5E7EB',
-                                                        color: index < 3 ? 'white' : '#374151'
-                                                    }}>
-                                                    {violator.count || 0} violations
-                                                </span>
+                                        ))}
+                                        {statsData.topViolators.length === 0 && (
+                                            <div className="text-center py-12">
+                                                <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                                </svg>
+                                                <p className="text-gray-500 font-medium text-lg">No violations recorded yet!</p>
+                                                <p className="text-sm text-gray-400 mt-2">Keep up the good work with traffic safety</p>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1529,57 +1721,6 @@ export default function ViolationsManagement() {
                     </div>
                 )}
             </main>
-        </div>
-    );
-}
-
-// Simple Bar Chart Component
-function BarChart({ data }) {
-    if (!data || data.length === 0) {
-        return (
-            <div className="h-full flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <p className="mt-2 text-sm">No data available</p>
-                </div>
-            </div>
-        );
-    }
-
-    const maxValue = Math.max(...data.map(item => item.count));
-    const keys = Object.keys(data[0]);
-    const labelKey = keys.find(key => key !== 'count') || keys[0];
-
-    return (
-        <div className="h-full flex flex-col">
-            <div className="flex-1 flex items-end justify-between space-x-2 px-2">
-                {data.map((item, index) => {
-                    const height = maxValue > 0 ? (item.count / maxValue) * 100 : 0;
-                    return (
-                        <div key={index} className="flex flex-col items-center flex-1 h-full">
-                            <div className="flex-1 flex items-end w-full">
-                                <div
-                                    className="w-full rounded-t-lg transition-all duration-500 hover:opacity-80 relative group"
-                                    style={{
-                                        height: `${height}%`,
-                                        backgroundColor: index % 2 === 0 ? '#355E3B' : '#FFD700',
-                                        minHeight: item.count > 0 ? '10px' : '0px'
-                                    }}
-                                >
-                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                        {item.count}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="mt-2 text-xs text-gray-600 text-center truncate w-full" title={item[labelKey]}>
-                                {item[labelKey]}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
         </div>
     );
 }

@@ -181,118 +181,144 @@ export default function ViolationAppealsPage() {
             <Header user={user} onLogout={handleLogout} />
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
                 {/* Navigation */}
-                <div className="mb-6">
+                <div className="mb-4">
                     <BackButton text="Back to Dashboard" fallbackPath="/admin" />
                 </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div
+                        className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition ${
+                            selectedStatus === 'all' ? 'border-[#355E3B] ring-1 ring-green-100' : 'border-gray-100 hover:border-gray-300'
+                        }`}
+                        onClick={() => setSelectedStatus('all')}
+                    >
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
+                                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
                                     <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
                             </div>
                             <div className="ml-4">
-                                <div className="text-2xl font-bold text-gray-900">{stats.total || 0}</div>
-                                <div className="text-sm text-gray-500">Total Appeals</div>
+                                <div className="text-xl font-semibold text-gray-900">{stats.total || 0}</div>
+                                <div className="text-sm text-gray-600 mt-1">Total Appeals</div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div
+                        className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition ${
+                            selectedStatus === 'pending' ? 'border-[#355E3B] ring-1 ring-green-100' : 'border-gray-100 hover:border-gray-300'
+                        }`}
+                        onClick={() => setSelectedStatus('pending')}
+                    >
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
+                                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
                                     <svg className="h-4 w-4" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
                             </div>
                             <div className="ml-4">
-                                <div className="text-2xl font-bold text-gray-900">{stats.pending || 0}</div>
-                                <div className="text-sm text-gray-500">Pending</div>
+                                <div className="text-xl font-semibold text-gray-900">{stats.pending || 0}</div>
+                                <div className="text-sm text-gray-600 mt-1">Pending</div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div
+                        className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition ${
+                            selectedStatus === 'under_review' ? 'border-[#355E3B] ring-1 ring-green-100' : 'border-gray-100 hover:border-gray-300'
+                        }`}
+                        onClick={() => setSelectedStatus('under_review')}
+                    >
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center">
                                     <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
                             </div>
                             <div className="ml-4">
-                                <div className="text-2xl font-bold text-gray-900">{stats.under_review || 0}</div>
-                                <div className="text-sm text-gray-500">Under Review</div>
+                                <div className="text-xl font-semibold text-gray-900">{stats.under_review || 0}</div>
+                                <div className="text-sm text-gray-600 mt-1">Under Review</div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div
+                        className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition ${
+                            selectedStatus === 'approved' ? 'border-[#355E3B] ring-1 ring-green-100' : 'border-gray-100 hover:border-gray-300'
+                        }`}
+                        onClick={() => setSelectedStatus('approved')}
+                    >
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                <div className="w-9 h-9 bg-green-500 rounded-full flex items-center justify-center">
                                     <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
                             </div>
                             <div className="ml-4">
-                                <div className="text-2xl font-bold text-gray-900">{stats.approved || 0}</div>
-                                <div className="text-sm text-gray-500">Approved</div>
+                                <div className="text-xl font-semibold text-gray-900">{stats.approved || 0}</div>
+                                <div className="text-sm text-gray-600 mt-1">Approved</div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div
+                        className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition ${
+                            selectedStatus === 'denied' ? 'border-[#355E3B] ring-1 ring-green-100' : 'border-gray-100 hover:border-gray-300'
+                        }`}
+                        onClick={() => setSelectedStatus('denied')}
+                    >
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                                <div className="w-9 h-9 bg-red-500 rounded-full flex items-center justify-center">
                                     <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </div>
                             </div>
                             <div className="ml-4">
-                                <div className="text-2xl font-bold text-gray-900">{stats.denied || 0}</div>
-                                <div className="text-sm text-gray-500">Denied</div>
+                                <div className="text-xl font-semibold text-gray-900">{stats.denied || 0}</div>
+                                <div className="text-sm text-gray-600 mt-1">Denied</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white shadow rounded-lg p-6">
-                    <div className="flex items-center space-x-4">
-                        <label className="text-sm font-medium text-gray-700">Filter by status:</label>
-                        <select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="pending">Pending Review</option>
-                            <option value="active">Active Appeals</option>
-                            <option value="under_review">Under Review</option>
-                            <option value="approved">Approved</option>
-                            <option value="denied">Denied</option>
-                            <option value="all">All Appeals</option>
-                        </select>
+                <div className="bg-white shadow-sm rounded-xl px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+                    <div>
+                        <p className="text-sm font-semibold text-gray-800">Filter Appeals</p>
+                        <p className="text-sm text-gray-600">Filter by current review status</p>
                     </div>
+                    <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className="rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#355E3B] focus:border-[#355E3B] bg-white text-gray-800"
+                    >
+                        <option value="pending">Pending Review</option>
+                        <option value="active">Active Appeals</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="denied">Denied</option>
+                        <option value="all">All Appeals</option>
+                    </select>
                 </div>
 
                 {/* Appeals List */}
-                <div className="bg-white shadow-lg rounded-lg border overflow-hidden" style={{ borderTopColor: '#355E3B', borderTopWidth: '4px' }}>
-                    <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: 'rgba(53, 94, 59, 0.05)' }}>
-                        <h3 className="text-lg font-bold" style={{ color: '#355E3B' }}>
+                <div className="bg-white shadow-lg rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
+                        <h3 className="text-base font-semibold text-green-900">
                             Appeals {selectedStatus !== 'all' && `(${selectedStatus.replace('_', ' ')})`}
                         </h3>
                     </div>
@@ -314,249 +340,242 @@ export default function ViolationAppealsPage() {
                     ) : (
                         <div className="divide-y divide-gray-100">
                             {contests.map((contest) => (
-                                <div key={contest.contest_id} className="p-6 transition-all duration-300" style={{ borderLeft: '4px solid #355E3B' }}>
-                                    <div className="bg-gray-50 hover:bg-gray-100 -m-6 p-6 rounded-lg">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-3 mb-3">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(contest.contest_status)}`}>
-                                                        {getStatusIcon(contest.contest_status)}
-                                                        <span className="ml-1">{contest.contest_status.replace('_', ' ').toUpperCase()}</span>
-                                                    </span>
-                                                    <span className="text-sm text-gray-500">
-                                                        Appeal #{contest.contest_id} • Violation #{contest.violation_id}
-                                                    </span>
-                                                </div>
+                                <div key={contest.contest_id} className="p-5 border-t border-gray-100 first:border-t-0 hover:bg-gray-50 transition-colors">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="border-l-4 border-[#355E3B] pl-4 space-y-4 flex-1">
+                                            <div className="flex items-center space-x-3 mb-3">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(contest.contest_status)}`}>
+                                                    {getStatusIcon(contest.contest_status)}
+                                                    <span className="ml-1">{contest.contest_status.replace('_', ' ').toUpperCase()}</span>
+                                                </span>
+                                                <span className="text-sm text-gray-500">
+                                                    Appeal #{contest.contest_id} • Violation #{contest.violation_id}
+                                                </span>
+                                            </div>
 
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                                    <div className="bg-white border rounded-lg p-5" style={{ borderLeftColor: '#355E3B', borderLeftWidth: '3px' }}>
-                                                        <div className="flex items-center mb-3">
-                                                            <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(53, 94, 59, 0.1)' }}>
-                                                                <svg className="h-5 w-5" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                                </svg>
-                                                            </div>
-                                                            <h4 className="text-lg font-semibold ml-3" style={{ color: '#355E3B' }}>Student Information</h4>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-blue-700 w-20">Name:</span>
-                                                                <span className="text-sm text-blue-900 font-semibold">{contest.user_name || 'N/A'}</span>
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-blue-700 w-20">USC ID:</span>
-                                                                <span className="text-sm text-blue-900">{contest.usc_id}</span>
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-blue-700 w-20">Email:</span>
-                                                                <span className="text-sm text-blue-900">{contest.email}</span>
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-blue-700 w-20">Role:</span>
-                                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-200 text-blue-800">
-                                                                    {contest.designation}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="bg-white border rounded-lg p-5" style={{ borderLeftColor: '#FFD700', borderLeftWidth: '3px' }}>
-                                                        <div className="flex items-center mb-3">
-                                                            <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)' }}>
-                                                                <svg className="h-5 w-5" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                                                </svg>
-                                                            </div>
-                                                            <h4 className="text-lg font-semibold ml-3" style={{ color: '#355E3B' }}>Violation Details</h4>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-orange-700 w-20">Type:</span>
-                                                                <span className="text-sm text-orange-900 font-semibold">{contest.violation_type}</span>
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-orange-700 w-20">Vehicle:</span>
-                                                                <span className="text-sm text-orange-900">{contest.vehicle_info}</span>
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-orange-700 w-20">Plate:</span>
-                                                                <span className="text-sm text-orange-900 font-mono bg-orange-100 px-2 py-1 rounded">{contest.plate_number}</span>
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <span className="text-sm font-medium text-orange-700 w-20">Date:</span>
-                                                                <span className="text-sm text-orange-900">{new Date(contest.violation_created_at).toLocaleDateString()}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="mb-6">
-                                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5">
-                                                        <div className="flex items-center mb-3">
-                                                            <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                                                <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                </svg>
-                                                            </div>
-                                                            <h4 className="text-lg font-semibold text-purple-900 ml-3">Appeal Explanation</h4>
-                                                        </div>
-                                                        <div className="bg-white rounded-lg p-4 shadow-sm border border-purple-100">
-                                                            <p className="text-gray-700 leading-relaxed">
-                                                                {contest.contest_notes}
-                                                            </p>
-                                                        </div>
-                                                        <div className="mt-3 flex items-center text-xs text-purple-600">
-                                                            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                                    <div className="flex items-center mb-3">
+                                                        <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(53, 94, 59, 0.1)' }}>
+                                                            <svg className="h-5 w-5" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                             </svg>
-                                                            Submitted: {new Date(contest.contest_created_at).toLocaleString()}
+                                                        </div>
+                                                        <h4 className="text-lg font-semibold ml-3" style={{ color: '#355E3B' }}>Student Information</h4>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">Name</span>
+                                                            <span className="text-sm font-semibold text-gray-900">{contest.user_name || 'N/A'}</span>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">USC ID</span>
+                                                            <span className="text-sm text-gray-900">{contest.usc_id}</span>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">Email</span>
+                                                            <span className="text-sm text-gray-900">{contest.email}</span>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">Role</span>
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-200 text-blue-800">
+                                                                {contest.designation}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Evidence Files Section */}
-                                                {contest.evidence_files && contest.evidence_files.length > 0 && (
-                                                    <div className="mb-6">
-                                                        <div className="bg-white border rounded-lg p-5" style={{ borderLeftColor: '#FFD700', borderLeftWidth: '3px' }}>
-                                                            <div className="flex items-center mb-3">
-                                                                <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)' }}>
-                                                                    <svg className="h-5 w-5" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                                                    </svg>
-                                                                </div>
-                                                                <h4 className="text-lg font-semibold ml-3" style={{ color: '#355E3B' }}>Evidence Files ({contest.evidence_files.length})</h4>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                                {contest.evidence_files.map((file, index) => (
-                                                                    <div key={file.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                                                                        <div className="flex items-center space-x-3">
-                                                                            <div className="flex-shrink-0">
-                                                                                {file.mime_type.startsWith('image/') ? (
-                                                                                    <div className="w-16 h-16 rounded-lg overflow-hidden border">
-                                                                                        <Image
-                                                                                            src={`data:${file.mime_type};base64,${file.file_data}`}
-                                                                                            alt={file.filename}
-                                                                                            width={64}
-                                                                                            height={64}
-                                                                                            className="w-full h-full object-cover cursor-pointer"
-                                                                                            onClick={() => openImagePreview(`data:${file.mime_type};base64,${file.file_data}`, file.filename)}
-                                                                                            style={{ cursor: 'pointer' }}
-                                                                                        />
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <div className="w-16 h-16 rounded-lg border flex items-center justify-center" style={{ backgroundColor: 'rgba(53, 94, 59, 0.1)' }}>
-                                                                                        <svg className="h-8 w-8" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                                        </svg>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="text-sm font-medium text-gray-900 truncate">
-                                                                                    {file.filename}
-                                                                                </p>
-                                                                                <p className="text-xs text-gray-500">
-                                                                                    {file.mime_type}
-                                                                                </p>
-                                                                                <p className="text-xs text-gray-400">
-                                                                                    {new Date(file.uploaded_at).toLocaleDateString()}
-                                                                                </p>
-                                                                            </div>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const link = document.createElement('a');
-                                                                                    link.href = `data:${file.mime_type};base64,${file.file_data}`;
-                                                                                    link.download = file.filename;
-                                                                                    document.body.appendChild(link);
-                                                                                    link.click();
-                                                                                    document.body.removeChild(link);
-                                                                                }}
-                                                                                className="p-2 rounded-lg border hover:bg-gray-100 transition-colors"
-                                                                                title="Download file"
-                                                                            >
-                                                                                <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
+                                                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                                    <div className="flex items-center mb-3">
+                                                        <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)' }}>
+                                                            <svg className="h-5 w-5" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                                            </svg>
+                                                        </div>
+                                                        <h4 className="text-lg font-semibold ml-3" style={{ color: '#355E3B' }}>Violation Details</h4>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">Type</span>
+                                                            <span className="text-sm font-semibold text-gray-900">{contest.violation_type}</span>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">Vehicle</span>
+                                                            <span className="text-sm text-gray-900">{contest.vehicle_info}</span>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">Plate</span>
+                                                            <span className="text-sm text-orange-900 font-mono bg-orange-100 px-2 py-1 rounded">{contest.plate_number}</span>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                                            <span className="text-xs font-medium text-gray-600">Date</span>
+                                                            <span className="text-sm text-gray-900">{new Date(contest.violation_created_at).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
-                                                )}
+                                                </div>
+                                            </div>
 
-                                                {contest.review_notes && (
-                                                    <div className="mb-6">
-                                                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5">
-                                                            <div className="flex items-center mb-3">
-                                                                <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
-                                                                    <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                    </svg>
-                                                                </div>
-                                                                <h4 className="text-lg font-semibold text-green-900 ml-3">Review Notes</h4>
-                                                            </div>
-                                                            <div className="bg-white rounded-lg p-4 shadow-sm border border-green-100">
-                                                                <p className="text-gray-700 leading-relaxed">
-                                                                    {contest.review_notes}
-                                                                </p>
-                                                            </div>
-                                                            <div className="mt-3 flex items-center text-xs text-green-600">
-                                                                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                                </svg>
-                                                                Reviewed by {contest.reviewed_by_email} on {new Date(contest.reviewed_at).toLocaleString()}
-                                                            </div>
+                                            <div className="mb-6">
+                                                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                                    <div className="flex items-center mb-3">
+                                                        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                                            <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
                                                         </div>
+                                                        <h4 className="ml-2 text-sm font-semibold text-gray-900">Appeal Explanation</h4>
                                                     </div>
-                                                )}
-
-                                                <div className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-                                                    <div className="flex items-center">
-                                                        <svg className="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <p className="text-sm text-gray-700 leading-relaxed bg-white rounded-lg p-3 border border-gray-100 max-h-40 overflow-y-auto">
+                                                        {contest.contest_notes}
+                                                    </p>
+                                                    <div className="mt-2 flex items-center text-xs text-gray-600">
+                                                        <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
                                                         Submitted: {new Date(contest.contest_created_at).toLocaleString()}
                                                     </div>
-                                                    {contest.reviewed_at && (
-                                                        <div className="flex items-center">
-                                                            <svg className="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                            </svg>
-                                                            Reviewed: {new Date(contest.reviewed_at).toLocaleString()}
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
 
-                                            <div className="ml-6 flex-shrink-0">
-                                                {contest.contest_status === 'pending' || contest.contest_status === 'under_review' ? (
-                                                    <button
-                                                        onClick={() => openReviewModal(contest)}
-                                                        className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white shadow hover:shadow-md transition-all duration-200"
-                                                        style={{ backgroundColor: '#355E3B' }}
-                                                        onMouseEnter={(e) => e.target.style.backgroundColor = '#2d4a31'}
-                                                        onMouseLeave={(e) => e.target.style.backgroundColor = '#355E3B'}
-                                                    >
-                                                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            {/* Evidence Files Section */}
+                                            {contest.evidence_files && contest.evidence_files.length > 0 && (
+                                                <div className="mb-6">
+                                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                                                        <div className="flex items-center mb-3">
+                                                            <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)' }}>
+                                                                <svg className="h-5 w-5" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                                </svg>
+                                                            </div>
+                                                            <h4 className="text-lg font-semibold ml-3" style={{ color: '#355E3B' }}>Evidence Files ({contest.evidence_files.length})</h4>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+                                                            {contest.evidence_files.map((file, index) => (
+                                                                <div key={file.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <div className="flex-shrink-0">
+                                                                            {file.mime_type.startsWith('image/') ? (
+                                                                                <div className="w-16 h-16 rounded-lg overflow-hidden border">
+                                                                                    <Image
+                                                                                        src={`data:${file.mime_type};base64,${file.file_data}`}
+                                                                                        alt={file.filename}
+                                                                                        width={64}
+                                                                                        height={64}
+                                                                                        className="w-full h-full object-cover cursor-pointer"
+                                                                                        onClick={() => openImagePreview(`data:${file.mime_type};base64,${file.file_data}`, file.filename)}
+                                                                                        style={{ cursor: 'pointer' }}
+                                                                                    />
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="w-16 h-16 rounded-lg border flex items-center justify-center" style={{ backgroundColor: 'rgba(53, 94, 59, 0.1)' }}>
+                                                                                    <svg className="h-8 w-8" style={{ color: '#355E3B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                                    </svg>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="text-sm font-medium text-gray-900 truncate">
+                                                                                {file.filename}
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-500">
+                                                                                {file.mime_type}
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-400">
+                                                                                {new Date(file.uploaded_at).toLocaleDateString()}
+                                                                            </p>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const link = document.createElement('a');
+                                                                                link.href = `data:${file.mime_type};base64,${file.file_data}`;
+                                                                                link.download = file.filename;
+                                                                                document.body.appendChild(link);
+                                                                                link.click();
+                                                                                document.body.removeChild(link);
+                                                                            }}
+                                                                            className="p-2 rounded-lg border hover:bg-gray-100 transition-colors"
+                                                                            title="Download file"
+                                                                        >
+                                                                            <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {contest.review_notes && (
+                                                <div className="mb-6">
+                                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5">
+                                                        <div className="flex items-center mb-3">
+                                                            <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                                                                <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                            </div>
+                                                            <h4 className="text-lg font-semibold text-green-900 ml-3">Review Notes</h4>
+                                                        </div>
+                                                        <div className="bg-white rounded-lg p-4 shadow-sm border border-green-100">
+                                                            <p className="text-gray-700 leading-relaxed">
+                                                                {contest.review_notes}
+                                                            </p>
+                                                        </div>
+                                                        <div className="mt-3 flex items-center text-xs text-green-600">
+                                                            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                            </svg>
+                                                            Reviewed by {contest.reviewed_by_email} on {new Date(contest.reviewed_at).toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                                                <div className="flex items-center">
+                                                    <svg className="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Submitted: {new Date(contest.contest_created_at).toLocaleString()}
+                                                </div>
+                                                {contest.reviewed_at && (
+                                                    <div className="flex items-center">
+                                                        <svg className="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
-                                                        Review Appeal
-                                                    </button>
-                                                ) : (
-                                                    <div className="text-center">
-                                                        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${getStatusColor(contest.contest_status)}`}>
-                                                            {getStatusIcon(contest.contest_status)}
-                                                            <span className="ml-2">
-                                                                {contest.contest_status === 'approved' ? 'APPROVED' : 'DENIED'}
-                                                            </span>
-                                                        </span>
-                                                        <div className="mt-2 text-xs text-gray-500">
-                                                            Decision Final
-                                                        </div>
+                                                        Reviewed: {new Date(contest.reviewed_at).toLocaleString()}
                                                     </div>
                                                 )}
                                             </div>
+                                        </div>
+
+                                        <div className="flex-shrink-0">
+                                            {contest.contest_status === 'pending' || contest.contest_status === 'under_review' ? (
+                                                <button
+                                                    onClick={() => openReviewModal(contest)}
+                                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-[#355E3B] hover:bg-[#2d4a31] shadow-sm hover:shadow-md transition-all"
+                                                >
+                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Review Appeal
+                                                </button>
+                                            ) : (
+                                                <div className="text-center">
+                                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(contest.contest_status)}`}>
+                                                        {getStatusIcon(contest.contest_status)}
+                                                        <span className="ml-1">
+                                                            {contest.contest_status === 'approved' ? 'APPROVED' : 'DENIED'}
+                                                        </span>
+                                                    </span>
+                                                    <div className="mt-1 text-xs text-gray-600 text-center">
+                                                        Final decision recorded
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -568,8 +587,8 @@ export default function ViolationAppealsPage() {
                 {/* Review Modal */}
                 {reviewModal.open && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm overflow-y-auto p-4">
-                        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <div className="sticky top-0 border-b border-gray-200 px-6 py-4 rounded-t-lg" style={{ backgroundColor: '#355E3B' }}>
+                        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <div className="sticky top-0 border-b border-gray-200 px-4 py-4 rounded-t-xl" style={{ backgroundColor: '#355E3B' }}>
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-medium text-white">
                                         Review Appeal #{reviewModal.contest.contest_id}
@@ -585,9 +604,9 @@ export default function ViolationAppealsPage() {
                                 </div>
                             </div>
 
-                            <div className="p-6">
+                            <div className="p-4">
                                 {/* Appeal Summary */}
-                                <div className="mb-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                                <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                     <div className="flex items-center mb-4">
                                         <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                                             <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -596,7 +615,7 @@ export default function ViolationAppealsPage() {
                                         </div>
                                         <h4 className="text-lg font-semibold text-gray-900 ml-3">Appeal Summary</h4>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-6 text-sm">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                         <div className="space-y-3">
                                             <div className="flex items-center">
                                                 <span className="text-gray-500 w-20">Student:</span>
@@ -625,23 +644,23 @@ export default function ViolationAppealsPage() {
                                 </div>
 
                                 {/* Appeal Explanation */}
-                                <div className="mb-6">
+                                <div className="mb-4">
                                     <div className="flex items-center mb-4">
                                         <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
                                             <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                             </svg>
                                         </div>
-                                        <h4 className="text-lg font-semibold text-gray-900 ml-3">Student&apos;s Explanation</h4>
+                                        <h4 className="text-lg font-semibold text-gray-900 ml-3">Student's Explanation</h4>
                                     </div>
-                                    <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100 text-gray-700 leading-relaxed">
+                                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 text-sm text-gray-800 leading-relaxed">
                                         {reviewModal.contest.contest_notes}
                                     </div>
                                 </div>
 
                                 {/* Evidence Files in Modal */}
                                 {reviewModal.contest.evidence_files && reviewModal.contest.evidence_files.length > 0 && (
-                                    <div className="mb-6">
+                                    <div className="mb-4">
                                         <div className="flex items-center mb-4">
                                             <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)' }}>
                                                 <svg className="h-5 w-5" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -781,16 +800,18 @@ export default function ViolationAppealsPage() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-lg font-semibold text-gray-900 mb-3">
+                                        <label className="block text-base font-semibold text-gray-900 mb-3">
                                             Review Notes (Optional)
                                         </label>
                                         <textarea
-                                            value={reviewForm.notes}
-                                            onChange={(e) => setReviewForm(prev => ({ ...prev, notes: e.target.value }))}
-                                            rows={4}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                            placeholder="Add any notes about your decision..."
-                                        />
+                                        value={reviewForm.notes}
+                                        onChange={(e) => setReviewForm(prev => ({ ...prev, notes: e.target.value }))}
+                                        rows={4}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl 
+                                                focus:outline-none focus:ring-2 focus:ring-[#355E3B] 
+                                                focus:border-[#355E3B] resize-none text-base text-gray-800"
+                                        placeholder="Add any notes about your decision..."
+                                    />
                                     </div>
                                 </div>
 
@@ -806,14 +827,11 @@ export default function ViolationAppealsPage() {
                                     <button
                                         onClick={submitReview}
                                         disabled={submitting || !reviewForm.action}
-                                        className="px-6 py-3 border text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-white border hover:opacity-90"
                                         style={{
                                             backgroundColor: '#355E3B',
-                                            borderColor: '#355E3B',
-                                            color: 'white'
+                                            borderColor: '#355E3B'
                                         }}
-                                        onMouseEnter={(e) => e.target.style.backgroundColor = '#2d4a31'}
-                                        onMouseLeave={(e) => e.target.style.backgroundColor = '#355E3B'}
                                     >
                                         {submitting ? (
                                             <div className="flex items-center">

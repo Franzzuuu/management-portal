@@ -129,13 +129,13 @@ export async function POST(request) {
                     v.reported_by,
                     vt.name as violation_type,
                     vh.plate_number as vehicle_plate,
-                    vh.owner_id,
+                    u.usc_id as owner_id,
                     up.full_name as owner_name
                 FROM violations v
                 LEFT JOIN violation_types vt ON v.violation_type_id = vt.id
-                LEFT JOIN vehicles vh ON v.vehicle_id = vh.id
-                LEFT JOIN users u ON vh.owner_id = u.id
-                LEFT JOIN user_profiles up ON u.id = up.user_id
+                LEFT JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
+                LEFT JOIN users u ON vh.usc_id = u.usc_id
+                LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
                 WHERE v.id = ?
             `;
             const violationResult = await executeQuery(violationQuery, [violationId]);
