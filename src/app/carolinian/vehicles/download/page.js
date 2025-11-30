@@ -5,6 +5,28 @@ import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
 import BackButton from '../../../components/BackButton';
 
+// Date utility functions (using native Date instead of date-fns for simplicity)
+const formatDateForInput = (date) => {
+    return date.toISOString().split('T')[0];
+};
+
+const getQuickSelectRanges = () => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+
+    return {
+        'Last 7 Days': { start: sevenDaysAgo, end: today },
+        'Last 30 Days': { start: thirtyDaysAgo, end: today },
+        'This Month': { start: thisMonthStart, end: today },
+        'Last Month': { start: lastMonthStart, end: lastMonthEnd }
+    };
+};
+
 export default function DownloadAccessLogs() {
     const [user, setUser] = useState(null);
     const [downloading, setDownloading] = useState(false);
@@ -13,7 +35,11 @@ export default function DownloadAccessLogs() {
         endDate: ''
     });
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [dateError, setDateError] = useState('');
     const router = useRouter();
+
+    const quickSelectRanges = getQuickSelectRanges();
+    const today = formatDateForInput(new Date());
 
     // Initialize date range to current month
     useEffect(() => {
@@ -61,14 +87,43 @@ export default function DownloadAccessLogs() {
         }
     }, [message.text]);
 
-    const handleDownloadPDF = async () => {
-        if (!dateRange.startDate || !dateRange.endDate) {
-            setMessage({ type: 'error', text: 'Please select both start and end dates.' });
-            return;
+    // Validate date range
+    useEffect(() => {
+        if (dateRange.startDate && dateRange.endDate) {
+            if (new Date(dateRange.startDate) > new Date(dateRange.endDate)) {
+                setDateError('Start date cannot be after end date');
+            } else {
+                setDateError('');
+            }
+        } else {
+            setDateError('');
         }
+    }, [dateRange.startDate, dateRange.endDate]);
 
-        if (new Date(dateRange.startDate) > new Date(dateRange.endDate)) {
-            setMessage({ type: 'error', text: 'Start date cannot be after end date.' });
+    const handleQuickSelect = (label) => {
+        const range = quickSelectRanges[label];
+        setDateRange({
+            startDate: formatDateForInput(range.start),
+            endDate: formatDateForInput(range.end)
+        });
+    };
+
+    const isValidDateRange = () => {
+        return dateRange.startDate && 
+               dateRange.endDate && 
+               new Date(dateRange.startDate) <= new Date(dateRange.endDate);
+    };
+
+    const getButtonText = () => {
+        if (downloading) return 'Generating PDF...';
+        if (!dateRange.startDate || !dateRange.endDate) return 'Select Date Range';
+        if (dateError) return 'Select Valid Dates';
+        return 'Download PDF Report';
+    };
+
+    const handleDownloadPDF = async () => {
+        if (!isValidDateRange()) {
+            setMessage({ type: 'error', text: 'Please select a valid date range.' });
             return;
         }
 
@@ -189,66 +244,121 @@ export default function DownloadAccessLogs() {
 
                         {/* Content */}
                         <div className="p-8">
-                            <div className="max-w-md mx-auto">
-                                {/* Date Range Form */}
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                            Start Date
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={dateRange.startDate}
-                                            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 font-medium transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-3">
-                                            End Date
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={dateRange.endDate}
-                                            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 font-medium transition-all"
-                                        />
+                            <div className="max-w-2xl mx-auto">
+                                {/* Quick Select Chips */}
+                                <div className="mb-8">
+                                    <label className="block text-sm font-semibold text-gray-800 mb-4">
+                                        Quick Select
+                                    </label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {Object.keys(quickSelectRanges).map((label) => (
+                                            <button
+                                                key={label}
+                                                onClick={() => handleQuickSelect(label)}
+                                                className="px-4 py-2 rounded-full border-2 border-green-200 text-green-700 text-sm font-medium hover:bg-green-50 hover:border-green-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                                                style={{
+                                                    backgroundColor: 'rgba(53, 94, 59, 0.05)',
+                                                    borderColor: '#355E3B'
+                                                }}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
-                                {/* Info Box */}
-                                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <div className="flex">
-                                        <svg className="w-5 h-5 text-blue-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
+                                {/* Date Range Form */}
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <h4 className="text-sm font-medium text-blue-800 mb-1">What&apos;s included in your PDF:</h4>
-                                            <ul className="text-sm text-blue-700 space-y-1">
-                                                <li>• Date and time of each access</li>
-                                                <li>• Vehicle information (plate number, make, model)</li>
-                                                <li>• Entry type (entry/exit)</li>
-                                                <li>• Gate location</li>
-                                                <li>• Summary statistics</li>
+                                            <label className="block text-sm font-semibold text-gray-800 mb-3">
+                                                Start Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={dateRange.startDate}
+                                                max={today}
+                                                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                                                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-gray-900 font-medium transition-all ${
+                                                    dateError && dateRange.startDate && dateRange.endDate
+                                                        ? 'border-red-400 focus:border-red-400 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:border-green-500'
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-800 mb-3">
+                                                End Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={dateRange.endDate}
+                                                max={today}
+                                                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                                                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-gray-900 font-medium transition-all ${
+                                                    dateError && dateRange.startDate && dateRange.endDate
+                                                        ? 'border-red-400 focus:border-red-400 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:border-green-500'
+                                                }`}
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Error Message */}
+                                    {dateError && (
+                                        <div className="text-red-600 text-sm font-medium flex items-center">
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            {dateError}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Info Box */}
+                                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                                    <div className="flex items-start">
+                                        <div className="flex-shrink-0">
+                                            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="ml-4">
+                                            <h4 className="text-sm font-semibold text-blue-900 mb-2">What&apos;s included in your PDF report:</h4>
+                                            <ul className="text-sm text-blue-800 space-y-1">
+                                                <li className="flex items-center">
+                                                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-3"></div>
+                                                    Date and time of each access
+                                                </li>
+                                                <li className="flex items-center">
+                                                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-3"></div>
+                                                    Vehicle information (plate number, make, model)
+                                                </li>
+                                                <li className="flex items-center">
+                                                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-3"></div>
+                                                    Entry type (entry/exit) and location
+                                                </li>
+                                                <li className="flex items-center">
+                                                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-3"></div>
+                                                    Summary statistics and insights
+                                                </li>
                                             </ul>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                                    <button
-                                        onClick={() => router.back()}
-                                        className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-                                        disabled={downloading}
-                                    >
-                                        Cancel
-                                    </button>
+                                <div className="mt-8 space-y-4">
                                     <button
                                         onClick={handleDownloadPDF}
-                                        disabled={downloading || !dateRange.startDate || !dateRange.endDate}
-                                        className="flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl"
-                                        style={{ backgroundColor: downloading ? '#6B7280' : '#355E3B' }}
+                                        disabled={downloading || !isValidDateRange()}
+                                        className="w-full px-6 py-4 rounded-xl text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                        style={{ 
+                                            backgroundColor: downloading || !isValidDateRange() ? '#6B7280' : '#355E3B',
+                                            background: !downloading && isValidDateRange() ? 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' : undefined
+                                        }}
                                     >
                                         {downloading ? (
                                             <>
@@ -260,10 +370,20 @@ export default function DownloadAccessLogs() {
                                                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>
-                                                Download PDF Report
+                                                {getButtonText()}
                                             </>
-                                        )}
+                                        )}  
                                     </button>
+                                    
+                                    <div className="text-center">
+                                        <button
+                                            onClick={() => router.back()}
+                                            className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors duration-200 underline-offset-4 hover:underline"
+                                            disabled={downloading}
+                                        >
+                                            Cancel and go back
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

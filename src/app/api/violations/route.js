@@ -79,8 +79,24 @@ export async function GET(request) {
 async function getSecurityViolations(securityUscId, dateFrom, dateTo) {
     console.log('Getting violations for security USC ID:', securityUscId);
 
+    // First, get the database user ID from the USC ID
+    const userQuery = `SELECT id FROM users WHERE usc_id = ?`;
+    const userResult = await queryMany(userQuery, [securityUscId]);
+    
+    if (!userResult || userResult.length === 0) {
+        console.error('User not found for USC ID:', securityUscId);
+        return Response.json({
+            success: true,
+            violations: [],
+            message: 'No violations found'
+        });
+    }
+    
+    const userId = userResult[0].id;
+    console.log('Found user ID:', userId, 'for USC ID:', securityUscId);
+
     let dateCondition = '';
-    let params = [securityUscId];
+    let params = [userId];
 
     if (dateFrom && dateTo) {
         dateCondition = 'AND v.created_at BETWEEN ? AND ?';

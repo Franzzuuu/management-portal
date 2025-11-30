@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
+import BackButton from '../../components/BackButton';
 import useSocketChannel from '@/hooks/useSocketChannel';
 
 export default function CarolinianVehicles() {
@@ -24,6 +25,13 @@ export default function CarolinianVehicles() {
         plateNumber: ''
     });
     const router = useRouter();
+
+    // Form state helpers
+    const isFormDirty = Object.values(formData).some(v => !!v);
+    const hasPendingVehicleOrSticker = (pendingVehicles.length > 0) ||
+        registeredVehicles.some(v => v.sticker_status === 'pending');
+
+    const shouldSubscribeVehicles = Boolean(user && hasPendingVehicleOrSticker && !showForm && !isFormDirty);
 
     const fetchUserData = async () => {
         try {
@@ -98,22 +106,33 @@ export default function CarolinianVehicles() {
         }
     }, [activeTab, fetchVehicles, fetchAccessLogs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Real-time vehicle updates for this user
+    // Real-time vehicle updates for this user (gated by form state)
     const { connected } = useSocketChannel('vehicles', {
         // Handle vehicle approval/status changes
         pending_update: (payload) => {
+            if (!shouldSubscribeVehicles) return; // ignore when not subscribed
             console.log('Vehicles page received vehicles:pending_update:', payload);
             if (payload.owner_id === user?.uscId) {
+                // avoid full fetch if user is filling form
+                if (showForm || isFormDirty) {
+                    // update only minimal state to avoid losing form progress
+                    setPendingVehicles(prev => {
+                        return prev.map(p => p.vehicle_id === payload.vehicle_id ? { ...p, ...payload } : p);
+                    });
+                    return;
+                }
                 console.log('Vehicle update for current user - refreshing data');
-                fetchVehicles();
+                fetchVehicles(); // safe to refresh when not editing
             }
         },
 
         // Handle RFID/sticker assignments
         rfid_update: (payload) => {
+            if (!shouldSubscribeVehicles) return;
             console.log('Vehicles page received vehicles:rfid_update:', payload);
             if (payload.owner_id === user?.uscId) {
                 console.log('RFID update for current user - updating vehicle sticker status');
+                // update only sticker fields to avoid full page re-render
                 setRegisteredVehicles(prevVehicles =>
                     prevVehicles.map(vehicle =>
                         vehicle.vehicle_id === payload.vehicle_id
@@ -124,24 +143,28 @@ export default function CarolinianVehicles() {
             }
         }
     }, {
-        enablePollingFallback: true,
+        autoSubscribe: shouldSubscribeVehicles,
+        enablePollingFallback: shouldSubscribeVehicles,
         pollFn: () => {
+            if (!shouldSubscribeVehicles) return;
             console.log('Vehicles page polling fallback');
             fetchVehicles();
         },
-        pollIntervalMs: 12000
+        // reduce motion and frequency
+        pollIntervalMs: shouldSubscribeVehicles ? 20000 : 0
     });
 
-    // Subscribe to access logs when viewing the logs tab
+    // Subscribe to access logs when viewing the logs tab (gated by form state)
+    const accessLogsAuto = activeTab === 'logs' && !showForm && !isFormDirty;
     const { connected: accessLogsConnected } = useSocketChannel('access_logs', {
         update: (record) => {
-            if (record.user_id === user?.uscId && activeTab === 'logs') {
+            if (accessLogsAuto && record.user_id === user?.uscId) {
                 fetchAccessLogs();
             }
         }
     }, {
-        enablePollingFallback: false,
-        autoSubscribe: activeTab === 'logs'
+        autoSubscribe: accessLogsAuto,
+        enablePollingFallback: false
     });
 
     // Debug: Log when user changes
@@ -386,6 +409,24 @@ export default function CarolinianVehicles() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Back Button */}
+                <div className="mb-6">
+                    <BackButton text="Back to Dashboard" fallbackPath="/carolinian" />
+                </div>
+
+                {/* Live Updates Banner */}
+                {(showForm || isFormDirty) && (
+                    <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                            <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-blue-700 text-sm" aria-live="polite">
+                                Live updates paused while registering a vehicle — updates will resume after saving.
+                            </span>
+                        </div>
+                    </div>
+                )}
                 {/* Page Header with Tabs */}
                 <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -633,7 +674,7 @@ export default function CarolinianVehicles() {
                             {/* Download button */}
                             <button
                                 onClick={() => router.push('/carolinian/vehicles/download')}
-                                className="text-white hover:text-yellow-300 transition-colors duration-200 p-2 rounded-lg hover:bg-white hover:bg-opacity-10"
+                                className="text-white hover:text-yellow-300 transition-colors duration-200 p-2 rounded-lg hover:bg-white hover:bg-opacity-10 hover:cursor-pointer"
                                 title="Download Access Logs"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

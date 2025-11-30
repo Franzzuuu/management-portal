@@ -12,12 +12,8 @@ const SecurityDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalViolations: 0,
-        pendingViolations: 0,
-        resolvedViolations: 0,
-        contestedViolations: 0,
-        todayViolations: 0,
-        weeklyViolations: 0,
-        monthlyViolations: 0
+        selfIssuedViolations: 0,
+        contributionPercentage: 0
     });
     const [recentViolations, setRecentViolations] = useState([]);
     const [todayActivity, setTodayActivity] = useState([]);
@@ -89,12 +85,8 @@ const SecurityDashboard = () => {
             console.error('Failed to fetch security dashboard data:', error);
             setStats({
                 totalViolations: 0,
-                pendingViolations: 0,
-                resolvedViolations: 0,
-                contestedViolations: 0,
-                todayViolations: 0,
-                weeklyViolations: 0,
-                monthlyViolations: 0
+                selfIssuedViolations: 0,
+                contributionPercentage: 0
             });
             setRecentViolations([]);
             setTodayActivity([]);
@@ -107,14 +99,23 @@ const SecurityDashboard = () => {
         update: (payload) => {
             console.log('Security dashboard received violations:update:', payload);
 
-            if (payload.action === 'create' && payload.reported_by === user?.uscId) {
-                // New violation created by this security user
-                setStats(prevStats => ({
-                    ...prevStats,
-                    totalViolations: prevStats.totalViolations + 1,
-                    pendingViolations: prevStats.pendingViolations + (payload.status === 'pending' ? 1 : 0),
-                    todayViolations: prevStats.todayViolations + 1
-                }));
+            if (payload.action === 'create') {
+                // New violation created
+                setStats(prevStats => {
+                    const newTotalViolations = prevStats.totalViolations + 1;
+                    const newSelfIssuedViolations = payload.reported_by === user?.uscId 
+                        ? prevStats.selfIssuedViolations + 1 
+                        : prevStats.selfIssuedViolations;
+                    const newContributionPercentage = newTotalViolations > 0 
+                        ? ((newSelfIssuedViolations / newTotalViolations) * 100).toFixed(1)
+                        : 0;
+
+                    return {
+                        totalViolations: newTotalViolations,
+                        selfIssuedViolations: newSelfIssuedViolations,
+                        contributionPercentage: newContributionPercentage
+                    };
+                });
 
                 // Add to recent violations (prepend and cap to 5)
                 setRecentViolations(prev => [payload, ...prev].slice(0, 5));
@@ -125,26 +126,7 @@ const SecurityDashboard = () => {
                 if (payloadDate.toDateString() === today.toDateString()) {
                     setTodayActivity(prev => [payload, ...prev]);
                 }
-            } else if (payload.action === 'update' && payload.reported_by === user?.uscId) {
-                // Existing violation updated
-                setStats(prevStats => {
-                    const updatedStats = { ...prevStats };
-                    if (payload.old_status === 'pending' && payload.status !== 'pending') {
-                        updatedStats.pendingViolations = Math.max(0, updatedStats.pendingViolations - 1);
-                    } else if (payload.old_status !== 'pending' && payload.status === 'pending') {
-                        updatedStats.pendingViolations += 1;
-                    }
-
-                    if (payload.status === 'resolved') {
-                        updatedStats.resolvedViolations += 1;
-                    }
-                    if (payload.status === 'contested') {
-                        updatedStats.contestedViolations += 1;
-                    }
-
-                    return updatedStats;
-                });
-
+            } else if (payload.action === 'update') {
                 // Update in recent violations list
                 setRecentViolations(prev =>
                     prev.map(v => v.id === payload.id ? { ...v, ...payload } : v)
@@ -215,7 +197,7 @@ const SecurityDashboard = () => {
         );
     }
 
-    // Dashboard stats configuration
+    // Dashboard stats configuration - Security-specific KPIs
     const dashboardStats = [
         {
             title: 'Total Violations',
@@ -228,53 +210,35 @@ const SecurityDashboard = () => {
             borderColor: '#355E3B'
         },
         {
-            title: 'Pending Review',
-            value: stats.pendingViolations,
-            subtitle: `${stats.todayViolations} reported today`,
-            iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+            title: 'Self-Issued Violations',
+            value: stats.selfIssuedViolations,
+            subtitle: 'Violations you reported',
+            iconPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
             bgColor: '#FFD700',
             iconColor: '#355E3B',
             textColor: '#FFD700',
             borderColor: '#FFD700'
         },
         {
-            title: 'Resolved Cases',
-            value: stats.resolvedViolations,
-            subtitle: `${stats.weeklyViolations} this week`,
-            iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+            title: 'Contribution Percentage',
+            value: `${stats.contributionPercentage}%`,
+            subtitle: 'Your contribution to total violations',
+            iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
             bgColor: '#10b981',
             iconColor: '#ffffff',
             textColor: '#10b981',
             borderColor: '#10b981'
-        },
-        {
-            title: 'Contested',
-            value: stats.contestedViolations,
-            subtitle: 'Require attention',
-            iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z',
-            bgColor: '#dc2626',
-            iconColor: '#ffffff',
-            textColor: '#dc2626',
-            borderColor: '#dc2626'
         }
     ];
 
     // Quick actions configuration
     const quickActions = [
         {
-            title: 'Report New Violation',
-            subtitle: 'Issue traffic violation with evidence and comprehensive details',
-            iconPath: 'M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z',
+            title: 'Violations',
+            subtitle: 'Report, monitor and manage all security violations',
+            iconPath: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
             bgColor: '#355E3B',
             iconColor: '#FFD700',
-            onClick: () => router.push('/security/violations?tab=add')
-        },
-        {
-            title: 'View All Violations',
-            subtitle: 'Monitor and manage all security violations',
-            iconPath: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
-            bgColor: '#FFD700',
-            iconColor: '#355E3B',
             onClick: () => router.push('/security/violations')
         }
     ];

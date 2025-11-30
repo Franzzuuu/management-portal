@@ -42,14 +42,14 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
             />
 
             {/* Main Content Area */}
-            <main className="max-w-7xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
+            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 {/* Welcome Banner */}
-                <div className="mb-8 sm:mb-8 p-6 sm:p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="text-center sm:text-left">
-                        <h2 className="text-2xl sm:text-2xl font-bold text-white mb-3 sm:mb-2">
+                        <h2 className="text-2xl font-bold text-white mb-2">
                             Welcome, {user?.fullName || user?.full_name || user?.email}
                         </h2>
-                        <p className="text-base sm:text-base text-gray-200">
+                        <p className="text-base text-gray-200">
                             Integrated RFID Sticker System - Vehicle Management Portal
                         </p>
                     </div>
@@ -57,21 +57,21 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
 
                 {/* Stats Grid */}
                 {stats && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-6 mb-8 sm:mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         {stats.map((stat, index) => (
-                            <div key={index} className="bg-white rounded-xl shadow-lg p-6 sm:p-6 border-l-4" style={{ borderLeftColor: stat.borderColor }}>
+                            <div key={index} className="bg-white rounded-xl shadow-lg p-6 border-l-4 transform transition-all duration-200 hover:shadow-xl" style={{ borderLeftColor: stat.borderColor }}>
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <div className="h-12 w-12 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: stat.bgColor }}>
-                                            <svg className="h-6 w-6 sm:h-6 sm:w-6" style={{ color: stat.iconColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="h-14 w-14 rounded-lg flex items-center justify-center" style={{ backgroundColor: stat.bgColor }}>
+                                            <svg className="h-7 w-7" style={{ color: stat.iconColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.iconPath} />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4 sm:ml-4 min-w-0 flex-1">
-                                        <h3 className="text-lg sm:text-lg font-semibold text-gray-900 truncate">{stat.title}</h3>
-                                        <p className="text-3xl sm:text-3xl font-bold" style={{ color: stat.textColor }}>{stat.value}</p>
-                                        <p className="text-sm sm:text-sm text-gray-500">{stat.subtitle}</p>
+                                    <div className="ml-5 min-w-0 flex-1">
+                                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">{stat.title}</h3>
+                                        <p className="text-3xl font-bold mb-1" style={{ color: stat.textColor }}>{stat.value}</p>
+                                        <p className="text-xs text-gray-500">{stat.subtitle}</p>
                                     </div>
                                 </div>
                             </div>
@@ -81,30 +81,30 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
 
                 {/* Quick Actions */}
                 {quickActions && (
-                    <div className="mb-8 sm:mb-8">
-                        <div className="bg-white rounded-xl shadow-lg">
-                            <div className="px-6 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                                <h2 className="text-xl sm:text-xl font-semibold text-white">Quick Actions</h2>
-                                <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Access your most used features</p>
+                    <div className="mb-8">
+                        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                            <div className="px-6 py-5 border-b border-gray-200" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                                <h2 className="text-xl font-semibold text-white">Quick Actions</h2>
+                                <p className="text-sm mt-1" style={{ color: '#FFD700' }}>Access your most used features</p>
                             </div>
-                            <div className="p-6 sm:p-6">
-                                <div className={`grid gap-6 sm:gap-6 ${quickActions.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+                            <div className="p-6">
+                                <div className={`grid gap-6 ${quickActions.length === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : quickActions.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
                                     {quickActions.map((action, index) => (
                                         <button
                                             key={index}
                                             onClick={action.onClick}
-                                            className="flex items-center p-6 sm:p-6 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer"
+                                            className="flex items-center p-5 border-2 border-gray-200 rounded-xl hover:shadow-xl transition-all duration-200 group hover:border-gray-300 hover:cursor-pointer hover:scale-105"
                                         >
                                             <div className="flex-shrink-0">
-                                                <div className="h-12 w-12 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: action.bgColor }}>
-                                                    <svg className="h-6 w-6 sm:h-6 sm:w-6" style={{ color: action.iconColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <div className="h-14 w-14 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: action.bgColor }}>
+                                                    <svg className="h-7 w-7" style={{ color: action.iconColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.iconPath} />
                                                     </svg>
                                                 </div>
                                             </div>
-                                            <div className="ml-4 sm:ml-4 text-left min-w-0 flex-1">
-                                                <p className="text-lg sm:text-lg font-semibold text-gray-900 truncate">{action.title}</p>
-                                                <p className="text-sm sm:text-sm text-gray-600">{action.subtitle}</p>
+                                            <div className="ml-5 text-left min-w-0 flex-1">
+                                                <p className="text-lg font-semibold text-gray-900">{action.title}</p>
+                                                <p className="text-sm text-gray-600 mt-1">{action.subtitle}</p>
                                             </div>
                                         </button>
                                     ))}

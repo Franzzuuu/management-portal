@@ -4,11 +4,11 @@ import { emit } from '@/lib/realtime';
 
 export async function POST(request) {
     try {
-        // Check if user is authenticated and is admin
+        // Check if user is authenticated and is admin or security
         const session = await getSession();
         console.log('Session:', session);
 
-        if (!session || session.userRole !== 'Admin') {
+        if (!session || (session.userRole !== 'Admin' && session.userRole !== 'Security')) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

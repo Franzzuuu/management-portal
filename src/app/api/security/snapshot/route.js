@@ -12,6 +12,33 @@ export async function GET(request) {
             }, { status: 400 });
         }
 
+        // Get ALL violations in the system for total count
+        const totalViolationsQuery = `SELECT COUNT(*) as count FROM violations`;
+        const totalResult = await queryMany(totalViolationsQuery, []);
+        const totalViolations = totalResult[0]?.count || 0;
+
+        // Convert uscId to database user ID
+        const userIdQuery = `SELECT id FROM users WHERE usc_id = ?`;
+        const userIdResult = await queryMany(userIdQuery, [userId]);
+        
+        if (userIdResult.length === 0) {
+            console.error('User not found for uscId:', userId);
+            return Response.json({
+                success: false,
+                error: 'User not found',
+                stats: {
+                    totalViolations: totalViolations,
+                    selfIssuedViolations: 0,
+                    contributionPercentage: 0
+                },
+                recentViolations: [],
+                violations: []
+            }, { status: 404 });
+        }
+        
+        const databaseUserId = userIdResult[0].id;
+        console.log('Security snapshot: Converting uscId', userId, 'to database ID', databaseUserId);
+
         // Get violations reported by this security user
         const violationsQuery = `
             SELECT 
@@ -32,18 +59,17 @@ export async function GET(request) {
             LIMIT 10
         `;
 
-        const violations = await queryMany(violationsQuery, [userId]); const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const violations = await queryMany(violationsQuery, [databaseUserId]);
+
+        const selfIssuedViolations = violations.length;
+        const contributionPercentage = totalViolations > 0 
+            ? ((selfIssuedViolations / totalViolations) * 100).toFixed(1)
+            : 0;
 
         const stats = {
-            totalViolations: violations.length,
-            pendingViolations: violations.filter(v => v.status === 'pending').length,
-            resolvedViolations: violations.filter(v => v.status === 'resolved').length,
-            contestedViolations: violations.filter(v => v.status === 'contested').length,
-            todayViolations: violations.filter(v => new Date(v.created_at) >= today).length,
-            weeklyViolations: violations.filter(v => new Date(v.created_at) >= weekAgo).length,
-            monthlyViolations: violations.filter(v => new Date(v.created_at) >= new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)).length
+            totalViolations: totalViolations,
+            selfIssuedViolations: selfIssuedViolations,
+            contributionPercentage: contributionPercentage
         };
 
         const recentViolations = violations.slice(0, 5);
@@ -62,12 +88,8 @@ export async function GET(request) {
             error: 'Failed to fetch security snapshot data',
             stats: {
                 totalViolations: 0,
-                pendingViolations: 0,
-                resolvedViolations: 0,
-                contestedViolations: 0,
-                todayViolations: 0,
-                weeklyViolations: 0,
-                monthlyViolations: 0
+                selfIssuedViolations: 0,
+                contributionPercentage: 0
             },
             recentViolations: [],
             violations: []
