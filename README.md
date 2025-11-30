@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# USC Management Portal
 
-## Getting Started
+A comprehensive web-based system for managing traffic violations at the University of San Carlos (USC). This application digitizes the manual paper-based process, enabling security guards to create violations, students and faculty to view and contest them, and administrators to manage everything through an analytics dashboard.
 
-First, run the development server:
+## 🎯 Project Overview
+
+**Purpose:** Streamline USC's campus traffic violation management process with role-based access, real-time analytics, and an appeal mechanism.
+
+**Target Users:**
+- **Security Guards** - Create and manage violations in the field
+- **Carolinians** (Students/Faculty) - View violations and submit appeals with evidence
+- **Administrators** - Review appeals, manage users, and analyze violation data
+
+## ✨ Key Features
+
+### For Security Guards
+- 📝 Create violations with photo evidence
+- 🚗 Link violations to registered vehicles
+- 📍 Record location and violation details
+- 📱 Mobile-responsive interface for field use
+
+### For Carolinians (Students/Faculty)
+- 👁️ View current and historical violations
+- ⚖️ Submit appeals with supporting evidence
+- 📎 Upload multiple files (images, PDFs, documents)
+- 📨 Receive admin decisions with detailed feedback
+- 📊 Track appeal status in real-time
+
+### For Administrators
+- 📊 Real-time analytics dashboard with charts
+- 📈 Violation trends and metrics
+- 🔍 Review and process appeals
+- 👥 User management system
+- 📋 Export reports (CSV/Excel/PDF)
+- 🎫 RFID tag management
+
+## 🏗️ Tech Stack
+
+- **Frontend:** Next.js 15 (App Router) + React 19
+- **Backend:** Next.js API Routes
+- **Database:** MySQL 8.0
+- **Authentication:** Custom session-based auth with bcrypt
+- **Styling:** Tailwind CSS 4
+- **Charts:** Recharts + Chart.js
+- **File Handling:** Multer
+- **Export:** ExcelJS, jsPDF, csv-writer
+
+## 📋 Prerequisites
+
+- Node.js 18+ 
+- MySQL 8.0+
+- npm or yarn
+- Git
+
+## 📁 Project Structure
+
+```
+management-portal/
+├── src/
+│   ├── app/                      # Next.js App Router pages
+│   │   ├── admin/                # Admin dashboard & management
+│   │   ├── carolinian/           # Student/Faculty portal
+│   │   ├── security/             # Security guard interface
+│   │   ├── api/                  # API routes
+│   │   │   ├── auth/             # Authentication endpoints
+│   │   │   ├── violations/       # Violation management
+│   │   │   ├── analytics/        # Dashboard metrics
+│   │   │   └── reports/          # Export functionality
+│   │   ├── components/           # Reusable React components
+│   │   └── login/                # Login page
+│   ├── lib/                      # Utility libraries
+│   │   ├── database.js           # MySQL connection pool
+│   │   ├── auth.js               # Authentication helpers
+│   │   ├── migrations/           # Database migrations
+│   │   └── init-database.js      # Database initialization
+│   └── middleware.js             # Route protection middleware
+├── public/
+│   └── images/                   # Static assets (USC logos, backgrounds)
+├── scripts/                      # Migration runner scripts
+├── .env.local                    # Environment variables (create this)
+├── next.config.mjs               # Next.js configuration
+├── tailwind.config.js            # Tailwind CSS configuration
+└── package.json                  # Dependencies
+```
+## 📦 Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy
+
+### Manual Deployment
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Build the application
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📄 License
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+This project is developed as part of a thesis requirement for Computer Engineering at the University of San Carlos.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Built with 💚💛 for 🔰USC🔰**
