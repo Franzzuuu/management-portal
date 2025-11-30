@@ -428,28 +428,28 @@ export default function CarolinianVehicles() {
                     </div>
                 )}
                 {/* Page Header with Tabs */}
-                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                        <div className="mb-4 lg:mb-0">
-                            <h2 className="text-3xl font-bold text-white mb-2">Vehicle Management</h2>
-                            <p className="text-green-100">Manage your registered vehicles and view access history</p>
+                <div className="mb-8 p-4 sm:p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                    <div className="flex flex-col space-y-4">
+                        <div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Vehicle Management</h2>
+                            <p className="text-sm sm:text-base text-green-100">Manage your registered vehicles and view access history</p>
                         </div>
 
-                        <div className="flex items-center space-x-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 sm:space-x-4">
                             {/* Register Vehicle Button */}
                             <button
                                 onClick={() => setShowForm(!showForm)}
-                                className="px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer"
+                                className="w-full sm:w-auto px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer"
                                 style={{ backgroundColor: '#FFD700', color: '#355E3B' }}
                             >
                                 {showForm ? 'Cancel' : '+ Register Vehicle'}
                             </button>
 
                             {/* Tab Navigation */}
-                            <div className="flex space-x-1 bg-green-950 bg-opacity-30 rounded-lg p-1">
+                            <div className="flex space-x-2 bg-green-950 bg-opacity-30 rounded-lg p-1">
                                 <button
                                     onClick={() => setActiveTab('vehicles')}
-                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'vehicles'
+                                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 hover:cursor-pointer whitespace-nowrap ${activeTab === 'vehicles'
                                         ? 'shadow-lg'
                                         : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                         }`}
@@ -459,7 +459,7 @@ export default function CarolinianVehicles() {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('logs')}
-                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'logs'
+                                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 hover:cursor-pointer whitespace-nowrap ${activeTab === 'logs'
                                         ? 'shadow-lg'
                                         : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                         }`}
@@ -663,21 +663,21 @@ export default function CarolinianVehicles() {
                     /* Access Logs */
                     <div className="bg-white rounded-xl shadow-lg">
                         <div 
-                            className="px-6 py-4 border-b border-gray-200 rounded-t-xl flex items-center justify-between"
+                            className="px-4 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl flex items-center justify-between"
                             style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}
                         >
-                            <div>
-                                <h3 className="text-lg font-semibold text-white">Vehicle Access Logs</h3>
-                                <p className="text-sm" style={{ color: '#FFD700' }}>Track your vehicle entry and exit history</p>
+                            <div className="min-w-0 flex-1 mr-3">
+                                <h3 className="text-base sm:text-lg font-semibold text-white truncate">Vehicle Access Logs</h3>
+                                <p className="text-xs sm:text-sm" style={{ color: '#FFD700' }}>Track your vehicle entry and exit history</p>
                             </div>
                             
                             {/* Download button */}
                             <button
                                 onClick={() => router.push('/carolinian/vehicles/download')}
-                                className="text-white hover:text-yellow-300 transition-colors duration-200 p-2 rounded-lg hover:bg-white hover:bg-opacity-10 hover:cursor-pointer"
+                                className="flex-shrink-0 text-white hover:text-yellow-300 transition-colors duration-200 p-2 rounded-lg hover:bg-white hover:bg-opacity-10 hover:cursor-pointer"
                                 title="Download Access Logs"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                             </button>
@@ -688,19 +688,19 @@ export default function CarolinianVehicles() {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Date & Time
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Vehicle
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Access Type
+                                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Type
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                                                 Location
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                                                 Status
                                             </th>
                                         </tr>
@@ -708,43 +708,43 @@ export default function CarolinianVehicles() {
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {accessLogs.map((log) => (
                                             <tr key={log.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {new Date(log.timestamp).toLocaleDateString()}
+                                                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                                                    <div className="text-xs sm:text-sm font-medium text-gray-900">
+                                                        {new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {new Date(log.timestamp).toLocaleTimeString()}
+                                                    <div className="text-xs text-gray-500">
+                                                        {new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
+                                                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                                                    <div className="text-xs sm:text-sm font-medium text-gray-900">
                                                         {log.plate_number}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-none">
                                                         {log.vehicle_make} {log.vehicle_model}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
                                                         {log.access_type === 'entry' ? (
                                                             <>
-                                                                <div className="h-2 w-2 bg-green-500 rounded-full mr-2"></div>
-                                                                <span className="text-sm text-green-700 font-medium">Entry</span>
+                                                                <div className="h-2 w-2 bg-green-500 rounded-full mr-1 sm:mr-2"></div>
+                                                                <span className="text-xs sm:text-sm text-green-700 font-medium">Entry</span>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <div className="h-2 w-2 bg-blue-500 rounded-full mr-2"></div>
-                                                                <span className="text-sm text-blue-700 font-medium">Exit</span>
+                                                                <div className="h-2 w-2 bg-blue-500 rounded-full mr-1 sm:mr-2"></div>
+                                                                <span className="text-xs sm:text-sm text-blue-700 font-medium">Exit</span>
                                                             </>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
+                                                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                                                    <div className="text-xs sm:text-sm text-gray-900">
                                                         {log.location || 'Main Gate'}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
                                                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                                         Successful
                                                     </span>

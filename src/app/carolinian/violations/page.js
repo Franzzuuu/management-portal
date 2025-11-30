@@ -191,28 +191,29 @@ export default function CarolinianViolations() {
                 </div>
 
                 {/* Page Header with Tabs */}
-                <div className="mb-8 p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                        <div className="mb-4 lg:mb-0">
-                            <h2 className="text-3xl font-bold text-white mb-2">Violation Management</h2>
-                            <p className="text-green-100">View and contest your traffic violations</p>
+                <div className="mb-8 p-4 sm:p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                        <div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Violation Management</h2>
+                            <p className="text-sm sm:text-base text-green-100">View and contest your traffic violations</p>
                         </div>
 
                         {/* Tab Navigation */}
                         <div className="flex space-x-1 bg-green-950 bg-opacity-30 rounded-lg p-1">
                             <button
                                 onClick={() => setActiveTab('current')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'current'
+                                className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 hover:cursor-pointer whitespace-nowrap ${activeTab === 'current'
                                     ? 'shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'current' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
-                                Current Violations
+                                <span className="sm:hidden">Current</span>
+                                <span className="hidden sm:inline">Current Violations</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('history')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'history'
+                                className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 hover:cursor-pointer whitespace-nowrap ${activeTab === 'history'
                                     ? 'shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
@@ -222,13 +223,14 @@ export default function CarolinianViolations() {
                             </button>
                             <button
                                 onClick={() => setActiveTab('appeals')}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:cursor-pointer ${activeTab === 'appeals'
+                                className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 hover:cursor-pointer whitespace-nowrap ${activeTab === 'appeals'
                                     ? 'shadow-lg'
                                     : 'text-green-100 hover:text-white hover:bg-green-700 hover:bg-opacity-40'
                                     }`}
                                 style={activeTab === 'appeals' ? { backgroundColor: '#FFD700', color: '#355E3B' } : {}}
                             >
-                                My Appeals
+                                <span className="sm:hidden">Appeals</span>
+                                <span className="hidden sm:inline">My Appeals</span>
                             </button>
                         </div>
                     </div>
@@ -236,70 +238,71 @@ export default function CarolinianViolations() {
 
                 {/* Violations List */}
                 <div className="bg-gray-100 rounded-xl shadow-lg">
-                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                        <h3 className="text-lg font-semibold text-white">
+                    <div className="px-4 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                        <h3 className="text-base sm:text-lg font-semibold text-white">
                             {activeTab === 'current' && 'Current Violations'}
                             {activeTab === 'history' && 'Violation History'}
                             {activeTab === 'appeals' && 'Appeal Status'}
                         </h3>
-                        <p className="text-sm" style={{ color: '#FFD700' }}>
+                        <p className="text-xs sm:text-sm" style={{ color: '#FFD700' }}>
                             {activeTab === 'current' && 'Violations that require your attention'}
                             {activeTab === 'history' && 'Complete record of all violations'}
                             {activeTab === 'appeals' && 'Track the status of your contest submissions'}
                         </p>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                         {violations.length > 0 ? (
-                            <div className="space-y-6">
+                            <div className="space-y-4 sm:space-y-6">
                                 {violations.map((violation) => (
                                     <div key={violation.id} className="bg-gray-50 border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
                                         {/* Violation Header */}
-                                        <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-6 py-4 border-b border-gray-200">
-                                            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                                                <div className="flex items-center space-x-4">
-                                                    <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
-                                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                                            <div className="flex flex-col space-y-3">
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#355E3B' }}>
+                                                        <svg className="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                         </svg>
                                                     </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-semibold text-gray-900">{violation.violation_type}</h3>
-                                                        <p className="text-sm text-gray-600">
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">{violation.violation_type}</h3>
+                                                        <p className="text-xs sm:text-sm text-gray-600 truncate">
                                                             Vehicle: <span className="font-medium text-gray-900">{violation.plate_number}</span>
-                                                            <span className="mx-2">•</span>
-                                                            {violation.vehicle_make} {violation.vehicle_model}
+                                                            <span className="mx-1 sm:mx-2">•</span>
+                                                            <span className="hidden sm:inline">{violation.vehicle_make} {violation.vehicle_model}</span>
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="mt-4 md:mt-0 flex flex-col md:items-end space-y-2">
-                                                    <div className="flex space-x-2">
-                                                        <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(violation.status, violation.contest_status)}`}>
-                                                            <div className={`w-2 h-2 rounded-full mr-2 ${violation.contest_status === 'approved' ? 'bg-green-400' :
+                                                <div className="flex flex-col space-y-2">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <span className={`inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded-full border ${getStatusColor(violation.status, violation.contest_status)}`}>
+                                                            <div className={`w-2 h-2 rounded-full mr-1 sm:mr-2 flex-shrink-0 ${violation.contest_status === 'approved' ? 'bg-green-400' :
                                                                 violation.contest_status === 'denied' ? 'bg-orange-400' :
                                                                     violation.status === 'pending' ? 'bg-yellow-400' :
                                                                         violation.status === 'contested' ? 'bg-blue-400' :
                                                                             violation.status === 'resolved' ? 'bg-green-400' : 'bg-red-400'
                                                                 }`}></div>
-                                                            {violation.contest_status === 'approved' ? 'Dismissed' :
-                                                                violation.contest_status === 'denied' ? 'Violation Stands' :
-                                                                    violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}
+                                                            <span className="truncate">
+                                                                {violation.contest_status === 'approved' ? 'Dismissed' :
+                                                                    violation.contest_status === 'denied' ? 'Stands' :
+                                                                        violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}
+                                                            </span>
                                                         </span>
                                                         {violation.contest_status && violation.contest_status !== 'approved' && (
-                                                            <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getContestStatusColor(violation.contest_status)}`}>
-                                                                <div className={`w-2 h-2 rounded-full mr-2 ${violation.contest_status === 'pending' ? 'bg-blue-400' :
+                                                            <span className={`inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded-full border ${getContestStatusColor(violation.contest_status)}`}>
+                                                                <div className={`w-2 h-2 rounded-full mr-1 sm:mr-2 flex-shrink-0 ${violation.contest_status === 'pending' ? 'bg-blue-400' :
                                                                     violation.contest_status === 'approved' ? 'bg-green-400' : 'bg-red-400'
                                                                     }`}></div>
-                                                                Appeal: {violation.contest_status.charAt(0).toUpperCase() + violation.contest_status.slice(1)}
+                                                                <span className="truncate">Appeal: {violation.contest_status.charAt(0).toUpperCase() + violation.contest_status.slice(1)}</span>
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="text-xs sm:text-sm text-gray-500">
                                                         {new Date(violation.created_at).toLocaleDateString('en-US', {
-                                                            weekday: 'short',
-                                                            year: 'numeric',
                                                             month: 'short',
-                                                            day: 'numeric'
+                                                            day: 'numeric',
+                                                            year: 'numeric'
                                                         })} at {new Date(violation.created_at).toLocaleTimeString('en-US', {
                                                             hour: '2-digit',
                                                             minute: '2-digit'
@@ -310,8 +313,8 @@ export default function CarolinianViolations() {
                                         </div>
 
                                         {/* Violation Details */}
-                                        <div className="px-6 py-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="px-4 sm:px-6 py-3 sm:py-4">
+                                            <div className="grid grid-cols-1 gap-4 sm:gap-6">
                                                 <div className="space-y-3">
                                                     <div>
                                                         <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Description</h4>
@@ -334,53 +337,53 @@ export default function CarolinianViolations() {
                                                 </div>
                                                 <div className="space-y-3">
                                                     <div>
-                                                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Actions</h4>
-                                                        <div className="mt-1 flex flex-wrap gap-2">
+                                                        <h4 className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide">Actions</h4>
+                                                        <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap gap-2">
                                                             {violation.has_image && (
                                                                 <button
                                                                     onClick={() => window.open(`/api/violations/view-image/${violation.id}`, '_blank')}
-                                                                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors duration-200 hover:cursor-pointer"
+                                                                    className="inline-flex items-center justify-center sm:justify-start px-3 py-2 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors duration-200 hover:cursor-pointer"
                                                                 >
-                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                                     </svg>
-                                                                    View Evidence
+                                                                    <span>View Evidence</span>
                                                                 </button>
                                                             )}
                                                             {violation.status === 'pending' && !violation.contest_status && (
                                                                 <button
                                                                     onClick={() => openContestModal(violation)}
-                                                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:shadow-lg hover:cursor-pointer transform hover:scale-105"
+                                                                    className="inline-flex items-center justify-center sm:justify-start px-4 py-2 text-xs sm:text-sm font-medium text-white rounded-lg transition-all duration-200 hover:shadow-lg hover:cursor-pointer transform hover:scale-105"
                                                                     style={{ backgroundColor: '#355E3B' }}
                                                                 >
-                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                                     </svg>
-                                                                    Submit Appeal
+                                                                    <span>Submit Appeal</span>
                                                                 </button>
                                                             )}
                                                             {violation.contest_status === 'pending' && (
-                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
-                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <div className="inline-flex items-center justify-center sm:justify-start px-3 py-2 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
+                                                                    <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                                     </svg>
-                                                                    Appeal Under Review
+                                                                    <span className="truncate">Appeal Under Review</span>
                                                                 </div>
                                                             )}
                                                             {violation.contest_status === 'approved' && (
-                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg">
-                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <div className="inline-flex items-center justify-center sm:justify-start px-3 py-2 text-xs sm:text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg">
+                                                                    <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                                     </svg>
-                                                                    Appeal Approved - Violation Dismissed
+                                                                    <span className="truncate">Appeal Approved - Dismissed</span>
                                                                 </div>
                                                             )}
                                                             {violation.contest_status === 'denied' && (
-                                                                <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg">
-                                                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <div className="inline-flex items-center justify-center sm:justify-start px-3 py-2 text-xs sm:text-sm font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg">
+                                                                    <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                                     </svg>
-                                                                    Appeal Denied - Violation Stands
+                                                                    <span className="truncate">Appeal Denied - Stands</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -391,18 +394,18 @@ export default function CarolinianViolations() {
 
                                         {/* Admin Review Notes Section */}
                                         {violation.admin_review_notes && (violation.contest_status === 'approved' || violation.contest_status === 'denied') && (
-                                            <div className="mx-6 mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-                                                <div className="flex items-start space-x-3">
-                                                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                                        <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className="mx-4 sm:mx-6 mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                                                <div className="flex items-start space-x-2 sm:space-x-3">
+                                                    <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                                        <svg className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                         </svg>
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                                                            Admin Review Notes
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-sm sm:text-base font-semibold text-blue-900 mb-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+                                                            <span>Admin Review Notes</span>
                                                             {violation.appeal_reviewed_at && (
-                                                                <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                                                <span className="text-xs font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block sm:ml-2">
                                                                     Reviewed {new Date(violation.appeal_reviewed_at).toLocaleDateString('en-US', {
                                                                         month: 'short',
                                                                         day: 'numeric',
@@ -411,7 +414,7 @@ export default function CarolinianViolations() {
                                                                 </span>
                                                             )}
                                                         </h4>
-                                                        <div className="text-sm text-blue-800 bg-gray-50 bg-opacity-70 p-3 rounded-lg border border-blue-100 leading-relaxed">
+                                                        <div className="text-xs sm:text-sm text-blue-800 bg-gray-50 bg-opacity-70 p-2 sm:p-3 rounded-lg border border-blue-100 leading-relaxed break-words">
                                                             {violation.admin_review_notes}
                                                         </div>
                                                     </div>
