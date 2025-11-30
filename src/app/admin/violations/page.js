@@ -960,7 +960,7 @@ export default function ViolationsManagement() {
                                     <div className="text-4xl mb-3">🎉</div>
                                     <p className="text-base font-semibold">No contested violations</p>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        All appeals have been reviewed. Youll see new appeals here as they are filed.
+                                        All appeals have been reviewed. You&apos;ll see new appeals here as they are filed.
                                     </p>
                                 </div>
                             ) : (
