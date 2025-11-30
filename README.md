@@ -1,6 +1,6 @@
 # USC Management Portal
 
-A comprehensive web-based system for managing traffic violations at the University of San Carlos (USC). This application digitizes the manual paper-based process, enabling security guards to create violations, students and faculty to view and contest them, and administrators to manage everything through an analytics dashboard.
+A comprehensive web-based system for managing traffic violations at the University of San Carlos (USC). This application enables security guards to create violations, students and faculty to view and contest them, and administrators to manage everything through an analytics dashboard.
 
 ## 🎯 Project Overview
 
