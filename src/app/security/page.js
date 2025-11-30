@@ -256,6 +256,7 @@ const SecurityDashboard = () => {
             stats={dashboardStats}
             quickActions={quickActions}
             recentActivity={formattedRecentActivity}
+            statsColumns={3}
         />
     );
 }; export default SecurityDashboard;

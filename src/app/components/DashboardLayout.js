@@ -3,8 +3,22 @@
 import { useRouter } from 'next/navigation';
 import Header from './Header';
 
-export default function DashboardLayout({ children, user, setUser, stats, quickActions, recentActivity, recentActivityTitle = "Recent Activity", recentActivitySubtitle = "Your latest account activity" }) {
+export default function DashboardLayout({ children, user, setUser, stats, quickActions, recentActivity, recentActivityTitle = "Recent Activity", recentActivitySubtitle = "Your latest account activity", statsColumns = 4 }) {
     const router = useRouter();
+
+    // Generate responsive grid classes based on statsColumns prop
+    const getStatsGridClass = () => {
+        switch(statsColumns) {
+            case 3:
+                return "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8";
+            case 4:
+                return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8";
+            case 2:
+                return "grid grid-cols-1 md:grid-cols-2 gap-6 mb-8";
+            default:
+                return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8";
+        }
+    };
 
     const handleLogout = async () => {
         try {
@@ -57,7 +71,7 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
 
                 {/* Stats Grid */}
                 {stats && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className={getStatsGridClass()}>
                         {stats.map((stat, index) => (
                             <div key={index} className="bg-white rounded-xl shadow-lg p-6 border-l-4 transform transition-all duration-200 hover:shadow-xl" style={{ borderLeftColor: stat.borderColor }}>
                                 <div className="flex items-center">
