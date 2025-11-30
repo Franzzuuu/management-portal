@@ -1,10 +1,9 @@
 # USC Management Portal
-
-A comprehensive web-based system for managing traffic violations at the University of San Carlos (USC). This application enables security guards to create violations, students and faculty to view and contest them, and administrators to manage everything through an analytics dashboard.
+This project is an implementation of an innovative RFID-based vehicular access system at the University of San Carlos.
 
 ## 🎯 Project Overview
 
-**Purpose:** Streamline USC's campus traffic violation management process with role-based access, real-time analytics, and an appeal mechanism.
+**Purpose:** SThe system enables administrators to manage vehicle and user information, security personnel to monitor logs and issue violations, and students and faculty to review their vehicle records.
 
 **Target Users:**
 - **Security Guards** - Create and manage violations in the field
