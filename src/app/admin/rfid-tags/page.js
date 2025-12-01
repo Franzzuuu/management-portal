@@ -12,7 +12,6 @@ export default function RFIDTagManagement() {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
-    const [showAssignForm, setShowAssignForm] = useState(false);
     const [selectedTag, setSelectedTag] = useState(null);
     const [formData, setFormData] = useState({
         tagUid: '',
@@ -22,6 +21,7 @@ export default function RFIDTagManagement() {
         tagId: '',
         vehicleId: ''
     });
+    const [activeAssignTagId, setActiveAssignTagId] = useState(null);
     const [searchFilter, setSearchFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [submitting, setSubmitting] = useState(false);
@@ -59,15 +59,6 @@ export default function RFIDTagManagement() {
             const data = await response.json();
             if (data.success) {
                 setRfidTags(data.tags);
-                
-                // Auto-select oldest unassigned tag (FIFO) for assign form
-                const unassignedTags = data.tags
-                    .filter(tag => tag.status === 'unassigned')
-                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                
-                if (unassignedTags.length > 0 && !assignData.tagId) {
-                    setAssignData(prev => ({ ...prev, tagId: unassignedTags[0].id.toString() }));
-                }
             }
         } catch (error) {
             console.error('Failed to fetch RFID tags:', error);
@@ -122,39 +113,6 @@ export default function RFIDTagManagement() {
         }
     };
 
-    const handleAssign = async (e) => {
-        e.preventDefault();
-        setError('');
-        setSuccess('');
-        setAssigning(true);
-
-        try {
-            const response = await fetch('/api/rfid-tags/assign', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(assignData),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                setSuccess('RFID sticker assigned successfully!');
-                setAssignData({ tagId: '', vehicleId: '' });
-                setShowAssignForm(false);
-                await fetchRFIDTags();
-                await fetchVehicles();
-            } else {
-                setError(data.error || 'Failed to assign RFID sticker');
-            }
-        } catch (error) {
-            setError('Network error. Please try again.');
-        } finally {
-            setAssigning(false);
-        }
-    };
-
     const handleUnassign = async (tagId) => {
         if (!confirm('Are you sure you want to unassign this RFID tag?')) return;
 
@@ -181,26 +139,9 @@ export default function RFIDTagManagement() {
         }
     };
 
-    const generateRandomUID = () => {
-        // Generate a random 12-character hexadecimal UID
-        const chars = '0123456789ABCDEF';
-        let uid = '';
-        for (let i = 0; i < 12; i++) {
-            uid += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        setFormData({ ...formData, tagUid: uid });
-    };
-
     const handleInputChange = (e) => {
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    const handleAssignInputChange = (e) => {
-        setAssignData({
-            ...assignData,
             [e.target.name]: e.target.value
         });
     };
@@ -215,15 +156,53 @@ export default function RFIDTagManagement() {
     };
 
     const handleQuickAssign = (tagId) => {
-        setAssignData({ ...assignData, tagId: tagId.toString() });
-        setShowAssignForm(true);
+        setActiveAssignTagId(tagId);
+        setAssignData({ tagId: '', vehicleId: '' }); // Reset vehicle selection
     };
 
-    const getOldestUnassignedTag = () => {
-        const unassignedTags = rfidTags
-            .filter(tag => tag.status === 'unassigned')
-            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        return unassignedTags[0] || null;
+    const handleCancelAssign = () => {
+        setActiveAssignTagId(null);
+        setAssignData({ tagId: '', vehicleId: '' });
+    };
+
+    const handleQuickAssignSubmit = async (tagId, vehicleId) => {
+        if (!vehicleId) {
+            setError('Please select a vehicle');
+            return;
+        }
+
+        setAssigning(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            const response = await fetch('/api/rfid-tags/assign', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    tagId: tagId.toString(), 
+                    vehicleId 
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setSuccess('RFID sticker assigned successfully!');
+                setActiveAssignTagId(null);
+                setAssignData({ tagId: '', vehicleId: '' });
+                await fetchRFIDTags();
+                await fetchVehicles();
+            } else {
+                setError(data.error || 'Failed to assign RFID sticker');
+            }
+        } catch (error) {
+            setError('Network error. Please try again.');
+        } finally {
+            setAssigning(false);
+        }
     };
 
     const getFilteredTags = () => {
@@ -237,6 +216,18 @@ export default function RFIDTagManagement() {
             
             return matchesSearch && matchesStatus;
         });
+    };
+
+    const getUnassignedTags = () => {
+        return getFilteredTags()
+            .filter(tag => tag.status === 'unassigned')
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    };
+
+    const getAssignedTags = () => {
+        return getFilteredTags()
+            .filter(tag => tag.status === 'active' || tag.status === 'inactive')
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     };
 
     const dismissAlert = (type) => {
@@ -283,29 +274,17 @@ export default function RFIDTagManagement() {
                                 <p className="text-gray-600 mt-1">Register stickers and assign them to approved vehicles</p>
                             </div>
                         </div>
-                        <div className="flex space-x-4">
-                            <button
-                                onClick={() => setShowAddForm(!showAddForm)}
-                                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                                    showAddForm 
-                                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
-                                        : 'text-white hover:shadow-lg'
-                                }`}
-                                style={!showAddForm ? { backgroundColor: '#355E3B' } : {}}
-                            >
-                                {showAddForm ? 'Cancel' : '+ Register Sticker'}
-                            </button>
-                            <button
-                                onClick={() => setShowAssignForm(!showAssignForm)}
-                                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                                    showAssignForm 
-                                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
-                                        : 'bg-teal-600 text-white hover:bg-teal-700 hover:shadow-lg'
-                                }`}
-                            >
-                                {showAssignForm ? 'Cancel' : 'Assign Sticker'}
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setShowAddForm(!showAddForm)}
+                            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                                showAddForm 
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                                    : 'text-white hover:shadow-lg'
+                            }`}
+                            style={!showAddForm ? { backgroundColor: '#355E3B' } : {}}
+                        >
+                            {showAddForm ? 'Cancel' : '+ Register Sticker'}
+                        </button>
                     </div>
                 </div>
 
@@ -428,243 +407,318 @@ export default function RFIDTagManagement() {
                     </div>
                 )}
 
-                {/* Assign Tag Form */}
-                {showAssignForm && (
-                    <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 bg-teal-600">
-                            <h3 className="text-lg font-semibold text-white">Assign RFID Sticker to Vehicle</h3>
-                            <p className="text-sm text-teal-100 mt-1">Link an RFID sticker to an approved vehicle</p>
-                            {getOldestUnassignedTag() && (
-                                <p className="text-xs text-teal-200 mt-2">
-                                    Next available sticker: <span className="font-mono font-semibold">{getOldestUnassignedTag().tag_uid}</span>
-                                </p>
-                            )}
-                        </div>
-
-                        <form onSubmit={handleAssign} className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label htmlFor="tagId" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Available RFID Sticker *
-                                    </label>
-                                    <select
-                                        id="tagId"
-                                        name="tagId"
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
-                                        value={assignData.tagId}
-                                        onChange={handleAssignInputChange}
-                                    >
-                                        <option value="">Select RFID sticker</option>
-                                        {rfidTags
-                                            .filter(tag => tag.status === 'unassigned')
-                                            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-                                            .map((tag) => (
-                                            <option key={tag.id} value={tag.id}>
-                                                {tag.tag_uid} {tag.description && `- ${tag.description}`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Search Approved Vehicle *
-                                    </label>
-                                    <SearchableVehicleSelect
-                                        value={assignData.vehicleId}
-                                        onChange={(value) => setAssignData({ ...assignData, vehicleId: value })}
-                                        className="w-full"
-                                        placeholder="Search by plate number or owner name"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="mt-8 flex justify-end space-x-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAssignForm(false)}
-                                    className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={assigning}
-                                    className="px-8 py-3 bg-teal-600 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                                >
-                                    {assigning ? (
-                                        <>
-                                            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Assigning...
-                                        </>
-                                    ) : (
-                                        'Assign Sticker'
-                                    )}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
                 {/* RFID Tags List */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: '#355E3B' }}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-lg font-semibold text-white">RFID Stickers Inventory</h3>
-                                <p className="text-sm text-green-100 mt-1">Manage all RFID stickers and vehicle assignments</p>
-                            </div>
-                            <div className="text-sm text-green-200">
-                                {getFilteredTags().length} of {rfidTags.length} stickers
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Search and Filter Bar */}
-                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                            <div className="flex-1 max-w-md">
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Search by UID, plate, or owner..."
-                                        value={searchFilter}
-                                        onChange={(e) => setSearchFilter(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    />
-                                    <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <div className="space-y-6">
+                    {/* Unassigned Tags Section */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200 bg-yellow-600">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <svg className="h-6 w-6 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">Unassigned Stickers</h3>
+                                        <p className="text-sm text-yellow-100 mt-0.5">RFID stickers ready to be assigned (FIFO order)</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <div className="text-right">
+                                        <div className="text-2xl font-bold text-white">{getUnassignedTags().length}</div>
+                                        <div className="text-xs text-yellow-100">Available</div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <label className="text-sm font-medium text-gray-700">Status:</label>
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                                >
-                                    <option value="all">All</option>
-                                    <option value="active">Active</option>
-                                    <option value="unassigned">Unassigned</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
                         </div>
-                    </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sticker UID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Vehicle</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {getFilteredTags().length > 0 ? (
-                                    getFilteredTags().map((tag) => (
-                                        <tr key={tag.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div 
-                                                        className="h-3 w-3 rounded-full mr-3" 
-                                                        style={{ 
-                                                            backgroundColor: tag.status === 'active' ? '#10B981' : 
-                                                                           tag.status === 'unassigned' ? '#F59E0B' : '#EF4444' 
-                                                        }}
-                                                    ></div>
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900 font-mono">{tag.tag_uid}</div>
-                                                        {tag.description && <div className="text-sm text-gray-500">{tag.description}</div>}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-yellow-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Queue #</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Sticker UID</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Added Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {getUnassignedTags().length > 0 ? (
+                                        getUnassignedTags().map((tag, index) => (
+                                            <tr 
+                                                key={tag.id} 
+                                                className={`hover:bg-yellow-50 transition-colors ${index === 0 ? 'bg-yellow-50/50' : ''}`}
+                                            >
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        {index === 0 ? (
+                                                            <span className="px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
+                                                                NEXT
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-3 py-1 bg-gray-200 text-gray-700 text-xs font-semibold rounded-full">
+                                                                #{index + 1}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${
-                                                    tag.status === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : tag.status === 'unassigned'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                    {tag.status.charAt(0).toUpperCase() + tag.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {tag.vehicle_plate ? (
-                                                    <div>
-                                                        <div className="font-medium">{tag.vehicle_plate}</div>
-                                                        <div className="text-gray-500">{tag.vehicle_make} {tag.vehicle_model}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="h-3 w-3 rounded-full bg-yellow-500 mr-3 animate-pulse"></div>
+                                                        <div>
+                                                            <div className="text-sm font-mono font-semibold text-gray-900">{tag.tag_uid}</div>
+                                                            {tag.description && (
+                                                                <div className="text-xs text-gray-500 mt-0.5">{tag.description}</div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                ) : (
-                                                    <span className="text-gray-400">Not assigned</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {tag.owner_name || <span className="text-gray-400">-</span>}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {new Date(tag.created_at).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    {tag.status === 'active' ? (
-                                                        <button
-                                                            onClick={() => handleUnassign(tag.id)}
-                                                            className="px-3 py-1 border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors text-sm"
-                                                        >
-                                                            Unassign
-                                                        </button>
-                                                    ) : tag.status === 'unassigned' ? (
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <div>{new Date(tag.created_at).toLocaleDateString()}</div>
+                                                    <div className="text-xs text-gray-400">{new Date(tag.created_at).toLocaleTimeString()}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-medium">
+                                                    {activeAssignTagId === tag.id ? (
+                                                        <div className="flex items-center gap-2 min-w-[400px]">
+                                                            <div className="flex-1">
+                                                                <SearchableVehicleSelect
+                                                                    value={assignData.vehicleId}
+                                                                    onChange={(value) => setAssignData({ ...assignData, vehicleId: value })}
+                                                                    className="w-full"
+                                                                    placeholder="Search vehicle..."
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleQuickAssignSubmit(tag.id, assignData.vehicleId)}
+                                                                disabled={assigning || !assignData.vehicleId}
+                                                                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center whitespace-nowrap"
+                                                                title="Confirm Assignment"
+                                                            >
+                                                                {assigning ? (
+                                                                    <>
+                                                                        <svg className="animate-spin h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24">
+                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                        </svg>
+                                                                        <span className="text-xs">Assigning...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                        <span className="text-xs">Confirm</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={handleCancelAssign}
+                                                                disabled={assigning}
+                                                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                                                                title="Cancel"
+                                                            >
+                                                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
                                                         <button
                                                             onClick={() => handleQuickAssign(tag.id)}
-                                                            className="px-3 py-1 border border-teal-300 text-teal-700 rounded-md hover:bg-teal-50 transition-colors text-sm"
+                                                            className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all duration-200 hover:shadow-md"
                                                         >
-                                                            Assign to vehicle
+                                                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                            </svg>
+                                                            Assign
                                                         </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="4" className="px-6 py-12 text-center">
+                                                <div className="text-gray-500">
+                                                    <svg className="mx-auto h-12 w-12 text-yellow-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                    </svg>
+                                                    <p className="text-lg font-medium text-gray-900 mb-2">No unassigned stickers in queue</p>
+                                                    <p className="text-gray-500">Register new RFID stickers to add them to the queue</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Assigned Tags Section */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <svg className="h-6 w-6 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">Assigned Stickers</h3>
+                                        <p className="text-sm text-green-100 mt-0.5">RFID stickers linked to vehicles</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-6">
+                                    <div className="text-right">
+                                        <div className="text-2xl font-bold text-white">
+                                            {getAssignedTags().filter(t => t.status === 'active').length}
+                                        </div>
+                                        <div className="text-xs text-green-100">Active</div>
+                                    </div>
+                                    {getAssignedTags().filter(t => t.status === 'inactive').length > 0 && (
+                                        <div className="text-right">
+                                            <div className="text-2xl font-bold text-red-200">
+                                                {getAssignedTags().filter(t => t.status === 'inactive').length}
+                                            </div>
+                                            <div className="text-xs text-red-100">Inactive</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Search and Filter Bar */}
+                        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div className="flex-1 max-w-md">
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Search by UID, plate, or owner..."
+                                            value={searchFilter}
+                                            onChange={(e) => setSearchFilter(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        />
+                                        <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <label className="text-sm font-medium text-gray-700">Status:</label>
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                                    >
+                                        <option value="all">All Assigned</option>
+                                        <option value="active">Active Only</option>
+                                        <option value="inactive">Inactive Only</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sticker UID</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {getAssignedTags().length > 0 ? (
+                                        getAssignedTags().map((tag) => (
+                                            <tr key={tag.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div 
+                                                            className="h-3 w-3 rounded-full mr-3" 
+                                                            style={{ 
+                                                                backgroundColor: tag.status === 'active' ? '#10B981' : '#EF4444' 
+                                                            }}
+                                                        ></div>
+                                                        <div>
+                                                            <div className="text-sm font-medium text-gray-900 font-mono">{tag.tag_uid}</div>
+                                                            {tag.description && <div className="text-xs text-gray-500 mt-0.5">{tag.description}</div>}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${
+                                                        tag.status === 'active'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        {tag.status.charAt(0).toUpperCase() + tag.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {tag.vehicle_plate ? (
+                                                        <div>
+                                                            <div className="font-medium">{tag.vehicle_plate}</div>
+                                                            <div className="text-gray-500 text-xs">{tag.vehicle_make} {tag.vehicle_model}</div>
+                                                        </div>
                                                     ) : (
-                                                        <span className="text-gray-400">-</span>
+                                                        <span className="text-gray-400 italic">No vehicle data</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {tag.owner_name || <span className="text-gray-400">-</span>}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <div>{new Date(tag.assigned_date || tag.created_at).toLocaleDateString()}</div>
+                                                    <div className="text-xs text-gray-400">{new Date(tag.assigned_date || tag.created_at).toLocaleTimeString()}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    {tag.status === 'active' && (
+                                                        <button
+                                                            onClick={() => handleUnassign(tag.id)}
+                                                            className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-all duration-200"
+                                                        >
+                                                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                            Unassign
+                                                        </button>
+                                                    )}
+                                                    {tag.status === 'inactive' && (
+                                                        <span className="text-gray-400 italic text-xs">Inactive</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center">
+                                                <div className="text-gray-500">
+                                                    {statusFilter === 'all' ? (
+                                                        <div>
+                                                            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                                            </svg>
+                                                            <p className="text-lg font-medium text-gray-900 mb-2">No assigned stickers yet</p>
+                                                            <p className="text-gray-500">Assign RFID stickers from the queue above</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                            </svg>
+                                                            <p className="text-lg font-medium text-gray-900 mb-2">No stickers match your search</p>
+                                                            <p className="text-gray-500">Try adjusting your search terms or filters</p>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-8 text-center">
-                                            <div className="text-gray-500">
-                                                {rfidTags.length === 0 ? (
-                                                    <div>
-                                                        <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                                        </svg>
-                                                        <p className="text-lg font-medium text-gray-900 mb-2">No RFID stickers registered yet</p>
-                                                        <p className="text-gray-500">Register your first RFID sticker to get started</p>
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                                        </svg>
-                                                        <p className="text-lg font-medium text-gray-900 mb-2">No stickers match your search</p>
-                                                        <p className="text-gray-500">Try adjusting your search terms or filters</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </main>

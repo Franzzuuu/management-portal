@@ -12,10 +12,10 @@ export async function POST(request) {
 
         const { currentPassword, newPassword } = await request.json();
 
-        // Validate required fields
-        if (!currentPassword || !newPassword) {
+        // Validate new password is provided
+        if (!newPassword) {
             return Response.json(
-                { error: 'Current password and new password are required' },
+                { error: 'New password is required' },
                 { status: 400 }
             );
         }
@@ -26,7 +26,7 @@ export async function POST(request) {
             return Response.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Check if user must change password (only allow if must_change_password = 1)
+        // Check if user must change password
         if (!user.must_change_password) {
             // If user doesn't need to change password and is not admin, reject
             if (user.designation !== 'Admin') {
@@ -35,16 +35,25 @@ export async function POST(request) {
                     { status: 403 }
                 );
             }
+            
+            // For admins or users who don't need to change password, require current password
+            if (!currentPassword) {
+                return Response.json(
+                    { error: 'Current password is required' },
+                    { status: 400 }
+                );
+            }
+            
+            // Verify current password
+            const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password_hash);
+            if (!isCurrentPasswordValid) {
+                return Response.json(
+                    { error: 'Current password is incorrect' },
+                    { status: 400 }
+                );
+            }
         }
-
-        // Verify current password
-        const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password_hash);
-        if (!isCurrentPasswordValid) {
-            return Response.json(
-                { error: 'Current password is incorrect' },
-                { status: 400 }
-            );
-        }
+        // For users with must_change_password = 1, skip current password verification
 
         // Validate new password
         const passwordValidation = validatePassword(newPassword);
