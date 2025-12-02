@@ -22,6 +22,9 @@ export default function RFIDTagManagement() {
         vehicleId: ''
     });
     const [activeAssignTagId, setActiveAssignTagId] = useState(null);
+    const [unassignedSearchFilter, setUnassignedSearchFilter] = useState('');
+    const [unassignedCurrentPage, setUnassignedCurrentPage] = useState(1);
+    const [assignedCurrentPage, setAssignedCurrentPage] = useState(1);
     const [searchFilter, setSearchFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [submitting, setSubmitting] = useState(false);
@@ -219,15 +222,76 @@ export default function RFIDTagManagement() {
     };
 
     const getUnassignedTags = () => {
-        return getFilteredTags()
-            .filter(tag => tag.status === 'unassigned')
+        return rfidTags
+            .filter(tag => {
+                const isUnassigned = tag.status === 'unassigned';
+                const matchesSearch = !unassignedSearchFilter || 
+                    tag.tag_uid.toLowerCase().includes(unassignedSearchFilter.toLowerCase());
+                return isUnassigned && matchesSearch;
+            })
             .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    };
+
+    const getPaginatedUnassignedTags = () => {
+        const allTags = getUnassignedTags();
+        const itemsPerPage = 10;
+        const startIndex = (unassignedCurrentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return allTags.slice(startIndex, endIndex);
+    };
+
+    const getTotalUnassignedPages = () => {
+        const itemsPerPage = 10;
+        return Math.ceil(getUnassignedTags().length / itemsPerPage);
     };
 
     const getAssignedTags = () => {
         return getFilteredTags()
             .filter(tag => tag.status === 'active' || tag.status === 'inactive')
             .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    };
+
+    const getPaginatedAssignedTags = () => {
+        const allTags = getAssignedTags();
+        const itemsPerPage = 10;
+        const startIndex = (assignedCurrentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return allTags.slice(startIndex, endIndex);
+    };
+
+    const getTotalAssignedPages = () => {
+        const itemsPerPage = 10;
+        return Math.ceil(getAssignedTags().length / itemsPerPage);
+    };
+
+    const getPageNumbers = (currentPage, totalPages) => {
+        const pages = [];
+        const maxVisible = 5;
+        
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) pages.push(i);
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1);
+                pages.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                pages.push('...');
+                pages.push(currentPage - 1);
+                pages.push(currentPage);
+                pages.push(currentPage + 1);
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+        return pages;
     };
 
     const dismissAlert = (type) => {
@@ -369,7 +433,7 @@ export default function RFIDTagManagement() {
                                         id="description"
                                         name="description"
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder:text-gray-400 text-gray-900"
-                                        placeholder="Optional notes (e.g., Batch #, Location found)"
+                                        placeholder="Optional notes (e.g., Batch #)"
                                         value={formData.description}
                                         onChange={handleInputChange}
                                     />
@@ -412,7 +476,7 @@ export default function RFIDTagManagement() {
                     {/* Unassigned Tags Section */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-200 bg-yellow-600">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center">
                                     <svg className="h-6 w-6 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -429,6 +493,18 @@ export default function RFIDTagManagement() {
                                     </div>
                                 </div>
                             </div>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search by Sticker UID..."
+                                    value={unassignedSearchFilter}
+                                    onChange={(e) => setUnassignedSearchFilter(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-yellow-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
+                                />
+                                <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -442,21 +518,23 @@ export default function RFIDTagManagement() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {getUnassignedTags().length > 0 ? (
-                                        getUnassignedTags().map((tag, index) => (
+                                    {getPaginatedUnassignedTags().length > 0 ? (
+                                        getPaginatedUnassignedTags().map((tag, index) => {
+                                            const globalIndex = (unassignedCurrentPage - 1) * 10 + index;
+                                            return (
                                             <tr 
                                                 key={tag.id} 
-                                                className={`hover:bg-yellow-50 transition-colors ${index === 0 ? 'bg-yellow-50/50' : ''}`}
+                                                className={`hover:bg-yellow-50 transition-colors ${globalIndex === 0 ? 'bg-yellow-50/50' : ''}`}
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
-                                                        {index === 0 ? (
+                                                        {globalIndex === 0 ? (
                                                             <span className="px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
                                                                 NEXT
                                                             </span>
                                                         ) : (
                                                             <span className="px-3 py-1 bg-gray-200 text-gray-700 text-xs font-semibold rounded-full">
-                                                                #{index + 1}
+                                                                #{globalIndex + 1}
                                                             </span>
                                                         )}
                                                     </div>
@@ -534,7 +612,8 @@ export default function RFIDTagManagement() {
                                                     )}
                                                 </td>
                                             </tr>
-                                        ))
+                                        );
+                                        })
                                     ) : (
                                         <tr>
                                             <td colSpan="4" className="px-6 py-12 text-center">
@@ -551,6 +630,76 @@ export default function RFIDTagManagement() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Controls */}
+                        {getTotalUnassignedPages() > 1 && (
+                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="text-sm text-gray-700">
+                                        Showing <span className="font-semibold text-gray-900">{(unassignedCurrentPage - 1) * 10 + 1}</span> to{' '}
+                                        <span className="font-semibold text-gray-900">
+                                            {Math.min(unassignedCurrentPage * 10, getUnassignedTags().length)}
+                                        </span>{' '}
+                                        of <span className="font-semibold text-gray-900">{getUnassignedTags().length}</span> stickers
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setUnassignedCurrentPage(1)}
+                                            disabled={unassignedCurrentPage === 1}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="First page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => setUnassignedCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={unassignedCurrentPage === 1}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {getPageNumbers(unassignedCurrentPage, getTotalUnassignedPages()).map((pageNum, idx) => (
+                                                pageNum === '...' ? (
+                                                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
+                                                ) : (
+                                                    <button
+                                                        key={pageNum}
+                                                        onClick={() => setUnassignedCurrentPage(pageNum)}
+                                                        className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                            pageNum === unassignedCurrentPage
+                                                                ? 'bg-yellow-600 text-white shadow-sm'
+                                                                : 'text-gray-700 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                )
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setUnassignedCurrentPage(prev => Math.min(getTotalUnassignedPages(), prev + 1))}
+                                            disabled={unassignedCurrentPage === getTotalUnassignedPages()}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Next
+                                        </button>
+                                        <button
+                                            onClick={() => setUnassignedCurrentPage(getTotalUnassignedPages())}
+                                            disabled={unassignedCurrentPage === getTotalUnassignedPages()}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="Last page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Assigned Tags Section */}
@@ -585,35 +734,19 @@ export default function RFIDTagManagement() {
                             </div>
                         </div>
 
-                        {/* Search and Filter Bar */}
+                        {/* Search Bar */}
                         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                <div className="flex-1 max-w-md">
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Search by UID, plate, or owner..."
-                                            value={searchFilter}
-                                            onChange={(e) => setSearchFilter(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                        />
-                                        <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <label className="text-sm font-medium text-gray-700">Status:</label>
-                                    <select
-                                        value={statusFilter}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                                    >
-                                        <option value="all">All Assigned</option>
-                                        <option value="active">Active Only</option>
-                                        <option value="inactive">Inactive Only</option>
-                                    </select>
-                                </div>
+                            <div className="relative max-w-md">
+                                <input
+                                    type="text"
+                                    placeholder="Search by UID, plate, or owner..."
+                                    value={searchFilter}
+                                    onChange={(e) => setSearchFilter(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                                />
+                                <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
                             </div>
                         </div>
 
@@ -630,8 +763,8 @@ export default function RFIDTagManagement() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {getAssignedTags().length > 0 ? (
-                                        getAssignedTags().map((tag) => (
+                                    {getPaginatedAssignedTags().length > 0 ? (
+                                        getPaginatedAssignedTags().map((tag) => (
                                             <tr key={tag.id} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
@@ -719,6 +852,76 @@ export default function RFIDTagManagement() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Controls */}
+                        {getTotalAssignedPages() > 1 && (
+                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="text-sm text-gray-700">
+                                        Showing <span className="font-semibold text-gray-900">{(assignedCurrentPage - 1) * 10 + 1}</span> to{' '}
+                                        <span className="font-semibold text-gray-900">
+                                            {Math.min(assignedCurrentPage * 10, getAssignedTags().length)}
+                                        </span>{' '}
+                                        of <span className="font-semibold text-gray-900">{getAssignedTags().length}</span> stickers
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setAssignedCurrentPage(1)}
+                                            disabled={assignedCurrentPage === 1}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="First page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => setAssignedCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={assignedCurrentPage === 1}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {getPageNumbers(assignedCurrentPage, getTotalAssignedPages()).map((pageNum, idx) => (
+                                                pageNum === '...' ? (
+                                                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
+                                                ) : (
+                                                    <button
+                                                        key={pageNum}
+                                                        onClick={() => setAssignedCurrentPage(pageNum)}
+                                                        className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                            pageNum === assignedCurrentPage
+                                                                ? 'bg-green-600 text-white shadow-sm'
+                                                                : 'text-gray-700 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                )
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setAssignedCurrentPage(prev => Math.min(getTotalAssignedPages(), prev + 1))}
+                                            disabled={assignedCurrentPage === getTotalAssignedPages()}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Next
+                                        </button>
+                                        <button
+                                            onClick={() => setAssignedCurrentPage(getTotalAssignedPages())}
+                                            disabled={assignedCurrentPage === getTotalAssignedPages()}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="Last page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
