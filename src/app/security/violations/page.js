@@ -6,6 +6,13 @@ import Image from 'next/image';
 import Header from '../../components/Header';
 import BackButton from '../../components/BackButton';
 import SearchableVehicleSelectForViolations from '../../components/SearchableVehicleSelectForViolations';
+import { 
+    queueViolationReport, 
+    syncQueue, 
+    getQueueStats, 
+    startAutoSync,
+    fileToBase64 
+} from '@/lib/offline-queue';
 
 export default function SecurityViolationsManagement() {
     const [user, setUser] = useState(null);
@@ -14,6 +21,7 @@ export default function SecurityViolationsManagement() {
     const [violationTypes, setViolationTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [showQuickReportForm, setShowQuickReportForm] = useState(false);
     const [showImageModal, setShowImageModal] = useState(false);
     const [selectedImage, setSelectedImage] = useState('');
 
@@ -39,6 +47,24 @@ export default function SecurityViolationsManagement() {
         description: '',
         imageFile: null
     });
+    
+    // Quick Report Form State
+    const [quickReportData, setQuickReportData] = useState({
+        tagUid: '',
+        violationTypeId: '',
+        location: '',
+        photo: null
+    });
+    const [quickReportError, setQuickReportError] = useState('');
+    const [quickReportSuccess, setQuickReportSuccess] = useState('');
+    const [quickReportLoading, setQuickReportLoading] = useState(false);
+    const [quickReportResult, setQuickReportResult] = useState(null);
+    
+    // Offline queue state
+    const [isOnline, setIsOnline] = useState(true);
+    const [queueStats, setQueueStats] = useState({ total: 0, pending: 0, failed: 0 });
+    const [showQueueModal, setShowQueueModal] = useState(false);
+    
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -66,6 +92,52 @@ export default function SecurityViolationsManagement() {
     useEffect(() => {
         checkAuth();
     }, [checkAuth]);
+
+    // Monitor online/offline status
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOnline(true);
+            console.log('Device is online. Attempting to sync queue...');
+            syncQueue().then(result => {
+                console.log('Auto-sync result:', result);
+                updateQueueStats();
+                if (result.synced > 0) {
+                    fetchViolations();
+                }
+            });
+        };
+
+        const handleOffline = () => {
+            setIsOnline(false);
+            console.log('Device is offline. Reports will be queued.');
+        };
+
+        // Set initial status
+        setIsOnline(navigator.onLine);
+        updateQueueStats();
+
+        // Listen for online/offline events
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        // Start auto-sync interval
+        const syncInterval = startAutoSync(30000); // Sync every 30 seconds
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+            clearInterval(syncInterval);
+        };
+    }, []);
+
+    // Update queue stats periodically
+    useEffect(() => {
+        const interval = setInterval(() => {
+            updateQueueStats();
+        }, 5000); // Update every 5 seconds
+
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchViolations = useCallback(async () => {
         try {
@@ -293,6 +365,156 @@ export default function SecurityViolationsManagement() {
         }
     };
 
+    const handleQuickReport = async (e) => {
+        e.preventDefault();
+        setQuickReportError('');
+        setQuickReportSuccess('');
+        setQuickReportLoading(true);
+        setQuickReportResult(null);
+
+        try {
+            // Convert photo to base64 for queue storage
+            const photoBase64 = await fileToBase64(quickReportData.photo);
+
+            // Check if online
+            if (!navigator.onLine || !isOnline) {
+                // Queue for offline sync
+                const queued = queueViolationReport({
+                    tag_uid: quickReportData.tagUid,
+                    violation_type_id: quickReportData.violationTypeId,
+                    location: quickReportData.location,
+                    photo_base64: photoBase64,
+                    photo_name: quickReportData.photo.name,
+                    photo_type: quickReportData.photo.type
+                });
+
+                if (queued) {
+                    setQuickReportSuccess('📴 Device is offline. Report queued for sync when online.');
+                    setQuickReportData({ tagUid: '', violationTypeId: '', location: '', photo: null });
+                    updateQueueStats();
+                    
+                    setTimeout(() => {
+                        setShowQuickReportForm(false);
+                        setQuickReportResult(null);
+                    }, 3000);
+                } else {
+                    setQuickReportError('Failed to queue report. Storage may be full.');
+                }
+                
+                setQuickReportLoading(false);
+                return;
+            }
+
+            // Try online submission
+            const submitData = new FormData();
+            submitData.append('tag_uid', quickReportData.tagUid);
+            submitData.append('violation_type_id', quickReportData.violationTypeId);
+            if (quickReportData.location) {
+                submitData.append('location', quickReportData.location);
+            }
+            if (quickReportData.photo) {
+                submitData.append('photo', quickReportData.photo);
+            }
+
+            const response = await fetch('/api/violations/quick-report', {
+                method: 'POST',
+                body: submitData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setQuickReportSuccess('✅ Violation reported successfully!');
+                setQuickReportResult(data.violation);
+                setQuickReportData({ tagUid: '', violationTypeId: '', location: '', photo: null });
+                fetchViolations();
+                
+                // Auto-close after 3 seconds
+                setTimeout(() => {
+                    setShowQuickReportForm(false);
+                    setQuickReportResult(null);
+                }, 3000);
+            } else {
+                // If network error, queue it
+                if (!response.ok && (response.status === 0 || response.status >= 500)) {
+                    const queued = queueViolationReport({
+                        tag_uid: quickReportData.tagUid,
+                        violation_type_id: quickReportData.violationTypeId,
+                        location: quickReportData.location,
+                        photo_base64: photoBase64,
+                        photo_name: quickReportData.photo.name,
+                        photo_type: quickReportData.photo.type
+                    });
+
+                    if (queued) {
+                        setQuickReportSuccess('⚠️ Server connection failed. Report queued for sync.');
+                        updateQueueStats();
+                    } else {
+                        setQuickReportError(data.error || 'Failed to report violation');
+                    }
+                } else {
+                    setQuickReportError(data.error || 'Failed to report violation');
+                }
+            }
+        } catch (error) {
+            console.error('Quick report error:', error);
+            
+            // Try to queue on network error
+            try {
+                const photoBase64 = await fileToBase64(quickReportData.photo);
+                const queued = queueViolationReport({
+                    tag_uid: quickReportData.tagUid,
+                    violation_type_id: quickReportData.violationTypeId,
+                    location: quickReportData.location,
+                    photo_base64: photoBase64,
+                    photo_name: quickReportData.photo.name,
+                    photo_type: quickReportData.photo.type
+                });
+
+                if (queued) {
+                    setQuickReportSuccess('⚠️ Network error. Report queued for sync when online.');
+                    setQuickReportData({ tagUid: '', violationTypeId: '', location: '', photo: null });
+                    updateQueueStats();
+                } else {
+                    setQuickReportError('Failed to report violation: ' + error.message);
+                }
+            } catch (queueError) {
+                setQuickReportError('Failed to report violation: ' + error.message);
+            }
+        } finally {
+            setQuickReportLoading(false);
+        }
+    };
+
+    // Update queue statistics
+    const updateQueueStats = () => {
+        const stats = getQueueStats();
+        setQueueStats(stats);
+    };
+
+    // Handle manual sync
+    const handleManualSync = async () => {
+        setQuickReportLoading(true);
+        try {
+            const result = await syncQueue();
+            if (result.synced > 0) {
+                setQuickReportSuccess(`✅ Synced ${result.synced} report(s) successfully!`);
+                fetchViolations();
+            }
+            if (result.failed > 0) {
+                setQuickReportError(`⚠️ ${result.failed} report(s) failed to sync.`);
+            }
+            if (result.synced === 0 && result.failed === 0) {
+                setQuickReportSuccess('✓ No reports to sync.');
+            }
+            updateQueueStats();
+        } catch (error) {
+            setQuickReportError('Sync failed: ' + error.message);
+        } finally {
+            setQuickReportLoading(false);
+        }
+    };
+
     const getDesignationColor = (designation) => {
         switch (designation) {
             case 'Admin': return 'bg-purple-100 text-purple-800';
@@ -377,18 +599,84 @@ export default function SecurityViolationsManagement() {
 
                 {/* Manage Violations Content */}
                 <div className="space-y-5">
+                    {/* Offline Status Banner */}
+                    {!isOnline && (
+                        <div className="max-w-6xl mx-auto px-4">
+                            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg">
+                                <div className="flex items-center">
+                                    <svg className="w-6 h-6 text-amber-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-medium text-amber-800">Device is Offline</h3>
+                                        <p className="text-xs text-amber-700 mt-1">
+                                            Reports will be queued and synced automatically when connection is restored.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Queue Status Banner */}
+                    {queueStats.total > 0 && (
+                        <div className="max-w-6xl mx-auto px-4">
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center flex-1">
+                                        <svg className="w-6 h-6 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <div className="flex-1">
+                                            <h3 className="text-sm font-medium text-blue-800">
+                                                Sync Queue: {queueStats.total} report(s)
+                                            </h3>
+                                            <p className="text-xs text-blue-700 mt-1">
+                                                {queueStats.pending} pending • {queueStats.failed} failed
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleManualSync}
+                                        disabled={!isOnline || quickReportLoading}
+                                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm rounded-lg transition-colors"
+                                    >
+                                        Sync Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="max-w-6xl mx-auto px-4">
-                        <button
-                            onClick={() => setShowAddForm(true)}
-                            className="inline-flex items-center px-5 py-2.5 rounded-lg bg-green-700 hover:bg-green-800 text-white text-sm font-medium shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1"
-                        >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span>Report New Violation</span>
-                        </button>
-                        <p className="text-sm text-gray-500 mt-2">Use this to manually file a new violation record.</p>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div>
+                                <button
+                                    onClick={() => setShowAddForm(true)}
+                                    className="inline-flex items-center px-5 py-2.5 rounded-lg bg-green-700 hover:bg-green-800 text-white text-sm font-medium shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1"
+                                >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    <span>Report New Violation</span>
+                                </button>
+                                <p className="text-sm text-gray-500 mt-2">Use this to manually file a new violation record.</p>
+                            </div>
+                            
+                            <div>
+                                <button
+                                    onClick={() => setShowQuickReportForm(true)}
+                                    className="inline-flex items-center px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-1"
+                                >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <span>Quick Report (by Tag)</span>
+                                </button>
+                                <p className="text-sm text-gray-500 mt-2">Handheld device mode - report by RFID tag UID.</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Advanced Filters */}
@@ -832,6 +1120,216 @@ export default function SecurityViolationsManagement() {
                                         type="button"
                                         onClick={() => setShowAddForm(false)}
                                         className="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors duration-200 hover:cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Quick Report Modal */}
+                {showQuickReportForm && (
+                    <div
+                        className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                        style={{
+                            backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/ismisbg.jpg')",
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                        }}
+                    >
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+                            {/* Header */}
+                            <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg bg-amber-500">
+                                            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-gray-900">Quick Report (Handheld Mode)</h3>
+                                            <p className="text-sm text-gray-600 mt-1">Report violation by RFID tag UID</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setShowQuickReportForm(false);
+                                            setQuickReportError('');
+                                            setQuickReportSuccess('');
+                                            setQuickReportResult(null);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:cursor-pointer p-2 rounded-full hover:bg-gray-100"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleQuickReport} className="p-8">
+                                {quickReportError && (
+                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                        <p className="text-red-600 text-sm">{quickReportError}</p>
+                                    </div>
+                                )}
+
+                                {quickReportSuccess && (
+                                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="flex items-center">
+                                            <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <p className="text-green-600 text-sm font-medium">{quickReportSuccess}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {quickReportResult && (
+                                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <h4 className="text-sm font-semibold text-blue-900 mb-2">Violation Created Successfully</h4>
+                                        <div className="text-xs text-blue-800 space-y-1">
+                                            <p><span className="font-medium">ID:</span> {quickReportResult.id}</p>
+                                            {quickReportResult.vehicle_info ? (
+                                                <p><span className="font-medium">Vehicle:</span> {quickReportResult.vehicle_info.plate_number} ({quickReportResult.vehicle_info.make} {quickReportResult.vehicle_info.model})</p>
+                                            ) : (
+                                                <p className="text-amber-700"><span className="font-medium">Vehicle:</span> Not found (tag UID recorded)</p>
+                                            )}
+                                            <p><span className="font-medium">Type:</span> {quickReportResult.violation_type_name}</p>
+                                            <p><span className="font-medium">Location:</span> {quickReportResult.location || 'Not specified'}</p>
+                                            <p><span className="font-medium">Status:</span> {quickReportResult.status}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-6">
+                                    {/* Tag UID Input */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            RFID Tag UID *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={quickReportData.tagUid}
+                                            onChange={(e) => setQuickReportData(prev => ({ ...prev, tagUid: e.target.value }))}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                                                     text-gray-900 placeholder:text-gray-400
+                                                     focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none"
+                                            placeholder="Enter RFID tag UID (e.g., ABC123DEF)"
+                                            required
+                                            disabled={quickReportLoading}
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">The system will automatically look up the vehicle.</p>
+                                    </div>
+
+                                    {/* Violation Type Select */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Violation Type *
+                                        </label>
+                                        <select
+                                            value={quickReportData.violationTypeId}
+                                            onChange={(e) => setQuickReportData(prev => ({ ...prev, violationTypeId: e.target.value }))}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                                                     text-gray-900 placeholder:text-gray-400
+                                                     focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none"
+                                            required
+                                            disabled={quickReportLoading}
+                                        >
+                                            <option value="">Select a violation type</option>
+                                            {violationTypes.map(type => (
+                                                <option key={type.id} value={type.id}>{type.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Location Input (Optional) */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Location (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={quickReportData.location}
+                                            onChange={(e) => setQuickReportData(prev => ({ ...prev, location: e.target.value }))}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                                                     text-gray-900 placeholder:text-gray-400
+                                                     focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none"
+                                            placeholder="e.g., Gate 2, Parking Lot A"
+                                            disabled={quickReportLoading}
+                                        />
+                                    </div>
+
+                                    {/* Photo Upload */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Photo Evidence *
+                                        </label>
+                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-amber-400 transition-colors">
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/jpg,image/png"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setQuickReportData(prev => ({ ...prev, photo: file }));
+                                                    }
+                                                }}
+                                                className="hidden"
+                                                id="quick-report-photo"
+                                                required
+                                                disabled={quickReportLoading}
+                                            />
+                                            <label htmlFor="quick-report-photo" className="cursor-pointer">
+                                                <div className="flex flex-col items-center">
+                                                    <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    {quickReportData.photo ? (
+                                                        <p className="text-sm text-gray-700 font-medium">{quickReportData.photo.name}</p>
+                                                    ) : (
+                                                        <p className="text-sm text-gray-600">Click to upload photo</p>
+                                                    )}
+                                                    <p className="text-xs text-gray-500 mt-1">JPEG or PNG, max 10MB</p>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-4 mt-8 pt-6 border-t border-gray-200">
+                                    <button
+                                        type="submit"
+                                        disabled={quickReportLoading}
+                                        className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    >
+                                        {quickReportLoading ? (
+                                            <span className="flex items-center justify-center">
+                                                <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Submitting...
+                                            </span>
+                                        ) : (
+                                            'Submit Quick Report'
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowQuickReportForm(false);
+                                            setQuickReportError('');
+                                            setQuickReportSuccess('');
+                                            setQuickReportResult(null);
+                                        }}
+                                        disabled={quickReportLoading}
+                                        className="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors duration-200 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Cancel
                                     </button>
