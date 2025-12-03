@@ -113,12 +113,20 @@ export default function ReportsPage() {
 
 
 
+    // Helper function to format date as YYYY-MM-DD in local timezone
+    const formatDateLocal = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Quick date filter handler
     const handleQuickDateFilter = (filter) => {
         setQuickDateFilter(filter);
         const now = new Date();
         let startDate = '';
-        let endDate = now.toISOString().split('T')[0];
+        let endDate = formatDateLocal(now);
 
         switch (filter) {
             case 'today':
@@ -127,35 +135,31 @@ export default function ReportsPage() {
             case 'yesterday':
                 const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
-                startDate = yesterday.toISOString().split('T')[0];
+                startDate = formatDateLocal(yesterday);
                 endDate = startDate;
                 break;
-            case 'this-week':
-                const startOfWeek = new Date(now);
-                startOfWeek.setDate(now.getDate() - now.getDay());
-                startDate = startOfWeek.toISOString().split('T')[0];
-                break;
             case 'last-week':
-                const lastWeekEnd = new Date(now);
-                lastWeekEnd.setDate(now.getDate() - now.getDay() - 1);
-                const lastWeekStart = new Date(lastWeekEnd);
-                lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
-                startDate = lastWeekStart.toISOString().split('T')[0];
-                endDate = lastWeekEnd.toISOString().split('T')[0];
-                break;
-            case 'this-month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-                break;
-            case 'last-month':
-                const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-                startDate = lastMonth.toISOString().split('T')[0];
-                endDate = lastMonthEnd.toISOString().split('T')[0];
+                // Last 7 days (including today)
+                const sevenDaysAgo = new Date(now);
+                sevenDaysAgo.setDate(now.getDate() - 6);
+                startDate = formatDateLocal(sevenDaysAgo);
                 break;
             case 'last-30-days':
                 const thirtyDaysAgo = new Date(now);
-                thirtyDaysAgo.setDate(now.getDate() - 30);
-                startDate = thirtyDaysAgo.toISOString().split('T')[0];
+                thirtyDaysAgo.setDate(now.getDate() - 29);
+                startDate = formatDateLocal(thirtyDaysAgo);
+                break;
+            case 'this-month':
+                // From 1st of current month to today
+                const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                startDate = formatDateLocal(firstOfMonth);
+                break;
+            case 'last-month':
+                // From 1st of last month to last day of last month
+                const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const lastOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                startDate = formatDateLocal(firstOfLastMonth);
+                endDate = formatDateLocal(lastOfLastMonth);
                 break;
             case 'all-time':
             default:
@@ -183,25 +187,29 @@ export default function ReportsPage() {
         switch (preset) {
             case 'today':
                 startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
                 break;
             case 'yesterday':
                 startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 23, 59, 59);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
                 break;
             case 'this-week':
                 const firstDayOfWeek = new Date(today);
                 firstDayOfWeek.setDate(today.getDate() - today.getDay());
                 startDate = new Date(firstDayOfWeek.getFullYear(), firstDayOfWeek.getMonth(), firstDayOfWeek.getDate());
-                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
                 break;
             case 'this-month':
                 startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                break;
+            case 'last-month':
+                startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                endDate = new Date(today.getFullYear(), today.getMonth(), 0);
                 break;
             case 'this-year':
                 startDate = new Date(today.getFullYear(), 0, 1);
-                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
                 break;
             case 'all-time':
             default:
@@ -209,14 +217,13 @@ export default function ReportsPage() {
         }
 
         return {
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0]
+            startDate: formatDateLocal(startDate),
+            endDate: formatDateLocal(endDate)
         };
     };
 
     const formatDateRangePreview = (preset) => {
         const today = new Date();
-        let startDate, endDate;
 
         switch (preset) {
             case 'today':
@@ -231,6 +238,10 @@ export default function ReportsPage() {
             case 'this-month':
                 const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
                 return `${firstDayOfMonth.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} to ${today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+            case 'last-month':
+                const firstOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const lastOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                return `${firstOfLastMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} to ${lastOfLastMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
             case 'this-year':
                 const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
                 return `${firstDayOfYear.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} to ${today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;

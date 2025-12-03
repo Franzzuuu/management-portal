@@ -197,8 +197,8 @@ export default function ViolationsManagement() {
         // Initial queue stats update
         updateQueueStats();
 
-        // Start auto-sync interval
-        const cleanup = startAutoSync(async () => {
+        // Start auto-sync interval (custom implementation with callback)
+        const syncInterval = setInterval(async () => {
             updateQueueStats();
             if (navigator.onLine) {
                 const result = await syncQueue();
@@ -207,12 +207,14 @@ export default function ViolationsManagement() {
                 }
                 updateQueueStats();
             }
-        });
+        }, 30000); // 30 seconds
 
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
-            cleanup();
+            if (syncInterval) {
+                clearInterval(syncInterval);
+            }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -234,7 +236,7 @@ export default function ViolationsManagement() {
     const fetchContestedViolations = async () => {
         try {
             setLoadingContested(true);
-            const response = await fetch('/api/admin/violation-contests');
+            const response = await fetch('/api/admin/violation-contests?status=active');
             const data = await response.json();
             if (data.success) {
                 setContestedViolations(data.contests);

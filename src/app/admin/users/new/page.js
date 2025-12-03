@@ -44,7 +44,41 @@ export default function AddNewUser() {
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
     const [previewPassword, setPreviewPassword] = useState('');
     const [copied, setCopied] = useState(false);
+    const [designationFilter, setDesignationFilter] = useState('all');
+    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' = oldest first, 'desc' = newest first
+    const [searchTerm, setSearchTerm] = useState('');
     const router = useRouter();
+
+    // Filter and sort users
+    const getFilteredAndSortedUsers = () => {
+        let filtered = [...users];
+
+        // Search filter
+        if (searchTerm) {
+            const search = searchTerm.toLowerCase();
+            filtered = filtered.filter(u => 
+                (u.full_name || '').toLowerCase().includes(search) ||
+                (u.email || '').toLowerCase().includes(search) ||
+                (u.usc_id || '').toLowerCase().includes(search)
+            );
+        }
+
+        // Filter by designation
+        if (designationFilter !== 'all') {
+            filtered = filtered.filter(u => u.designation === designationFilter);
+        }
+
+        // Sort by created_at
+        filtered.sort((a, b) => {
+            const dateA = new Date(a.created_at || 0);
+            const dateB = new Date(b.created_at || 0);
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+
+        return filtered;
+    };
+
+    const filteredUsers = getFilteredAndSortedUsers();
 
     useEffect(() => {
         checkAuth();
@@ -608,8 +642,70 @@ export default function AddNewUser() {
                 {activeTab === 'manage' && (
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                         <div className="p-6 border-b border-gray-100" style={{ backgroundColor: '#f8f9fa' }}>
-                            <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>Manage Existing Users</h3>
-                            <p className="text-sm text-gray-600 mt-1">View, update status, and manage user accounts ({users.length} users)</p>
+                            <div className="flex flex-col gap-4">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold" style={{ color: '#355E3B' }}>Manage Existing Users</h3>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {filteredUsers.length === users.length 
+                                                ? `${users.length} total users`
+                                                : `Showing ${filteredUsers.length} of ${users.length} users`
+                                            }
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        {/* User Type Filter */}
+                                        <select
+                                            value={designationFilter}
+                                            onChange={(e) => setDesignationFilter(e.target.value)}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-700 bg-white"
+                                            style={{ '--tw-ring-color': '#355E3B' }}
+                                        >
+                                            <option value="all">All Types</option>
+                                            <option value="Student">Student</option>
+                                            <option value="Faculty">Faculty</option>
+                                            <option value="Security">Security</option>
+                                            <option value="Admin">Admin</option>
+                                        </select>
+                                        {/* Sort Order */}
+                                        <select
+                                            value={sortOrder}
+                                            onChange={(e) => setSortOrder(e.target.value)}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-700 bg-white"
+                                            style={{ '--tw-ring-color': '#355E3B' }}
+                                        >
+                                            <option value="asc">Oldest First</option>
+                                            <option value="desc">Newest First</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {/* Search Bar */}
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name, email, or USC ID..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-700 bg-white"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                    />
+                                    {searchTerm && (
+                                        <button
+                                            onClick={() => setSearchTerm('')}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                        >
+                                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Error/Success Messages for Manage Tab with dismiss button */}
@@ -648,52 +744,63 @@ export default function AddNewUser() {
                         )}
 
                         <div className="overflow-x-auto">
+                            {filteredUsers.length > 0 ? (
                             <table className="w-full">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USC ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">USC ID</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {users.map((userData) => (
-                                        <tr key={userData.id} className="hover:bg-gray-50">
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {filteredUsers.map((userData, index) => (
+                                        <tr key={userData.id} className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">{userData.full_name}</div>
-                                                    <div className="text-sm text-gray-500">{userData.email}</div>
+                                                <div className="flex items-center">
+                                                    <div className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ backgroundColor: '#355E3B' }}>
+                                                        {(userData.full_name || 'U').charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div className="ml-3">
+                                                        <div className="text-sm font-medium text-gray-900">{userData.full_name || 'No name'}</div>
+                                                        <div className="text-sm text-gray-500">{userData.email}</div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{userData.usc_id}</div>
+                                                <div className="text-sm font-mono font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded inline-block">{userData.usc_id}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDesignationColor(userData.designation)}`}>
+                                                <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${getDesignationColor(userData.designation)}`}>
                                                     {userData.designation}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(userData.status)}`}>
+                                                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(userData.status)}`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${userData.status === 'active' ? 'bg-green-500' : userData.status === 'inactive' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
                                                     {userData.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {userData.phone_number || 'No phone'}
+                                                {userData.phone_number || <span className="text-gray-400 italic">Not provided</span>}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div className="flex flex-col space-y-2">
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => {
                                                             setSelectedUser(userData);
                                                             setShowStatusModal(true);
                                                         }}
-                                                        className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors hover:cursor-pointer text-center"
+                                                        className="inline-flex items-center text-blue-600 hover:text-blue-900 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors hover:cursor-pointer text-xs font-medium"
                                                     >
-                                                        Manage Account
+                                                        <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        </svg>
+                                                        Manage
                                                     </button>
                                                     {userData.designation !== 'Admin' && (
                                                         <button
@@ -701,8 +808,11 @@ export default function AddNewUser() {
                                                                 setSelectedUser(userData);
                                                                 setShowDeleteModal(true);
                                                             }}
-                                                            className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors hover:cursor-pointer text-center"
+                                                            className="inline-flex items-center text-red-600 hover:text-red-900 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors hover:cursor-pointer text-xs font-medium"
                                                         >
+                                                            <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
                                                             Delete
                                                         </button>
                                                     )}
@@ -712,6 +822,32 @@ export default function AddNewUser() {
                                     ))}
                                 </tbody>
                             </table>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <h3 className="mt-4 text-lg font-medium text-gray-900">No users found</h3>
+                                    <p className="mt-2 text-sm text-gray-500">
+                                        {searchTerm || designationFilter !== 'all' 
+                                            ? 'Try adjusting your search or filter criteria'
+                                            : 'No users have been created yet'
+                                        }
+                                    </p>
+                                    {(searchTerm || designationFilter !== 'all') && (
+                                        <button
+                                            onClick={() => {
+                                                setSearchTerm('');
+                                                setDesignationFilter('all');
+                                            }}
+                                            className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors hover:opacity-90"
+                                            style={{ backgroundColor: '#355E3B' }}
+                                        >
+                                            Clear filters
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

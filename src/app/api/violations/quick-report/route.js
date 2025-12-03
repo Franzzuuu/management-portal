@@ -155,7 +155,7 @@ export async function POST(request) {
             location: location ? location.toString().trim() : null,
             reported_by: reporter.id,
             status: 'pending',
-            contest_status: 'pending',
+            contest_status: null,
             contest_explanation: null,
             image_data: photoBuffer,
             image_filename: photo.name,

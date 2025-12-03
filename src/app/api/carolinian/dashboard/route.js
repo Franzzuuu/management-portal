@@ -24,13 +24,14 @@ export async function GET() {
         `, [uscId]);
         const registeredVehicles = vehiclesResult[0]?.count || 0;
 
-        // Get user's total violations count
+        // Get user's total violations count (excluding resolved)
         const violationsResult = await queryMany(`
             SELECT COUNT(*) as count
             FROM violations v
             JOIN vehicles ve ON v.vehicle_id = ve.vehicle_id
             JOIN users u ON ve.usc_id = u.usc_id
             WHERE u.usc_id = ?
+            AND v.status != 'resolved'
         `, [uscId]);
         const totalViolations = violationsResult[0]?.count || 0;
 

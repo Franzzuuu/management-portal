@@ -76,23 +76,32 @@ export default function CarolinianViolations() {
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-        const validFiles = [];
-        const rejectedFiles = [];
 
-        files.forEach(file => {
-            if (file.size <= maxSize) {
-                validFiles.push(file);
-            } else {
-                rejectedFiles.push(file);
-            }
-        });
-
-        if (rejectedFiles.length > 0) {
-            const fileNames = rejectedFiles.map(f => f.name).join(', ');
-            alert(`The following files exceed the 5MB limit and were not added: ${fileNames}`);
+        // Only allow 1 file
+        if (files.length > 1) {
+            alert('You can only upload 1 file. Please select a single file.');
+            e.target.value = ''; // Reset the input
+            return;
         }
 
-        setContestForm(prev => ({ ...prev, evidence_files: [...prev.evidence_files, ...validFiles] }));
+        // Check if a file is already uploaded
+        if (contestForm.evidence_files.length >= 1) {
+            alert('You can only upload 1 file. Please remove the existing file first.');
+            e.target.value = ''; // Reset the input
+            return;
+        }
+
+        const file = files[0];
+        if (!file) return;
+
+        if (file.size > maxSize) {
+            alert(`The file "${file.name}" exceeds the 5MB limit and was not added.`);
+            e.target.value = ''; // Reset the input
+            return;
+        }
+
+        setContestForm(prev => ({ ...prev, evidence_files: [file] }));
+        e.target.value = ''; // Reset the input for future uploads
     };
 
     const removeFile = (indexToRemove) => {
@@ -574,7 +583,6 @@ export default function CarolinianViolations() {
                                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-colors duration-200">
                                         <input
                                             type="file"
-                                            multiple
                                             accept="image/*,.pdf,.doc,.docx"
                                             onChange={handleFileChange}
                                             className="hidden"
@@ -585,9 +593,9 @@ export default function CarolinianViolations() {
                                                 <svg className="h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                                 </svg>
-                                                <p className="text-gray-600 font-medium">Click to upload files</p>
+                                                <p className="text-gray-600 font-medium">Click to upload a file</p>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    Images, PDF, Word documents • Max 5 files • 5MB each
+                                                    Images, PDF, Word documents • 1 file only • Max 5MB
                                                 </p>
                                             </div>
                                         </label>
@@ -595,7 +603,7 @@ export default function CarolinianViolations() {
 
                                     {contestForm.evidence_files.length > 0 && (
                                         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                                            <p className="text-sm font-medium text-blue-900 mb-3">Selected Files ({contestForm.evidence_files.length}):</p>
+                                            <p className="text-sm font-medium text-blue-900 mb-3">Selected File:</p>
                                             <ul className="space-y-2">
                                                 {contestForm.evidence_files.map((file, index) => (
                                                     <li key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded-lg border border-blue-100">
