@@ -426,33 +426,66 @@ export default function AccessLogsPage() {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {currentLogs.length > 0 ? (
                                     currentLogs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50">
+                                        <tr key={log.id} className={`hover:bg-gray-50 ${log.success === 0 ? 'bg-red-50' : ''}`}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {formatDateTime(log.timestamp)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {log.plate_number}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {log.vehicle_make} {log.vehicle_model}
-                                                </div>
+                                                {log.success === 0 || !log.plate_number ? (
+                                                    <div>
+                                                        <div className="text-sm font-medium text-red-600">
+                                                            Unknown Vehicle
+                                                        </div>
+                                                        <div className="text-sm text-red-500">
+                                                            Failed Scan
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {log.plate_number}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">
+                                                            {log.vehicle_make} {log.vehicle_model}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {log.user_name}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {log.designation}
-                                                </div>
+                                                {log.success === 0 || !log.user_name ? (
+                                                    <div>
+                                                        <div className="text-sm font-medium text-red-600">
+                                                            Unknown
+                                                        </div>
+                                                        <div className="text-sm text-red-500">
+                                                            Not Found
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {log.user_name}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">
+                                                            {log.designation}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.entry_type === 'entry'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-orange-100 text-orange-800'
-                                                    }`}>
-                                                    {log.entry_type === 'entry' ? '→ Entry' : '← Exit'}
-                                                </span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.entry_type === 'entry'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-orange-100 text-orange-800'
+                                                        }`}>
+                                                        {log.entry_type === 'entry' ? '→ Entry' : '← Exit'}
+                                                    </span>
+                                                    {log.success === 0 && (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                            Failed
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {log.gate_location || 'Main Gate'}

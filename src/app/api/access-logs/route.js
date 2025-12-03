@@ -10,8 +10,8 @@ export async function GET(request) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // For now, let's use a simple query without complex filtering
-        // We'll get all logs and let the frontend handle filtering
+        // Get all logs including failed ones with NULL vehicle_id
+        // Use LEFT JOIN to include logs even when vehicle is not found
         const query = `
             SELECT 
                 al.id,
@@ -30,9 +30,9 @@ export async function GET(request) {
                 u.designation,
                 u.email
             FROM access_logs al
-            JOIN vehicles v ON al.vehicle_id = v.vehicle_id
-            JOIN users u ON v.usc_id = u.usc_id
-            JOIN user_profiles up ON u.usc_id = up.usc_id
+            LEFT JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+            LEFT JOIN users u ON v.usc_id = u.usc_id
+            LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
             ORDER BY al.timestamp DESC
             LIMIT 100
         `;
@@ -66,10 +66,10 @@ export async function POST(request) {
         const body = await request.json();
         const { vehicle_id, tag_uid, entry_type, gate_location } = body;
 
-        // Validate required fields
-        if (!vehicle_id || !tag_uid || !entry_type) {
+        // Validate required fields (vehicle_id can be NULL for failed scans)
+        if (!tag_uid || !entry_type) {
             return Response.json(
-                { error: 'Missing required fields: vehicle_id, tag_uid, entry_type' },
+                { error: 'Missing required fields: tag_uid, entry_type' },
                 { status: 400 }
             );
         }
@@ -82,6 +82,9 @@ export async function POST(request) {
             );
         }
 
+        // Determine success based on whether vehicle_id is present
+        const success = vehicle_id ? 1 : 0;
+
         // Insert new access log
         const insertQuery = `
             INSERT INTO access_logs (
@@ -92,17 +95,19 @@ export async function POST(request) {
                 location,
                 gate_location,
                 success
-            ) VALUES (?, ?, ?, NOW(), ?, ?, TRUE)
+            ) VALUES (?, ?, ?, NOW(), ?, ?, ?)
         `;
 
         const defaultGateLocation = entry_type === 'entry' ? 'Gate 3' : 'Gate 1';
+        const locationValue = entry_type === 'entry' ? 'entrance' : 'exit';
 
         await queryMany(insertQuery, [
-            vehicle_id,
+            vehicle_id, // Can be NULL for failed scans
             tag_uid,
             entry_type,
             locationValue,
-            gate_location || defaultGateLocation
+            gate_location || defaultGateLocation,
+            success // 0 for failed, 1 for success
         ]);
 
         // Emit real-time update for entry/exit activity
@@ -126,15 +131,15 @@ export async function POST(request) {
                     u.designation,
                     u.email
                 FROM access_logs al
-                JOIN vehicles v ON al.vehicle_id = v.vehicle_id
-                JOIN users u ON v.usc_id = u.usc_id
-                JOIN user_profiles up ON u.usc_id = up.usc_id
-                WHERE al.vehicle_id = ? AND al.tag_uid = ?
+                LEFT JOIN vehicles v ON al.vehicle_id = v.vehicle_id
+                LEFT JOIN users u ON v.usc_id = u.usc_id
+                LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
+                WHERE al.tag_uid = ?
                 ORDER BY al.timestamp DESC
                 LIMIT 1
             `;
 
-            const logResult = await queryMany(logQuery, [vehicle_id, tag_uid]);
+            const logResult = await queryMany(logQuery, [tag_uid]);
             const newLog = logResult?.[0];
 
             if (newLog) {

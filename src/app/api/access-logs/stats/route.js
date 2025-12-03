@@ -10,12 +10,16 @@ export async function GET(request) {
         }
 
         // Query to get success vs failure counts from access_logs table
+        // Count logs with vehicle_id as success, logs with NULL vehicle_id or success=0 as failure
         const query = `
             SELECT 
-                success, 
+                CASE 
+                    WHEN success = 1 THEN 'success'
+                    ELSE 'failure'
+                END as status,
                 COUNT(*) AS count
             FROM access_logs 
-            GROUP BY success
+            GROUP BY status
         `;
 
         const results = await queryMany(query);
@@ -27,9 +31,9 @@ export async function GET(request) {
         // Process results
         if (results && results.length > 0) {
             results.forEach(row => {
-                if (row.success === 1) {
+                if (row.status === 'success') {
                     successCount = row.count;
-                } else if (row.success === 0) {
+                } else if (row.status === 'failure') {
                     failureCount = row.count;
                 }
             });
