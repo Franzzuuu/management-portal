@@ -32,7 +32,7 @@ async function authenticate(request) {
     return { authenticated: false };
 }
 
-// Get violations that are eligible for auto-close
+// Get violations that are eligible for auto-close (pending for 7+ days OR appeal denied)
 async function getEligibleViolations() {
     const query = `
         SELECT 
@@ -45,14 +45,23 @@ async function getEligibleViolations() {
             vh.plate_number,
             u.usc_id as owner_id,
             up.full_name as owner_name,
-            DATEDIFF(NOW(), v.created_at) as days_pending
+            vc.contest_status,
+            DATEDIFF(NOW(), v.created_at) as days_pending,
+            CASE 
+                WHEN vc.contest_status = 'denied' THEN 'Appeal denied'
+                ELSE 'Pending 7+ days'
+            END as close_reason
         FROM violations v
         LEFT JOIN violation_types vt ON v.violation_type_id = vt.id
         LEFT JOIN vehicles vh ON v.vehicle_id = vh.vehicle_id
         LEFT JOIN users u ON vh.usc_id = u.usc_id
         LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
-        WHERE v.status = 'pending'
-        AND v.created_at <= DATE_SUB(NOW(), INTERVAL ? DAY)
+        LEFT JOIN violation_contests vc ON v.id = vc.violation_id
+        WHERE v.status != 'closed'
+        AND (
+            (v.status = 'pending' AND v.created_at <= DATE_SUB(NOW(), INTERVAL ? DAY))
+            OR vc.contest_status = 'denied'
+        )
         ORDER BY v.created_at ASC
     `;
 
@@ -65,25 +74,36 @@ async function closeViolations(violations, closedBy = 'system') {
         return { closed: 0, ids: [] };
     }
 
-    const violationIds = violations.map(v => v.id);
-    
-    // Update all eligible violations to 'closed' status
-    const updateQuery = `
-        UPDATE violations 
-        SET status = 'closed',
-            updated_at = NOW(),
-            updated_by = ?,
-            closed_at = NOW(),
-            closed_reason = 'Auto-closed after ${AUTO_CLOSE_DAYS} days'
-        WHERE id IN (${violationIds.map(() => '?').join(',')})
-        AND status = 'pending'
-    `;
+    let totalClosed = 0;
+    const closedIds = [];
 
-    const result = await executeQuery(updateQuery, [closedBy, ...violationIds]);
+    // Process each violation individually to set the correct close reason
+    for (const violation of violations) {
+        const closeReason = violation.contest_status === 'denied' 
+            ? 'Auto-closed: Appeal denied'
+            : `Auto-closed after ${AUTO_CLOSE_DAYS} days`;
+
+        const updateQuery = `
+            UPDATE violations 
+            SET status = 'closed',
+                updated_at = NOW(),
+                closed_at = NOW(),
+                closed_reason = ?
+            WHERE id = ?
+            AND status != 'closed'
+        `;
+
+        const result = await executeQuery(updateQuery, [closeReason, violation.id]);
+        
+        if (result.affectedRows > 0) {
+            totalClosed++;
+            closedIds.push(violation.id);
+        }
+    }
 
     return {
-        closed: result.affectedRows || violationIds.length,
-        ids: violationIds
+        closed: totalClosed,
+        ids: closedIds
     };
 }
 
@@ -109,7 +129,9 @@ export async function GET(request) {
                 owner_name: v.owner_name,
                 created_at: v.created_at,
                 days_pending: v.days_pending,
-                location: v.location
+                location: v.location,
+                contest_status: v.contest_status,
+                close_reason: v.close_reason
             })),
             message: violations.length > 0 
                 ? `${violations.length} violation(s) would be auto-closed. Use POST to execute.`
