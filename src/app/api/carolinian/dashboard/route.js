@@ -72,7 +72,7 @@ export async function GET() {
                         WHEN al.entry_type = 'entry' THEN 'entered campus'
                         ELSE 'exited campus'
                     END,
-                    ' at Main Gate'
+                    ' at ', COALESCE(al.gate_location, 'Main Gate')
                 ) as description,
                 al.timestamp
             FROM access_logs al

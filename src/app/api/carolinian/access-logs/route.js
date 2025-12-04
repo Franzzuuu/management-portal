@@ -24,7 +24,7 @@ export async function GET(request) {
                 al.id,
                 al.timestamp,
                 al.entry_type as access_type,
-                'Main Gate' as location,
+                al.gate_location,
                 al.tag_uid as rfid_tag_scanned,
                 v.plate_number,
                 v.make as vehicle_make,

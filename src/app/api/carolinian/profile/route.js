@@ -144,7 +144,7 @@ export async function PUT(request) {
                 UPDATE users 
                 SET 
                     email = ?
-                WHERE id = ?
+                WHERE usc_id = ?
             `, [
                 profileData.email.trim(),
                 uscId
@@ -173,7 +173,7 @@ export async function PUT(request) {
                 UPDATE users 
                 SET 
                     email = ?
-                WHERE id = ?
+                WHERE usc_id = ?
             `, [
                 profileData.email.trim(),
                 uscId

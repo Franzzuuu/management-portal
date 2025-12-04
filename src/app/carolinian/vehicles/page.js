@@ -741,7 +741,7 @@ export default function CarolinianVehicles() {
                                                 </td>
                                                 <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
                                                     <div className="text-xs sm:text-sm text-gray-900">
-                                                        {log.location || 'Main Gate'}
+                                                        {log.gate_location || 'Main Gate'}
                                                     </div>
                                                 </td>
                                                 <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
