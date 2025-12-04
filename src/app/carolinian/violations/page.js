@@ -163,6 +163,7 @@ export default function CarolinianViolations() {
             case 'pending': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
             case 'contested': return 'bg-blue-50 text-blue-800 border-blue-200';
             case 'resolved': return 'bg-green-50 text-green-800 border-green-200';
+            case 'closed': return 'bg-gray-50 text-gray-600 border-gray-300';
             case 'rejected': return 'bg-red-50 text-red-800 border-red-200';
             default: return 'bg-gray-50 text-gray-800 border-gray-200';
         }
@@ -290,7 +291,8 @@ export default function CarolinianViolations() {
                                                                 violation.contest_status === 'denied' ? 'bg-orange-400' :
                                                                     violation.status === 'pending' ? 'bg-yellow-400' :
                                                                         violation.status === 'contested' ? 'bg-blue-400' :
-                                                                            violation.status === 'resolved' ? 'bg-green-400' : 'bg-red-400'
+                                                                            violation.status === 'resolved' ? 'bg-green-400' :
+                                                                                violation.status === 'closed' ? 'bg-gray-400' : 'bg-red-400'
                                                                 }`}></div>
                                                             <span className="truncate">
                                                                 {violation.contest_status === 'approved' ? 'Dismissed' :

@@ -28,7 +28,7 @@ export async function POST(request) {
         }
 
         // Validate status
-        if (!['pending', 'resolved', 'contested'].includes(status)) {
+        if (!['pending', 'resolved', 'contested', 'closed'].includes(status)) {
             return Response.json(
                 { error: 'Invalid status value' },
                 { status: 400 }

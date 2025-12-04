@@ -50,6 +50,7 @@ export async function GET(request) {
         switch (view) {
             case 'current':
                 // Show pending and contested violations (active violations)
+                // Exclude 'closed' and 'resolved' violations
                 violations = await queryMany(`
                     ${baseQuery}
                     AND v.status IN ('pending', 'contested')
@@ -58,7 +59,7 @@ export async function GET(request) {
                 break;
 
             case 'history':
-                // Show all violations
+                // Show all violations including closed ones
                 violations = await queryMany(`
                     ${baseQuery}
                     ORDER BY v.created_at DESC

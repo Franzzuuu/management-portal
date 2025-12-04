@@ -699,6 +699,7 @@ export default function ViolationsManagement() {
             case 'pending': return 'bg-yellow-100 text-yellow-800';
             case 'resolved': return 'bg-green-100 text-green-800';
             case 'contested': return 'bg-red-100 text-red-800';
+            case 'closed': return 'bg-gray-200 text-gray-600';
             default: return 'bg-gray-100 text-gray-800';
         }
     };
@@ -937,6 +938,7 @@ export default function ViolationsManagement() {
                                         <option value="pending">Pending</option>
                                         <option value="resolved">Resolved</option>
                                         <option value="contested">Contested</option>
+                                        <option value="closed">Closed</option>
                                     </select>
                                 </div>
 
@@ -1370,7 +1372,7 @@ export default function ViolationsManagement() {
                             </p>
 
                             {/* History Summary Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                                 <div className="bg-blue-600 rounded-lg p-4">
                                     <div className="text-2xl font-bold text-white">{violations.length}</div>
                                     <div className="text-sm text-blue-100">Total Violations</div>
@@ -1386,6 +1388,10 @@ export default function ViolationsManagement() {
                                 <div className="bg-red-600 rounded-lg p-4">
                                     <div className="text-2xl font-bold text-white">{violations.filter(v => v.status === 'contested').length}</div>
                                     <div className="text-sm text-red-100">Contested</div>
+                                </div>
+                                <div className="bg-gray-600 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-white">{violations.filter(v => v.status === 'closed').length}</div>
+                                    <div className="text-sm text-gray-100">Closed</div>
                                 </div>
                             </div>
 
