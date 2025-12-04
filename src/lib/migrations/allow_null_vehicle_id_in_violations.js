@@ -68,11 +68,25 @@ export async function allowNullVehicleIdInViolations() {
 
         console.log('✓ Re-added foreign key constraint with ON DELETE SET NULL');
 
-        // Add index for better query performance on tag_uid lookups
-        await executeQuery(`
-            ALTER TABLE violations 
-            ADD INDEX IF NOT EXISTS idx_violations_vehicle_id (vehicle_id)
-        `);
+        // Add index for better query performance on vehicle_id lookups (if not exists)
+        try {
+            // Check if index exists first
+            const [indexes] = await executeQuery(`
+                SHOW INDEX FROM violations WHERE Key_name = 'idx_violations_vehicle_id'
+            `);
+            
+            if (!indexes || indexes.length === 0) {
+                await executeQuery(`
+                    ALTER TABLE violations 
+                    ADD INDEX idx_violations_vehicle_id (vehicle_id)
+                `);
+                console.log('✓ Added index idx_violations_vehicle_id');
+            } else {
+                console.log('→ Index idx_violations_vehicle_id already exists');
+            }
+        } catch (indexError) {
+            console.log('→ Index may already exist or failed:', indexError.message);
+        }
 
         console.log('✓ Migration completed successfully!');
 

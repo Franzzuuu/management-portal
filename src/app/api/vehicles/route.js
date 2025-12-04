@@ -70,6 +70,7 @@ export async function GET(request) {
                     v.approval_status,
                     v.sticker_status,
                     v.registration_date,
+                    v.rejection_reason,
                     v.created_at,
                     v.updated_at,
                     rt.tag_uid as rfid_tag_uid,
@@ -83,11 +84,13 @@ export async function GET(request) {
             // Split vehicles by approval status
             const registered = vehicles.filter(v => v.approval_status === 'approved');
             const pending = vehicles.filter(v => v.approval_status === 'pending');
+            const rejected = vehicles.filter(v => v.approval_status === 'rejected');
 
             return Response.json({
                 success: true,
                 registered,
-                pending
+                pending,
+                rejected
             });
         }
 

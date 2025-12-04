@@ -12,7 +12,7 @@ export async function POST(request) {
 
         const body = await request.json();
         console.log('Received request body:', body);
-        const { vehicleId, status } = body;
+        const { vehicleId, status, rejectionReason } = body;
 
         // Validate input
         if (!vehicleId || !status || !['approved', 'rejected'].includes(status)) {
@@ -44,12 +44,12 @@ export async function POST(request) {
 
         if (status === 'approved') {
             // When approved, set registration_date to current timestamp
-            updateQuery = 'UPDATE vehicles SET approval_status = ?, registration_date = NOW(), updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?';
+            updateQuery = 'UPDATE vehicles SET approval_status = ?, rejection_reason = NULL, registration_date = NOW(), updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?';
             updateParams = [status, vehicleId];
         } else {
-            // When rejected, only update approval_status
-            updateQuery = 'UPDATE vehicles SET approval_status = ?, updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?';
-            updateParams = [status, vehicleId];
+            // When rejected, store the rejection reason (optional)
+            updateQuery = 'UPDATE vehicles SET approval_status = ?, rejection_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE vehicle_id = ?';
+            updateParams = [status, rejectionReason || null, vehicleId];
         }
 
         console.log('Updating vehicle with:', { status, vehicleId });

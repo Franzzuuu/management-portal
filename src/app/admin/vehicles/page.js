@@ -24,6 +24,9 @@ export default function VehicleManagement() {
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [rejectModal, setRejectModal] = useState({ open: false, vehicleId: null, vehicleInfo: '' });
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [rejecting, setRejecting] = useState(false);
     const router = useRouter();
 
     const fetchVehicles = useCallback(async () => {
@@ -126,6 +129,51 @@ export default function VehicleManagement() {
             }
         } catch (error) {
             setError('Network error. Please try again.');
+        }
+    };
+
+    const openRejectModal = (vehicle) => {
+        setRejectModal({
+            open: true,
+            vehicleId: vehicle.vehicle_id,
+            vehicleInfo: `${vehicle.make} ${vehicle.model} - ${vehicle.plate_number}`
+        });
+        setRejectionReason('');
+    };
+
+    const closeRejectModal = () => {
+        setRejectModal({ open: false, vehicleId: null, vehicleInfo: '' });
+        setRejectionReason('');
+    };
+
+    const handleRejectWithReason = async () => {
+        setRejecting(true);
+        try {
+            const response = await fetch('/api/vehicles/approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    vehicleId: rejectModal.vehicleId,
+                    status: 'rejected',
+                    rejectionReason: rejectionReason.trim() || null
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setSuccess('Vehicle rejected successfully!');
+                closeRejectModal();
+                await fetchVehicles();
+            } else {
+                setError(data.error || 'Failed to reject vehicle');
+            }
+        } catch (error) {
+            setError('Network error. Please try again.');
+        } finally {
+            setRejecting(false);
         }
     };
 
@@ -423,7 +471,7 @@ export default function VehicleManagement() {
                                                             Approve
                                                         </button>
                                                         <button
-                                                            onClick={() => handleApproval(vehicle.vehicle_id, 'rejected')}
+                                                            onClick={() => openRejectModal(vehicle)}
                                                             className="text-red-600 hover:text-red-900 hover:cursor-pointer"
                                                         >
                                                             Reject
@@ -445,6 +493,92 @@ export default function VehicleManagement() {
                     </div>
                 </div>
             </main>
+
+            {/* Rejection Reason Modal */}
+            {rejectModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm overflow-y-auto p-4">
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
+                        {/* Modal Header */}
+                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl" style={{ background: 'linear-gradient(90deg, #dc2626 0%, #b91c1c 100%)' }}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
+                                        <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">Reject Vehicle</h3>
+                                        <p className="text-sm text-red-100">Provide a reason (optional)</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={closeRejectModal}
+                                    className="text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors duration-200 hover:cursor-pointer"
+                                >
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            {/* Vehicle Info */}
+                            <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                <p className="text-sm text-gray-600">Vehicle:</p>
+                                <p className="text-base font-medium text-gray-900">{rejectModal.vehicleInfo}</p>
+                            </div>
+
+                            {/* Rejection Reason Input */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Rejection Reason <span className="text-gray-400">(optional)</span>
+                                </label>
+                                <textarea
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent resize-none text-gray-700 placeholder-gray-400"
+                                    style={{ '--tw-ring-color': '#dc2626' }}
+                                    rows={3}
+                                    placeholder="e.g., Invalid documents, duplicate registration, incomplete information..."
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    This reason will be shown to the vehicle owner.
+                                </p>
+                            </div>
+
+                            {/* Modal Actions */}
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={closeRejectModal}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer"
+                                    disabled={rejecting}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRejectWithReason}
+                                    disabled={rejecting}
+                                    className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-red-700 hover:shadow-lg hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {rejecting ? (
+                                        <span className="flex items-center">
+                                            <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Rejecting...
+                                        </span>
+                                    ) : (
+                                        'Reject Vehicle'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -154,9 +154,9 @@ export default function CarolinianViolations() {
             return 'bg-green-50 text-green-800 border-green-200';
         }
 
-        // If appeal is denied, show as resolved but with different color to indicate it stands
+        // If appeal is denied, show as closed
         if (contestStatus === 'denied') {
-            return 'bg-orange-50 text-orange-800 border-orange-200';
+            return 'bg-gray-50 text-gray-600 border-gray-300';
         }
 
         switch (status) {
@@ -288,7 +288,7 @@ export default function CarolinianViolations() {
                                                     <div className="flex flex-wrap gap-2">
                                                         <span className={`inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded-full border ${getStatusColor(violation.status, violation.contest_status)}`}>
                                                             <div className={`w-2 h-2 rounded-full mr-1 sm:mr-2 flex-shrink-0 ${violation.contest_status === 'approved' ? 'bg-green-400' :
-                                                                violation.contest_status === 'denied' ? 'bg-orange-400' :
+                                                                violation.contest_status === 'denied' ? 'bg-gray-400' :
                                                                     violation.status === 'pending' ? 'bg-yellow-400' :
                                                                         violation.status === 'contested' ? 'bg-blue-400' :
                                                                             violation.status === 'resolved' ? 'bg-green-400' :
@@ -296,7 +296,7 @@ export default function CarolinianViolations() {
                                                                 }`}></div>
                                                             <span className="truncate">
                                                                 {violation.contest_status === 'approved' ? 'Dismissed' :
-                                                                    violation.contest_status === 'denied' ? 'Stands' :
+                                                                    violation.contest_status === 'denied' ? 'Closed' :
                                                                         violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}
                                                             </span>
                                                         </span>
@@ -390,11 +390,11 @@ export default function CarolinianViolations() {
                                                                 </div>
                                                             )}
                                                             {violation.contest_status === 'denied' && (
-                                                                <div className="inline-flex items-center justify-center sm:justify-start px-3 py-2 text-xs sm:text-sm font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg">
+                                                                <div className="inline-flex items-center justify-center sm:justify-start px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-lg">
                                                                     <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                                     </svg>
-                                                                    <span className="truncate">Appeal Denied - Stands</span>
+                                                                    <span className="truncate">Appeal Denied - Closed</span>
                                                                 </div>
                                                             )}
                                                         </div>

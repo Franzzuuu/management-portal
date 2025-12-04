@@ -313,14 +313,17 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Pending Vehicle Approvals */}
-                <div className="bg-white rounded-xl shadow-lg">
+                <div 
+                    className="bg-white rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200"
+                    onClick={() => router.push('/admin/vehicles')}
+                >
                     <div className="px-6 sm:px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-xl sm:text-xl font-semibold text-white">
                                     Pending Vehicle Approvals {stats.pendingApprovals > 0 && `(${stats.pendingApprovals})`}
                                 </h2>
-                                <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Awaiting admin confirmation</p>
+                                <p className="text-sm sm:text-sm" style={{ color: '#FFD700' }}>Awaiting admin confirmation • Click to manage</p>
                             </div>
                             {stats.pendingApprovals > 0 && (
                                 <span className="bg-[#FFD700] text-[#355E3B] text-xs font-semibold px-2 py-1 rounded-full">
@@ -333,7 +336,7 @@ export default function AdminDashboard() {
                         {pendingVehicleApprovals && pendingVehicleApprovals.length > 0 ? (
                             <div className="space-y-4 sm:space-y-4">
                                 {pendingVehicleApprovals.slice(0, 5).map((vehicle, index) => (
-                                    <div key={index} className="flex items-center justify-between p-4 sm:p-4 bg-gray-50 rounded-lg">
+                                    <div key={index} className="flex items-center justify-between p-4 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                                         <div className="flex items-center flex-1">
                                             <div className="flex-shrink-0">
                                                 <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f97316' }}>

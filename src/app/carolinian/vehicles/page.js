@@ -10,12 +10,14 @@ export default function CarolinianVehicles() {
     const [user, setUser] = useState(null);
     const [registeredVehicles, setRegisteredVehicles] = useState([]);
     const [pendingVehicles, setPendingVehicles] = useState([]);
+    const [rejectedVehicles, setRejectedVehicles] = useState([]);
     const [activeTab, setActiveTab] = useState('vehicles');
     const [loading, setLoading] = useState(true);
     const [accessLogs, setAccessLogs] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [formLoading, setFormLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [acknowledging, setAcknowledging] = useState(null);
     const [formData, setFormData] = useState({
         vehicleType: '',
         make: '',
@@ -61,6 +63,7 @@ export default function CarolinianVehicles() {
                 const data = await response.json();
                 setRegisteredVehicles(data.registered || []);
                 setPendingVehicles(data.pending || []);
+                setRejectedVehicles(data.rejected || []);
             }
         } catch (error) {
             console.error('Failed to fetch vehicles:', error);
@@ -68,6 +71,31 @@ export default function CarolinianVehicles() {
             setLoading(false);
         }
     }, []);
+
+    const handleAcknowledgeRejection = async (vehicleId) => {
+        setAcknowledging(vehicleId);
+        try {
+            const response = await fetch('/api/vehicles/acknowledge-rejection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vehicleId })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove the vehicle from the rejected list
+                setRejectedVehicles(prev => prev.filter(v => v.vehicle_id !== vehicleId));
+            } else {
+                setMessage({ type: 'error', text: data.error || 'Failed to acknowledge rejection' });
+            }
+        } catch (error) {
+            console.error('Error acknowledging rejection:', error);
+            setMessage({ type: 'error', text: 'Failed to acknowledge rejection. Please try again.' });
+        } finally {
+            setAcknowledging(null);
+        }
+    };
 
     const fetchAccessLogs = useCallback(async () => {
         try {
@@ -414,19 +442,7 @@ export default function CarolinianVehicles() {
                     <BackButton text="Back to Dashboard" fallbackPath="/carolinian" />
                 </div>
 
-                {/* Live Updates Banner */}
-                {(showForm || isFormDirty) && (
-                    <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div className="flex items-center">
-                            <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-blue-700 text-sm" aria-live="polite">
-                                Live updates paused while registering a vehicle — updates will resume after saving.
-                            </span>
-                        </div>
-                    </div>
-                )}
+
                 {/* Page Header with Tabs */}
                 <div className="mb-8 p-4 sm:p-6 rounded-xl shadow-lg" style={{ background: 'linear-gradient(135deg, #355E3B 0%, #2d4f32 100%)' }}>
                     <div className="flex flex-col space-y-4">
@@ -646,8 +662,104 @@ export default function CarolinianVehicles() {
                             </div>
                         )}
 
+                        {/* Rejected Vehicles */}
+                        {rejectedVehicles.length > 0 && (
+                            <div className="bg-white rounded-xl shadow-lg">
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #dc2626 0%, #b91c1c 100%)' }}>
+                                    <h3 className="text-lg font-semibold text-white">Rejected Vehicles</h3>
+                                    <p className="text-sm text-red-100">Please acknowledge to remove from list</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {rejectedVehicles.map((vehicle) => (
+                                            <div key={vehicle.vehicle_id} className="border-2 border-red-200 rounded-xl p-6 bg-red-50">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div className="flex items-center">
+                                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-red-600">
+                                                            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className="ml-3">
+                                                            <h4 className="text-lg font-semibold text-gray-900">{vehicle.plate_number}</h4>
+                                                            <p className="text-sm text-gray-500">{vehicle.make} {vehicle.model}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-gray-500">Color:</span>
+                                                        <span className="text-sm font-medium text-gray-900">{vehicle.color}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-gray-500">Year:</span>
+                                                        <span className="text-sm font-medium text-gray-900">{vehicle.year}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-gray-500">Type:</span>
+                                                        <span className="text-sm font-medium text-gray-900">{vehicle.vehicle_type}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-gray-500">Status:</span>
+                                                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-800">
+                                                            Rejected
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Rejection Reason */}
+                                                <div className="mt-4 p-3 bg-white border border-red-200 rounded-lg">
+                                                    <div className="flex items-start">
+                                                        <svg className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                                        </svg>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                                                            <p className="text-sm text-red-700 mt-1">
+                                                                {vehicle.rejection_reason || 'No reason provided. Please contact the admin office for more information.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Acknowledge Button */}
+                                                <div className="mt-4">
+                                                    <button
+                                                        onClick={() => handleAcknowledgeRejection(vehicle.vehicle_id)}
+                                                        disabled={acknowledging === vehicle.vehicle_id}
+                                                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-red-700 hover:shadow-lg hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {acknowledging === vehicle.vehicle_id ? (
+                                                            <span className="flex items-center justify-center">
+                                                                <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                </svg>
+                                                                Processing...
+                                                            </span>
+                                                        ) : (
+                                                            <span className="flex items-center justify-center">
+                                                                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                                Acknowledge &amp; Remove
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                    <p className="text-xs text-gray-500 text-center mt-2">
+                                                        This will permanently remove this rejected vehicle from your list.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* No Vehicles Message */}
-                        {registeredVehicles.length === 0 && pendingVehicles.length === 0 && !showForm && (
+                        {registeredVehicles.length === 0 && pendingVehicles.length === 0 && rejectedVehicles.length === 0 && !showForm && (
                             <div className="bg-white rounded-xl shadow-lg">
                                 <div className="text-center py-12">
                                     <svg className="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
