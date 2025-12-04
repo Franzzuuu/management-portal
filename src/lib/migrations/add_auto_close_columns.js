@@ -74,6 +74,32 @@ export async function addAutoCloseColumns() {
             console.log('→ closed_reason column already exists');
         }
 
+        // Update status ENUM to include 'closed' value
+        try {
+            // Check current ENUM values
+            const [columnInfo] = await connection.execute(`
+                SELECT COLUMN_TYPE 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'violations' 
+                AND COLUMN_NAME = 'status'
+            `);
+            
+            const currentType = columnInfo[0]?.COLUMN_TYPE || '';
+            if (!currentType.includes("'closed'")) {
+                console.log('Updating status ENUM to include closed...');
+                await connection.execute(`
+                    ALTER TABLE violations 
+                    MODIFY COLUMN status ENUM('pending', 'resolved', 'contested', 'closed') DEFAULT 'pending'
+                `);
+                console.log('✓ Status ENUM updated to include closed');
+            } else {
+                console.log('→ Status ENUM already includes closed');
+            }
+        } catch (enumError) {
+            console.warn('Could not update status ENUM:', enumError.message);
+        }
+
         // Add index for efficient querying of pending violations by date
         try {
             await connection.execute(`
