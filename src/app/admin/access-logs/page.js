@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import DeleteLogsModal from '../../components/DeleteLogsModal';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import Toast from '../../components/Toast';
 import BackButton from '../../components/BackButton';
 import useSocketChannel from '../../../hooks/useSocketChannel';
@@ -196,14 +197,7 @@ export default function AccessLogsPage() {
     const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#355E3B' }}></div>
-                    <span className="text-gray-600">Loading access logs...</span>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Loading access logs" />;
     }
 
     return (

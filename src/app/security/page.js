@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, AlertCircle, CheckCircle, Clock, Users, Car, Calendar, MapPin, User } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import useSocketChannel from '@/hooks/useSocketChannel';
 
 const SecurityDashboard = () => {
@@ -187,14 +188,7 @@ const SecurityDashboard = () => {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto" style={{ borderColor: '#355E3B' }}></div>
-                    <p className="mt-4 text-gray-600">Loading Security Dashboard...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Loading Security Dashboard" />;
     }
 
     // Dashboard stats configuration - Security-specific KPIs
@@ -203,31 +197,28 @@ const SecurityDashboard = () => {
             title: 'Total Violations',
             value: stats.totalViolations,
             subtitle: 'Recorded in system',
-            iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+            iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
             bgColor: '#355E3B',
             iconColor: '#FFD700',
-            textColor: '#355E3B',
-            borderColor: '#355E3B'
+            borderColor: '#e5e7eb'
         },
         {
             title: 'Self-Issued Violations',
             value: stats.selfIssuedViolations,
             subtitle: 'Violations you reported',
-            iconPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-            bgColor: '#FFD700',
-            iconColor: '#355E3B',
-            textColor: '#FFD700',
-            borderColor: '#FFD700'
+            iconPath: 'M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+            bgColor: '#f59e0b',
+            iconColor: '#ffffff',
+            borderColor: '#e5e7eb'
         },
         {
             title: 'Contribution Percentage',
             value: `${stats.contributionPercentage}%`,
             subtitle: 'Your contribution to total violations',
-            iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+            iconPath: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z',
             bgColor: '#10b981',
             iconColor: '#ffffff',
-            textColor: '#10b981',
-            borderColor: '#10b981'
+            borderColor: '#e5e7eb'
         }
     ];
 
@@ -236,7 +227,7 @@ const SecurityDashboard = () => {
         {
             title: 'Violations',
             subtitle: 'Report, monitor and manage all security violations',
-            iconPath: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+            iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
             bgColor: '#355E3B',
             iconColor: '#FFD700',
             onClick: () => router.push('/security/violations')

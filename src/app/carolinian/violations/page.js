@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import BackButton from '../../components/BackButton';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CarolinianViolations() {
     const [user, setUser] = useState(null);
@@ -179,14 +180,7 @@ export default function CarolinianViolations() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto" style={{ borderColor: '#355E3B' }}></div>
-                    <p className="mt-4 text-gray-600">Loading violations...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Loading violations" />;
     }
 
     return (

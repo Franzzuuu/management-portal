@@ -18,7 +18,7 @@ export default function KPICard({
                 <div className="flex-shrink-0">
                     <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
                          style={{ backgroundColor: iconBgColor }}>
-                        <svg className="h-6 w-6" style={{ color: iconColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-6 w-6" style={{ color: iconColor }} viewBox="0 0 24 24">
                             {icon}
                         </svg>
                     </div>

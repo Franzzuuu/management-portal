@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '../../components/Header';
 import BackButton from '../../components/BackButton';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CarolinianProfile() {
     const [user, setUser] = useState(null);
@@ -207,14 +208,7 @@ export default function CarolinianProfile() {
     const hasChanges = JSON.stringify(profile) !== JSON.stringify(originalProfile);
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-green-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600 font-medium">Loading profile...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Loading profile" />;
     }
 
     return (

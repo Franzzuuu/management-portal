@@ -73,19 +73,30 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                 {stats && (
                     <div className={getStatsGridClass()}>
                         {stats.map((stat, index) => (
-                            <div key={index} className="bg-white rounded-xl shadow-lg p-6 border-l-4 transform transition-all duration-200 hover:shadow-xl" style={{ borderLeftColor: stat.borderColor }}>
+                            <div 
+                                key={index} 
+                                className="bg-white rounded-xl shadow-sm p-6 border-l-4 select-none"
+                                style={{ borderLeftColor: stat.borderColor }}
+                            >
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <div className="h-14 w-14 rounded-lg flex items-center justify-center" style={{ backgroundColor: stat.bgColor }}>
-                                            <svg className="h-7 w-7" style={{ color: stat.iconColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.iconPath} />
+                                        <div 
+                                            className="h-12 w-12 rounded-full flex items-center justify-center opacity-90"
+                                            style={{ backgroundColor: stat.bgColor }}
+                                        >
+                                            <svg className="h-6 w-6" style={{ color: stat.iconColor }} fill={stat.iconFill ? 'currentColor' : 'none'} stroke={stat.iconFill ? 'none' : 'currentColor'} viewBox="0 0 24 24">
+                                                {stat.iconFill ? (
+                                                    <path d={stat.iconPath} />
+                                                ) : (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.iconPath} />
+                                                )}
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-5 min-w-0 flex-1">
-                                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">{stat.title}</h3>
-                                        <p className="text-3xl font-bold mb-1" style={{ color: stat.textColor }}>{stat.value}</p>
-                                        <p className="text-xs text-gray-500">{stat.subtitle}</p>
+                                    <div className="ml-4 min-w-0 flex-1">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{stat.title}</p>
+                                        <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">{stat.subtitle}</p>
                                     </div>
                                 </div>
                             </div>
@@ -111,8 +122,12 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                                         >
                                             <div className="flex-shrink-0">
                                                 <div className="h-14 w-14 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200" style={{ backgroundColor: action.bgColor }}>
-                                                    <svg className="h-7 w-7" style={{ color: action.iconColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.iconPath} />
+                                                    <svg className="h-7 w-7" style={{ color: action.iconColor }} fill={action.iconFill ? 'currentColor' : 'none'} stroke={action.iconFill ? 'none' : 'currentColor'} viewBox="0 0 24 24">
+                                                        {action.iconFill ? (
+                                                            <path d={action.iconPath} />
+                                                        ) : (
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.iconPath} />
+                                                        )}
                                                     </svg>
                                                 </div>
                                             </div>

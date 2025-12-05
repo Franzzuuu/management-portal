@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import BackButton from '../../components/BackButton';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import KPICard from '../../components/KPICard';
 import ReportsSection from '../../components/ReportsSection';
 import SimplePieChart from '../../components/SimplePieChart';
@@ -326,17 +327,7 @@ export default function ReportsPage() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="flex items-center space-x-2">
-                    <svg className="animate-spin h-5 w-5" style={{ color: '#355E3B' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="text-gray-600">Loading...</span>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Loading reports" />;
     }
 
     return (
@@ -462,17 +453,17 @@ export default function ReportsPage() {
                                 title="Total Users"
                                 value={reportData.userStats?.total || 0}
                                 subtitle="System-wide"
-                                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />}
+                                icon={<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />}
                                 borderColor="#355E3B"
                                 textColor="#355E3B"
                                 iconBgColor="#355E3B"
                                 iconColor="#FFD700"
                             />
                             <KPICard
-                                title="Active Users"
+                                title="Users with Activity"
                                 value={reportData.userStats?.activeInRange || reportData.userStats?.total || 0}
-                                subtitle={dateRange.startDate && dateRange.endDate ? "In period" : "Current"}
-                                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />}
+                                subtitle={dateRange.startDate && dateRange.endDate ? "Logged access in period" : "With access records"}
+                                icon={<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />}
                                 borderColor="#FFD700"
                                 textColor="#FFD700"
                                 iconBgColor="#FFD700"
@@ -482,7 +473,7 @@ export default function ReportsPage() {
                                 title="Total Vehicles"
                                 value={reportData.vehicleStats?.total || 0}
                                 subtitle="Registered"
-                                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-5a2 2 0 00-2-2H8z" />}
+                                icon={<path fill="currentColor" d="M12,4C7.58,4 4,7.58 4,12C4,16.42 7.58,20 12,20C16.42,20 20,16.42 20,12C20,7.58 16.42,4 12,4M12,2C17.52,2 22,6.48 22,12C22,17.52 17.52,22 12,22C6.48,22 2,17.52 2,12C2,6.48 6.48,2 12,2M12,7C13.1,7 14.14,7.22 15.1,7.61L13.58,10.24C13.15,10.08 12.6,10 12,10C11.4,10 10.85,10.08 10.42,10.24L8.9,7.61C9.86,7.22 10.9,7 12,7M16.73,8.86C17.45,9.66 17.88,10.71 17.97,11.87L14.95,12.39C14.83,11.86 14.59,11.37 14.24,10.97L16.73,8.86M17.97,12.13C17.88,13.29 17.45,14.34 16.73,15.14L14.24,13.03C14.59,12.63 14.83,12.14 14.95,11.61L17.97,12.13M15.1,16.39C14.14,16.78 13.1,17 12,17C10.9,17 9.86,16.78 8.9,16.39L10.42,13.76C10.85,13.92 11.4,14 12,14C12.6,14 13.15,13.92 13.58,13.76L15.1,16.39M7.27,15.14C6.55,14.34 6.12,13.29 6.03,12.13L9.05,11.61C9.17,12.14 9.41,12.63 9.76,13.03L7.27,15.14M6.03,11.87C6.12,10.71 6.55,9.66 7.27,8.86L9.76,10.97C9.41,11.37 9.17,11.86 9.05,12.39L6.03,11.87Z" />}
                                 borderColor="#4E7D57"
                                 textColor="#4E7D57"
                                 iconBgColor="#4E7D57"
@@ -496,7 +487,7 @@ export default function ReportsPage() {
                                 title="Access Logs"
                                 value={reportData.accessStats?.inRange || 0}
                                 subtitle={dateRange.startDate && dateRange.endDate ? "In period" : "Total"}
-                                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />}
+                                icon={<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />}
                                 borderColor="#4F81BD"
                                 textColor="#4F81BD"
                                 iconBgColor="#4F81BD"
@@ -506,7 +497,7 @@ export default function ReportsPage() {
                                 title="Violations"
                                 value={reportData.violationStats?.total || 0}
                                 subtitle={dateRange.startDate && dateRange.endDate ? "In period" : "Total"}
-                                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />}
+                                icon={<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />}
                                 borderColor="#DC2626"
                                 textColor="#DC2626"
                                 iconBgColor="#DC2626"
@@ -514,9 +505,9 @@ export default function ReportsPage() {
                             />
                             <KPICard
                                 title="Peak Entry Hour"
-                                value={reportData.accessStats?.peakEntryHour !== null ? `${String(reportData.accessStats.peakEntryHour).padStart(2, '0')}:00` : 'N/A'}
+                                value={reportData.accessStats?.peakEntryHour !== null ? `${String(reportData.accessStats.peakEntryHour).padStart(2, '0')}:00 - ${String(reportData.accessStats.peakEntryHour).padStart(2, '0')}:59` : 'N/A'}
                                 subtitle="Most entries"
-                                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />}
+                                icon={<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />}
                                 borderColor="#F59E0B"
                                 textColor="#F59E0B"
                                 iconBgColor="#F59E0B"
@@ -631,13 +622,13 @@ export default function ReportsPage() {
                                     </div>
                                     <div className="bg-gray-50 p-4 rounded-lg text-center">
                                         <div className="text-2xl font-bold text-blue-600">
-                                            {reportData.accessStats?.peakEntryHour !== null ? `${String(reportData.accessStats.peakEntryHour).padStart(2, '0')}:00` : 'N/A'}
+                                            {reportData.accessStats?.peakEntryHour !== null ? `${String(reportData.accessStats.peakEntryHour).padStart(2, '0')}:00 - ${String(reportData.accessStats.peakEntryHour).padStart(2, '0')}:59` : 'N/A'}
                                         </div>
                                         <div className="text-sm text-gray-600">Peak Entry Hour</div>
                                     </div>
                                     <div className="bg-gray-50 p-4 rounded-lg text-center">
                                         <div className="text-2xl font-bold text-blue-600">
-                                            {reportData.accessStats?.peakExitHour !== null ? `${String(reportData.accessStats.peakExitHour).padStart(2, '0')}:00` : 'N/A'}
+                                            {reportData.accessStats?.peakExitHour !== null ? `${String(reportData.accessStats.peakExitHour).padStart(2, '0')}:00 - ${String(reportData.accessStats.peakExitHour).padStart(2, '0')}:59` : 'N/A'}
                                         </div>
                                         <div className="text-sm text-gray-600">Peak Exit Hour</div>
                                     </div>
