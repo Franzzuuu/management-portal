@@ -49,7 +49,7 @@ export async function GET(request) {
             queryOne('SELECT COUNT(*) as count FROM users WHERE designation = "Security" AND status = "active"'),
             startDate && endDate 
                 ? queryOne(`SELECT COUNT(DISTINCT u.id) as count FROM users u JOIN vehicles v ON u.usc_id = v.usc_id JOIN access_logs al ON v.vehicle_id = al.vehicle_id WHERE u.status = "active" AND DATE(al.timestamp) BETWEEN ? AND ?`, dateParams)
-                : queryOne('SELECT COUNT(*) as count FROM users WHERE status = "active"'),
+                : queryOne('SELECT COUNT(DISTINCT u.id) as count FROM users u JOIN vehicles v ON u.usc_id = v.usc_id JOIN access_logs al ON v.vehicle_id = al.vehicle_id WHERE u.status = "active"'),
             queryMany('SELECT designation, COUNT(*) as count FROM users WHERE status = "active" GROUP BY designation ORDER BY count DESC')
         ]);
 

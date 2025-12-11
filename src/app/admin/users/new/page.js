@@ -48,6 +48,7 @@ export default function AddNewUser() {
     const [designationFilter, setDesignationFilter] = useState('all');
     const [sortOrder, setSortOrder] = useState('asc'); // 'asc' = oldest first, 'desc' = newest first
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
     const router = useRouter();
 
     // Filter and sort users
@@ -80,6 +81,43 @@ export default function AddNewUser() {
     };
 
     const filteredUsers = getFilteredAndSortedUsers();
+
+    // Pagination
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    const getPageNumbers = (currentPage, totalPages) => {
+        const pages = [];
+        const maxVisible = 5;
+        
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) pages.push(i);
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1);
+                pages.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                pages.push('...');
+                pages.push(currentPage - 1);
+                pages.push(currentPage);
+                pages.push(currentPage + 1);
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+        return pages;
+    };
 
     useEffect(() => {
         checkAuth();
@@ -651,7 +689,10 @@ export default function AddNewUser() {
                                         {/* User Type Filter */}
                                         <select
                                             value={designationFilter}
-                                            onChange={(e) => setDesignationFilter(e.target.value)}
+                                            onChange={(e) => {
+                                                setDesignationFilter(e.target.value);
+                                                setCurrentPage(1);
+                                            }}
                                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-700 bg-white"
                                             style={{ '--tw-ring-color': '#355E3B' }}
                                         >
@@ -664,7 +705,10 @@ export default function AddNewUser() {
                                         {/* Sort Order */}
                                         <select
                                             value={sortOrder}
-                                            onChange={(e) => setSortOrder(e.target.value)}
+                                            onChange={(e) => {
+                                                setSortOrder(e.target.value);
+                                                setCurrentPage(1);
+                                            }}
                                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-700 bg-white"
                                             style={{ '--tw-ring-color': '#355E3B' }}
                                         >
@@ -684,13 +728,19 @@ export default function AddNewUser() {
                                         type="text"
                                         placeholder="Search by name, email, or USC ID..."
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={(e) => {
+                                            setSearchTerm(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
                                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-700 bg-white"
                                         style={{ '--tw-ring-color': '#355E3B' }}
                                     />
                                     {searchTerm && (
                                         <button
-                                            onClick={() => setSearchTerm('')}
+                                            onClick={() => {
+                                                setSearchTerm('');
+                                                setCurrentPage(1);
+                                            }}
                                             className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                                         >
                                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -738,7 +788,7 @@ export default function AddNewUser() {
                         )}
 
                         <div className="overflow-x-auto">
-                            {filteredUsers.length > 0 ? (
+                            {paginatedUsers.length > 0 ? (
                             <table className="w-full">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
@@ -751,7 +801,7 @@ export default function AddNewUser() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
-                                    {filteredUsers.map((userData, index) => (
+                                    {paginatedUsers.map((userData, index) => (
                                         <tr key={userData.id} className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
@@ -833,6 +883,7 @@ export default function AddNewUser() {
                                             onClick={() => {
                                                 setSearchTerm('');
                                                 setDesignationFilter('all');
+                                                setCurrentPage(1);
                                             }}
                                             className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors hover:opacity-90"
                                             style={{ backgroundColor: '#355E3B' }}
@@ -843,6 +894,77 @@ export default function AddNewUser() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && filteredUsers.length > 0 && (
+                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="text-sm text-gray-700">
+                                        Showing <span className="font-semibold text-gray-900">{startIndex + 1}</span> to{' '}
+                                        <span className="font-semibold text-gray-900">
+                                            {Math.min(endIndex, filteredUsers.length)}
+                                        </span>{' '}
+                                        of <span className="font-semibold text-gray-900">{filteredUsers.length}</span> users
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(1)}
+                                            disabled={currentPage === 1}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="First page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {getPageNumbers(currentPage, totalPages).map((pageNum, idx) => (
+                                                pageNum === '...' ? (
+                                                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
+                                                ) : (
+                                                    <button
+                                                        key={pageNum}
+                                                        onClick={() => setCurrentPage(pageNum)}
+                                                        className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                            pageNum === currentPage
+                                                                ? 'text-white shadow-sm'
+                                                                : 'text-gray-700 hover:bg-gray-100'
+                                                        }`}
+                                                        style={pageNum === currentPage ? { backgroundColor: '#355E3B' } : {}}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                )
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Next
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(totalPages)}
+                                            disabled={currentPage === totalPages}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="Last page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>

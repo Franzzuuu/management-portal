@@ -86,7 +86,7 @@ export default function AdminDashboard() {
 
             // Fetch recent violation appeals - using violation contests endpoint
             try {
-                const violationAppealsResponse = await fetch('/api/admin/violation-contests?status=all');
+                const violationAppealsResponse = await fetch('/api/admin/violation-contests?status=pending');
                 if (violationAppealsResponse.ok) {
                     const violationAppealsData = await violationAppealsResponse.json();
                     if (violationAppealsData.success) {

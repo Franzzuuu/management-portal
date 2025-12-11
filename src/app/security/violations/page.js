@@ -173,7 +173,6 @@ export default function SecurityViolationsManagement() {
 
     useEffect(() => {
         filterViolations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm, statusFilter, typeFilter, designationFilter, vehicleTypeFilter, dateFilter, customDateRange, violations, sortConfig]);
 
     const fetchViolationTypes = async () => {
@@ -948,7 +947,6 @@ export default function SecurityViolationsManagement() {
 
                         {filteredViolations.length === 0 && (
                             <div className="text-center py-16 bg-gray-50 rounded-lg mx-6 mb-6">
-                                <div className="text-6xl mb-4">🎉</div>
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">No violations found</h3>
                                 <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
                                     {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'

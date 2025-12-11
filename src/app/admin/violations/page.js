@@ -47,16 +47,22 @@ export default function ViolationsManagement() {
         direction: 'desc',  // 'asc' | 'desc'
     });
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     // Statistics States
     const [statsData, setStatsData] = useState({
         totalViolations: 0,
-        monthlyTrends: [],
+        trendData: [],
         violationTypeStats: [],
         userTypeStats: [],
         statusStats: [],
         topViolators: []
     });
     const [statsDateRange, setStatsDateRange] = useState({ start: '', end: '' });
+    const [statsQuickFilter, setStatsQuickFilter] = useState('last-7-days');
+    const [statsTrendPeriod, setStatsTrendPeriod] = useState('daily'); // 'daily', 'weekly', 'monthly'
 
     // Form and UI States
     const [formData, setFormData] = useState({
@@ -217,12 +223,10 @@ export default function ViolationsManagement() {
                 clearInterval(syncInterval);
             }
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         filterViolations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm, statusFilter, typeFilter, designationFilter, vehicleTypeFilter, dateFilter, customDateRange, violations, sortConfig]);
 
     useEffect(() => {
@@ -231,8 +235,7 @@ export default function ViolationsManagement() {
         } else if (activeTab === 'contested') {
             fetchContestedViolations();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTab, violations, statsDateRange]);
+    }, [activeTab, violations, statsDateRange, statsTrendPeriod]);
 
     const fetchContestedViolations = async () => {
         try {
@@ -349,32 +352,163 @@ export default function ViolationsManagement() {
         });
 
         setFilteredViolations(filtered);
+        setCurrentPage(1); // Reset to page 1 when filters change
+    };
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredViolations.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedViolations = filteredViolations.slice(startIndex, endIndex);
+
+    const getPageNumbers = (currentPage, totalPages) => {
+        const pages = [];
+        const maxVisible = 5;
+        
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) pages.push(i);
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1);
+                pages.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                pages.push('...');
+                pages.push(currentPage - 1);
+                pages.push(currentPage);
+                pages.push(currentPage + 1);
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+        return pages;
+    };
+
+    // Helper function to format date as YYYY-MM-DD in local timezone
+    const formatDateLocal = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Quick date filter handler for statistics
+    const handleStatsQuickFilter = (filter) => {
+        setStatsQuickFilter(filter);
+        const now = new Date();
+        let startDate = '';
+        let endDate = formatDateLocal(now);
+
+        switch (filter) {
+            case 'today':
+                startDate = endDate;
+                setStatsTrendPeriod('daily');
+                break;
+            case 'yesterday':
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                startDate = formatDateLocal(yesterday);
+                endDate = startDate;
+                setStatsTrendPeriod('daily');
+                break;
+            case 'last-7-days':
+                const sevenDaysAgo = new Date(now);
+                sevenDaysAgo.setDate(now.getDate() - 6);
+                startDate = formatDateLocal(sevenDaysAgo);
+                setStatsTrendPeriod('daily');
+                break;
+            case 'last-30-days':
+                const thirtyDaysAgo = new Date(now);
+                thirtyDaysAgo.setDate(now.getDate() - 29);
+                startDate = formatDateLocal(thirtyDaysAgo);
+                setStatsTrendPeriod('weekly');
+                break;
+            case 'this-month':
+                const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                startDate = formatDateLocal(firstOfMonth);
+                setStatsTrendPeriod('weekly');
+                break;
+            case 'last-month':
+                const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const lastOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                startDate = formatDateLocal(firstOfLastMonth);
+                endDate = formatDateLocal(lastOfLastMonth);
+                setStatsTrendPeriod('weekly');
+                break;
+            case 'this-year':
+                const firstOfYear = new Date(now.getFullYear(), 0, 1);
+                startDate = formatDateLocal(firstOfYear);
+                setStatsTrendPeriod('monthly');
+                break;
+            case 'all-time':
+            default:
+                startDate = '';
+                endDate = '';
+                setStatsTrendPeriod('monthly');
+                break;
+        }
+
+        setStatsDateRange({ start: startDate, end: endDate });
     };
 
     const generateStatistics = () => {
         let dataToAnalyze = violations;
 
-        // Apply date filter for stats if set
         if (statsDateRange.start && statsDateRange.end) {
             dataToAnalyze = violations.filter(violation => {
                 const violationDate = new Date(violation.created_at);
-                return violationDate >= new Date(statsDateRange.start) &&
-                    violationDate <= new Date(statsDateRange.end);
+                const startDate = new Date(statsDateRange.start);
+                const endDate = new Date(statsDateRange.end);
+                endDate.setHours(23, 59, 59, 999);
+                return violationDate >= startDate && violationDate <= endDate;
+            });
+        } else if (statsDateRange.start) {
+            dataToAnalyze = violations.filter(violation => {
+                const violationDate = new Date(violation.created_at);
+                return violationDate >= new Date(statsDateRange.start);
             });
         }
 
-        // If no data, provide sample data structure for charts
         if (dataToAnalyze.length === 0) {
+            // Generate empty trend data based on current period
+            let emptyTrends = [];
+            const now = new Date();
+            
+            if (statsTrendPeriod === 'daily') {
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date(now);
+                    date.setDate(date.getDate() - i);
+                    emptyTrends.push({ 
+                        period: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
+                        violations: 0 
+                    });
+                }
+            } else if (statsTrendPeriod === 'weekly') {
+                for (let i = 3; i >= 0; i--) {
+                    const weekStart = new Date(now);
+                    weekStart.setDate(weekStart.getDate() - (i * 7));
+                    emptyTrends.push({ 
+                        period: `Week ${4 - i}`, 
+                        violations: 0 
+                    });
+                }
+            } else {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                months.forEach(month => {
+                    emptyTrends.push({ period: month, violations: 0 });
+                });
+            }
+
             setStatsData({
                 totalViolations: 0,
-                monthlyTrends: [
-                    { month: 'Jan 2024', violations: 0 },
-                    { month: 'Feb 2024', violations: 0 },
-                    { month: 'Mar 2024', violations: 0 },
-                    { month: 'Apr 2024', violations: 0 },
-                    { month: 'May 2024', violations: 0 },
-                    { month: 'Jun 2024', violations: 0 },
-                ],
+                trendData: emptyTrends,
                 violationTypeStats: [],
                 userTypeStats: [
                     { user_type: 'Student', count: 0 },
@@ -391,15 +525,61 @@ export default function ViolationsManagement() {
             return;
         }
 
-        // Monthly statistics
-        const monthlyStats = {};
-        dataToAnalyze.forEach(violation => {
-            const month = new Date(violation.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short'
+        // Generate trend data based on selected period
+        const trendStats = {};
+        const now = new Date();
+        
+        if (statsTrendPeriod === 'daily') {
+            // Last 7 days
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const key = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                trendStats[key] = 0;
+            }
+            dataToAnalyze.forEach(violation => {
+                const violationDate = new Date(violation.created_at);
+                const key = violationDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                if (trendStats.hasOwnProperty(key)) {
+                    trendStats[key] = (trendStats[key] || 0) + 1;
+                }
             });
-            monthlyStats[month] = (monthlyStats[month] || 0) + 1;
-        });
+        } else if (statsTrendPeriod === 'weekly') {
+            // Last 4 weeks
+            for (let i = 3; i >= 0; i--) {
+                const weekEnd = new Date(now);
+                weekEnd.setDate(weekEnd.getDate() - (i * 7));
+                const weekStart = new Date(weekEnd);
+                weekStart.setDate(weekStart.getDate() - 6);
+                const key = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                trendStats[key] = 0;
+            }
+            dataToAnalyze.forEach(violation => {
+                const violationDate = new Date(violation.created_at);
+                const daysDiff = Math.floor((now - violationDate) / (1000 * 60 * 60 * 24));
+                const weekIndex = Math.floor(daysDiff / 7);
+                if (weekIndex >= 0 && weekIndex < 4) {
+                    const keys = Object.keys(trendStats);
+                    const targetKey = keys[3 - weekIndex];
+                    if (targetKey) {
+                        trendStats[targetKey] = (trendStats[targetKey] || 0) + 1;
+                    }
+                }
+            });
+        } else {
+            // Monthly - January to December for current year
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            months.forEach(month => {
+                trendStats[month] = 0;
+            });
+            dataToAnalyze.forEach(violation => {
+                const violationDate = new Date(violation.created_at);
+                if (violationDate.getFullYear() === now.getFullYear()) {
+                    const month = violationDate.toLocaleDateString('en-US', { month: 'short' });
+                    trendStats[month] = (trendStats[month] || 0) + 1;
+                }
+            });
+        }
 
         // Violation type statistics
         const typeStats = {};
@@ -435,7 +615,7 @@ export default function ViolationsManagement() {
 
         setStatsData({
             totalViolations: dataToAnalyze.length,
-            monthlyTrends: Object.entries(monthlyStats).map(([month, violations]) => ({ month, violations })),
+            trendData: Object.entries(trendStats).map(([period, violations]) => ({ period, violations })),
             violationTypeStats: Object.entries(typeStats).map(([name, count]) => ({ name, count })),
             userTypeStats: Object.entries(designationStats).map(([user_type, count]) => ({ user_type, count })),
             statusStats: Object.entries(statusStats).map(([status, count]) => ({ status, count })),
@@ -444,7 +624,6 @@ export default function ViolationsManagement() {
     };
 
     const handleSort = (field) => {
-        // Only allow sorting for Owner and Date columns
         if (field !== 'owner_name' && field !== 'created_at') {
             return;
         }
@@ -465,7 +644,6 @@ export default function ViolationsManagement() {
     };
 
     const getSortIcon = (field) => {
-        // Only show sort icons for Owner and Date columns
         if (field !== 'owner_name' && field !== 'created_at') {
             return null;
         }
@@ -496,7 +674,6 @@ export default function ViolationsManagement() {
         setSuccess('');
 
         try {
-            // Convert form data to string values to prevent undefined
             const submitData = new FormData();
             submitData.append('vehicleId', formData.vehicleId || '');
             submitData.append('violationTypeId', formData.violationTypeId || '');
@@ -536,9 +713,7 @@ export default function ViolationsManagement() {
             // Convert photo to base64 for queue storage
             const photoBase64 = await fileToBase64(quickReportData.photo);
 
-            // Check if online
             if (!navigator.onLine || !isOnline) {
-                // Queue for offline sync
                 const queued = queueViolationReport({
                     tag_uid: quickReportData.tagUid,
                     violation_type_id: quickReportData.violationTypeId,
@@ -565,7 +740,6 @@ export default function ViolationsManagement() {
                 return;
             }
 
-            // Try online submission
             const submitData = new FormData();
             submitData.append('tag_uid', quickReportData.tagUid);
             submitData.append('violation_type_id', quickReportData.violationTypeId);
@@ -1102,7 +1276,7 @@ export default function ViolationsManagement() {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredViolations.map((violation) => (
+                                        {paginatedViolations.map((violation) => (
                                             <tr key={violation.id} className="hover:bg-green-50 transition-colors duration-200 border-t border-gray-200">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
@@ -1200,10 +1374,79 @@ export default function ViolationsManagement() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="text-sm text-gray-700">
+                                        Showing <span className="font-semibold text-gray-900">{startIndex + 1}</span> to{' '}
+                                        <span className="font-semibold text-gray-900">
+                                            {Math.min(endIndex, filteredViolations.length)}
+                                        </span>{' '}
+                                        of <span className="font-semibold text-gray-900">{filteredViolations.length}</span> violations
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(1)}
+                                            disabled={currentPage === 1}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="First page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {getPageNumbers(currentPage, totalPages).map((pageNum, idx) => (
+                                                pageNum === '...' ? (
+                                                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
+                                                ) : (
+                                                    <button
+                                                        key={pageNum}
+                                                        onClick={() => setCurrentPage(pageNum)}
+                                                        className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                            pageNum === currentPage
+                                                                ? 'text-white shadow-sm'
+                                                                : 'text-gray-700 hover:bg-gray-100'
+                                                        }`}
+                                                        style={pageNum === currentPage ? { backgroundColor: '#355E3B' } : {}}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                )
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Next
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(totalPages)}
+                                            disabled={currentPage === totalPages}
+                                            className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="Last page"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
-
-                {/* Contested Violations Tab */}
                 {activeTab === 'contested' && (
                     <div className="space-y-6">
                         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
@@ -1412,7 +1655,7 @@ export default function ViolationsManagement() {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredViolations.map((violation) => (
+                                        {paginatedViolations.map((violation) => (
                                             <tr key={violation.id} className="hover:bg-gray-50 transition-colors duration-200">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-mono font-medium text-gray-900">
@@ -1461,6 +1704,77 @@ export default function ViolationsManagement() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="mt-4 px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="text-sm text-gray-700">
+                                            Showing <span className="font-semibold text-gray-900">{startIndex + 1}</span> to{' '}
+                                            <span className="font-semibold text-gray-900">
+                                                {Math.min(endIndex, filteredViolations.length)}
+                                            </span>{' '}
+                                            of <span className="font-semibold text-gray-900">{filteredViolations.length}</span> violations
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setCurrentPage(1)}
+                                                disabled={currentPage === 1}
+                                                className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                title="First page"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                disabled={currentPage === 1}
+                                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Previous
+                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                {getPageNumbers(currentPage, totalPages).map((pageNum, idx) => (
+                                                    pageNum === '...' ? (
+                                                        <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
+                                                    ) : (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setCurrentPage(pageNum)}
+                                                            className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                                pageNum === currentPage
+                                                                    ? 'text-white shadow-sm'
+                                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                            }`}
+                                                            style={pageNum === currentPage ? { backgroundColor: '#355E3B' } : {}}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    )
+                                                ))}
+                                            </div>
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                                disabled={currentPage === totalPages}
+                                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Next
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                disabled={currentPage === totalPages}
+                                                className="p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                title="Last page"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1468,163 +1782,211 @@ export default function ViolationsManagement() {
                 {/* Statistics Tab */}
                 {activeTab === 'stats' && (
                     <div className="space-y-8">
-                        {/* Date Range Filter */}
+                        {/* Quick Date Filter */}
                         <div className="bg-white rounded-xl shadow-lg p-6">
                             <div className="space-y-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Analytics Date Range</h3>
-                                    <p className="text-gray-600 text-sm">Filter violation statistics by date range</p>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">Analytics Date Range</h3>
+                                        <p className="text-gray-600 text-sm">Filter violation statistics by date range</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        {statsDateRange.start && statsDateRange.end ? (
+                                            <span className="px-3 py-1 bg-gray-100 rounded-lg">
+                                                {new Date(statsDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(statsDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </span>
+                                        ) : (
+                                            <span className="px-3 py-1 bg-gray-100 rounded-lg">All Time</span>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap items-end gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                                        <input
-                                            type="date"
-                                            value={statsDateRange.start}
-                                            onChange={(e) => setStatsDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-gray-700"
-                                            style={{ '--tw-ring-color': '#355E3B' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                                        <input
-                                            type="date"
-                                            value={statsDateRange.end}
-                                            onChange={(e) => setStatsDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-gray-700"
-                                            style={{ '--tw-ring-color': '#355E3B' }}
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={() => setStatsDateRange({ start: '', end: '' })}
-                                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
-                                    >
-                                        Clear
-                                    </button>
+                                
+                                {/* Quick Filter Buttons */}
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { key: 'today', label: 'Today' },
+                                        { key: 'yesterday', label: 'Yesterday' },
+                                        { key: 'last-7-days', label: 'Last 7 Days' },
+                                        { key: 'last-30-days', label: 'Last 30 Days' },
+                                        { key: 'this-month', label: 'This Month' },
+                                        { key: 'last-month', label: 'Last Month' },
+                                        { key: 'this-year', label: 'This Year' },
+                                        { key: 'all-time', label: 'All Time' }
+                                    ].map((filter) => (
+                                        <button
+                                            key={filter.key}
+                                            onClick={() => handleStatsQuickFilter(filter.key)}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                                statsQuickFilter === filter.key
+                                                    ? 'text-white shadow-md'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                            style={statsQuickFilter === filter.key ? { backgroundColor: '#355E3B' } : {}}
+                                        >
+                                            {filter.label}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
 
-                        {/* KPI Summary Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
-                                 style={{ borderLeftColor: '#355E3B' }}>
-                                <div className="flex items-center">
-                                    <div className="flex-shrink-0">
-                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                        {/* KPI Summary Row - Dashboard Style */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Total Violations */}
+                            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                                <div className="p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Total Violations</p>
+                                            <p className="text-3xl font-bold text-gray-900">{statsData.totalViolations}</p>
+                                            <p className="text-xs text-gray-400 mt-1">All recorded violations</p>
+                                        </div>
+                                        <div className="h-14 w-14 rounded-xl flex items-center justify-center" 
                                              style={{ backgroundColor: '#355E3B' }}>
-                                            <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="h-7 w-7" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4 flex-1">
-                                        <h3 className="text-lg font-semibold text-gray-900">Total Violations</h3>
-                                        <p className="text-3xl font-bold" style={{ color: '#355E3B' }}>
-                                            {statsData.totalViolations}
-                                        </p>
-                                        <p className="text-sm text-gray-500">All recorded violations</p>
-                                    </div>
                                 </div>
+                                <div className="h-1" style={{ backgroundColor: '#355E3B' }}></div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
-                                 style={{ borderLeftColor: '#F59E0B' }}>
-                                <div className="flex items-center">
-                                    <div className="flex-shrink-0">
-                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                            {/* Pending Resolution */}
+                            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                                <div className="p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Pending Resolution</p>
+                                            <p className="text-3xl font-bold text-gray-900">
+                                                {statsData.statusStats.find(s => s.status === 'pending')?.count || 0}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">Awaiting action</p>
+                                        </div>
+                                        <div className="h-14 w-14 rounded-xl flex items-center justify-center" 
                                              style={{ backgroundColor: '#F59E0B' }}>
-                                            <svg className="h-6 w-6" style={{ color: '#FFF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4 flex-1">
-                                        <h3 className="text-lg font-semibold text-gray-900">Pending Resolution</h3>
-                                        <p className="text-3xl font-bold" style={{ color: '#F59E0B' }}>
-                                            {statsData.statusStats.find(s => s.status === 'pending')?.count || 0}
-                                        </p>
-                                        <p className="text-sm text-gray-500">Awaiting action</p>
-                                    </div>
                                 </div>
+                                <div className="h-1" style={{ backgroundColor: '#F59E0B' }}></div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
-                                 style={{ borderLeftColor: '#10B981' }}>
-                                <div className="flex items-center">
-                                    <div className="flex-shrink-0">
-                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                            {/* Resolved Cases */}
+                            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                                <div className="p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Resolved Cases</p>
+                                            <p className="text-3xl font-bold text-gray-900">
+                                                {statsData.statusStats.find(s => s.status === 'resolved')?.count || 0}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">Successfully completed</p>
+                                        </div>
+                                        <div className="h-14 w-14 rounded-xl flex items-center justify-center" 
                                              style={{ backgroundColor: '#10B981' }}>
-                                            <svg className="h-6 w-6" style={{ color: '#FFF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4 flex-1">
-                                        <h3 className="text-lg font-semibold text-gray-900">Resolved Cases</h3>
-                                        <p className="text-3xl font-bold" style={{ color: '#10B981' }}>
-                                            {statsData.statusStats.find(s => s.status === 'resolved')?.count || 0}
-                                        </p>
-                                        <p className="text-sm text-gray-500">Successfully completed</p>
-                                    </div>
                                 </div>
+                                <div className="h-1" style={{ backgroundColor: '#10B981' }}></div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow duration-200" 
-                                 style={{ borderLeftColor: '#DC2626' }}>
-                                <div className="flex items-center">
-                                    <div className="flex-shrink-0">
-                                        <div className="h-12 w-12 rounded-lg flex items-center justify-center" 
+                            {/* Contested Appeals */}
+                            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                                <div className="p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Contested Appeals</p>
+                                            <p className="text-3xl font-bold text-gray-900">
+                                                {statsData.statusStats.find(s => s.status === 'contested')?.count || 0}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">Under review</p>
+                                        </div>
+                                        <div className="h-14 w-14 rounded-xl flex items-center justify-center" 
                                              style={{ backgroundColor: '#DC2626' }}>
-                                            <svg className="h-6 w-6" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <div className="ml-4 flex-1">
-                                        <h3 className="text-lg font-semibold text-gray-900">Contested Appeals</h3>
-                                        <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>
-                                            {statsData.statusStats.find(s => s.status === 'contested')?.count || 0}
-                                        </p>
-                                        <p className="text-sm text-gray-500">Under review</p>
-                                    </div>
                                 </div>
+                                <div className="h-1" style={{ backgroundColor: '#DC2626' }}></div>
                             </div>
                         </div>
 
                         {/* Charts Row 1 - Trends and Types */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             <div className="bg-white rounded-xl shadow-lg">
-                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" 
+                                <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl flex items-center justify-between" 
                                      style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                                    <h3 className="text-lg font-semibold text-white">Monthly Violation Trends</h3>
-                                    <p className="text-sm" style={{ color: '#FFD700' }}>Track violation patterns over time</p>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">
+                                            {statsTrendPeriod === 'daily' ? 'Daily' : statsTrendPeriod === 'weekly' ? 'Weekly' : 'Monthly'} Violation Trends
+                                        </h3>
+                                        <p className="text-sm" style={{ color: '#FFD700' }}>
+                                            {statsTrendPeriod === 'daily' ? 'Last 7 days' : statsTrendPeriod === 'weekly' ? 'Last 4 weeks' : 'January to December'}
+                                        </p>
+                                    </div>
+                                    {/* Trend Period Switcher */}
+                                    <div className="flex rounded-lg overflow-hidden border border-white/20">
+                                        {['daily', 'weekly', 'monthly'].map((period) => (
+                                            <button
+                                                key={period}
+                                                onClick={() => setStatsTrendPeriod(period)}
+                                                className={`px-3 py-1 text-xs font-medium transition-colors ${
+                                                    statsTrendPeriod === period
+                                                        ? 'bg-white text-gray-800'
+                                                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                                                }`}
+                                            >
+                                                {period.charAt(0).toUpperCase() + period.slice(1)}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className="p-6">
-                                    <div className="h-80">
+                                    <div className="h-96">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart data={statsData.monthlyTrends}>
+                                            <LineChart data={statsData.trendData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
                                                 <XAxis 
-                                                    dataKey="month" 
+                                                    dataKey="period" 
                                                     stroke="#6b7280" 
-                                                    fontSize={12}
+                                                    fontSize={11}
                                                     tickLine={false}
+                                                    tick={{ fill: '#6b7280' }}
+                                                    angle={statsTrendPeriod === 'weekly' ? -15 : 0}
+                                                    textAnchor={statsTrendPeriod === 'weekly' ? 'end' : 'middle'}
                                                 />
                                                 <YAxis 
                                                     stroke="#6b7280" 
                                                     fontSize={12}
                                                     tickLine={false}
                                                     axisLine={false}
+                                                    tick={{ fill: '#6b7280' }}
+                                                    allowDecimals={false}
                                                 />
                                                 <Tooltip 
-                                                    contentStyle={{
-                                                        backgroundColor: '#355E3B',
-                                                        border: 'none',
-                                                        borderRadius: '8px',
-                                                        color: 'white',
-                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                                    content={({ active, payload, label }) => {
+                                                        if (active && payload && payload.length) {
+                                                            const value = payload[0].value;
+                                                            return (
+                                                                <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[140px]">
+                                                                    <p className="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-100 pb-2">{label}</p>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#355E3B' }}></div>
+                                                                        <span className="text-sm text-gray-600">Violations:</span>
+                                                                        <span className="text-sm font-bold text-gray-900">{value}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
                                                     }}
                                                 />
                                                 <Line 
@@ -1632,7 +1994,7 @@ export default function ViolationsManagement() {
                                                     dataKey="violations" 
                                                     stroke="#355E3B" 
                                                     strokeWidth={3}
-                                                    dot={{ fill: '#FFD700', strokeWidth: 2, r: 6 }}
+                                                    dot={{ fill: '#FFD700', strokeWidth: 2, r: 5, stroke: '#355E3B' }}
                                                     activeDot={{ r: 8, stroke: '#355E3B', fill: '#FFD700' }}
                                                 />
                                             </LineChart>
@@ -1648,18 +2010,20 @@ export default function ViolationsManagement() {
                                     <p className="text-sm" style={{ color: '#FFD700' }}>Distribution of different violation categories</p>
                                 </div>
                                 <div className="p-6">
-                                    <div className="h-80">
+                                    <div className="h-96">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
                                                     data={statsData.violationTypeStats}
                                                     cx="50%"
-                                                    cy="50%"
-                                                    labelLine={false}
-                                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                                    outerRadius={100}
+                                                    cy="45%"
+                                                    labelLine={true}
+                                                    label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                                                    outerRadius={90}
+                                                    innerRadius={50}
                                                     fill="#8884d8"
                                                     dataKey="count"
+                                                    paddingAngle={2}
                                                 >
                                                     {statsData.violationTypeStats.map((entry, index) => {
                                                         const colors = ['#355E3B', '#FFD700', '#DC2626', '#10B981', '#F59E0B', '#6366F1', '#8B5CF6', '#EC4899'];
@@ -1675,12 +2039,14 @@ export default function ViolationsManagement() {
                                                         borderRadius: '8px',
                                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                                     }}
+                                                    formatter={(value, name) => [`${value} violations`, name]}
                                                 />
                                                 <Legend 
                                                     verticalAlign="bottom" 
-                                                    height={36}
+                                                    height={60}
                                                     iconType="circle"
-                                                    wrapperStyle={{ fontSize: '12px', color: '#6b7280' }}
+                                                    wrapperStyle={{ fontSize: '11px', color: '#6b7280', paddingTop: '10px' }}
+                                                    formatter={(value) => <span className="text-gray-700">{value}</span>}
                                                 />
                                             </PieChart>
                                         </ResponsiveContainer>
@@ -1700,33 +2066,58 @@ export default function ViolationsManagement() {
                                 <div className="p-6">
                                     <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={statsData.userTypeStats}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+                                            <BarChart data={statsData.userTypeStats} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" vertical={false} />
                                                 <XAxis 
                                                     dataKey="user_type" 
                                                     stroke="#6b7280" 
                                                     fontSize={12}
                                                     tickLine={false}
+                                                    tick={{ fill: '#6b7280' }}
                                                 />
                                                 <YAxis 
                                                     stroke="#6b7280" 
                                                     fontSize={12}
                                                     tickLine={false}
                                                     axisLine={false}
+                                                    tick={{ fill: '#6b7280' }}
+                                                    allowDecimals={false}
                                                 />
                                                 <Tooltip 
-                                                    contentStyle={{
-                                                        backgroundColor: '#355E3B',
-                                                        border: 'none',
-                                                        borderRadius: '8px',
-                                                        color: 'white',
-                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                                    content={({ active, payload, label }) => {
+                                                        if (active && payload && payload.length) {
+                                                            const value = payload[0].value;
+                                                            const total = statsData.userTypeStats.reduce((sum, item) => sum + item.count, 0);
+                                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                                            const colors = { 'Student': '#355E3B', 'Faculty': '#FFD700', 'Admin': '#DC2626' };
+                                                            return (
+                                                                <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[160px]">
+                                                                    <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
+                                                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[label] || '#6b7280' }}></div>
+                                                                        <p className="text-sm font-semibold text-gray-800">{label}</p>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-sm text-gray-600">Violations:</span>
+                                                                            <span className="text-sm font-bold text-gray-900">{value}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-sm text-gray-600">Percentage:</span>
+                                                                            <span className="text-sm font-semibold" style={{ color: colors[label] || '#6b7280' }}>{percentage}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
                                                     }}
+                                                    cursor={{ fill: 'rgba(53, 94, 59, 0.1)' }}
                                                 />
                                                 <Bar 
                                                     dataKey="count" 
                                                     fill="#355E3B"
-                                                    radius={[4, 4, 0, 0]}
+                                                    radius={[6, 6, 0, 0]}
+                                                    maxBarSize={80}
                                                 >
                                                     {statsData.userTypeStats.map((entry, index) => {
                                                         const colors = {
@@ -1739,12 +2130,6 @@ export default function ViolationsManagement() {
                                                         );
                                                     })}
                                                 </Bar>
-                                                <Legend 
-                                                    verticalAlign="bottom" 
-                                                    height={36}
-                                                    iconType="rect"
-                                                    wrapperStyle={{ fontSize: '12px', color: '#6b7280' }}
-                                                />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -1754,8 +2139,8 @@ export default function ViolationsManagement() {
                             <div className="bg-white rounded-xl shadow-lg">
                                 <div className="px-6 py-4 border-b border-gray-200 rounded-t-xl" 
                                      style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
-                                    <h3 className="text-lg font-semibold text-white">Top Violators Leaderboard</h3>
-                                    <p className="text-sm" style={{ color: '#FFD700' }}>Most frequent violation offenders</p>
+                                    <h3 className="text-lg font-semibold text-white">Frequent Violators</h3>
+                                    <p className="text-sm" style={{ color: '#FFD700' }}>Users with most recorded violations</p>
                                 </div>
                                 <div className="p-6">
                                     <div className="space-y-3">
@@ -1769,11 +2154,11 @@ export default function ViolationsManagement() {
                                                         {index < 3 ? (
                                                             <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shadow-sm"
                                                                 style={{
-                                                                    backgroundColor: index === 0 ? '#FFD700' :
-                                                                                   index === 1 ? '#C0C0C0' :
-                                                                                   '#CD7F32'
+                                                                    backgroundColor: index === 0 ? '#DC2626' :
+                                                                                   index === 1 ? '#F59E0B' :
+                                                                                   '#355E3B'
                                                                 }}>
-                                                                <span style={{ color: index === 0 ? '#355E3B' : '#FFF' }}>
+                                                                <span className="text-white">
                                                                     {index + 1}
                                                                 </span>
                                                             </div>
@@ -1788,17 +2173,19 @@ export default function ViolationsManagement() {
                                                             {violator.name || 'Unknown User'}
                                                         </div>
                                                         <div className="text-sm text-gray-500">
-                                                            {index < 3 ? 'Top Offender' : 'Frequent Violator'}
+                                                            {index === 0 ? 'Highest Count' : index < 3 ? 'High Priority' : 'Monitor'}
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center">
                                                     <span className={`px-3 py-1 text-sm font-semibold rounded-lg ${
-                                                        index < 3 
+                                                        index === 0 
                                                             ? 'bg-red-100 text-red-700' 
+                                                            : index < 3
+                                                            ? 'bg-amber-100 text-amber-700'
                                                             : 'bg-gray-100 text-gray-700'
                                                     }`}>
-                                                        {violator.count || 0} violations
+                                                        {violator.count || 0} violation{(violator.count || 0) !== 1 ? 's' : ''}
                                                     </span>
                                                 </div>
                                             </div>

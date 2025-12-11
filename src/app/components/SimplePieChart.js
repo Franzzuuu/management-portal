@@ -11,7 +11,22 @@ export default function SimplePieChart({ data, title }) {
         );
     }
 
-    const colors = ['#355E3B', '#FFD700', '#4E7D57', '#F79646', '#4F81BD', '#95A5A6'];
+    // Color mapping for designations and vehicle types
+    const designationColors = {
+        'Student': '#355E3B',
+        'Faculty': '#FFD700',
+        'Security': '#4E7D57',
+        'Admin': '#F79646',
+        'Staff': '#4F81BD',
+        '2-wheel': '#FFD700',
+        '4-wheel': '#355E3B'
+    };
+    
+    const defaultColors = ['#355E3B', '#FFD700', '#4E7D57', '#F79646', '#4F81BD', '#95A5A6'];
+    
+    const getColor = (label, index) => {
+        return designationColors[label] || defaultColors[index % defaultColors.length];
+    };
     
     let currentAngle = 0;
     const radius = 100;
@@ -52,7 +67,7 @@ export default function SimplePieChart({ data, title }) {
                                 <path
                                     key={index}
                                     d={pathData}
-                                    fill={colors[index % colors.length]}
+                                    fill={getColor(item.label, index)}
                                     stroke="white"
                                     strokeWidth="2"
                                 />
@@ -66,7 +81,7 @@ export default function SimplePieChart({ data, title }) {
                     <div key={index} className="flex items-center space-x-2">
                         <div 
                             className="w-4 h-4 rounded-full" 
-                            style={{ backgroundColor: colors[index % colors.length] }}
+                            style={{ backgroundColor: getColor(item.label, index) }}
                         ></div>
                         <span className="text-sm text-gray-700">
                             {item.label}: {item.value} ({((item.value / total) * 100).toFixed(1)}%)

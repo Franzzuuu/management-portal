@@ -461,7 +461,7 @@ export default function ReportsPage() {
                             />
                             <KPICard
                                 title="Users with Activity"
-                                value={reportData.userStats?.activeInRange || reportData.userStats?.total || 0}
+                                value={reportData.userStats?.activeInRange !== undefined ? reportData.userStats.activeInRange : 0}
                                 subtitle={dateRange.startDate && dateRange.endDate ? "Logged access in period" : "With access records"}
                                 icon={<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />}
                                 borderColor="#FFD700"
@@ -486,7 +486,7 @@ export default function ReportsPage() {
                             <KPICard
                                 title="Access Logs"
                                 value={reportData.accessStats?.inRange || 0}
-                                subtitle={dateRange.startDate && dateRange.endDate ? "In period" : "Total"}
+                                subtitle={dateRange.startDate && dateRange.endDate ? "Entry and Exit" : "Total"}
                                 icon={<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />}
                                 borderColor="#4F81BD"
                                 textColor="#4F81BD"
@@ -540,19 +540,19 @@ export default function ReportsPage() {
                                     <h4 className="text-lg font-semibold text-gray-900">User Statistics</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-blue-600">{reportData.userStats?.students || 0}</div>
+                                            <div className="text-2xl font-bold" style={{ color: '#355E3B' }}>{reportData.userStats?.students || 0}</div>
                                             <div className="text-sm text-gray-600">Students</div>
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-green-600">{reportData.userStats?.faculty || 0}</div>
+                                            <div className="text-2xl font-bold" style={{ color: '#dbb902' }}>{reportData.userStats?.faculty || 0}</div>
                                             <div className="text-sm text-gray-600">Faculty</div>
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-purple-600">{reportData.userStats?.security || 0}</div>
+                                            <div className="text-2xl font-bold" style={{ color: '#4E7D57' }}>{reportData.userStats?.security || 0}</div>
                                             <div className="text-sm text-gray-600">Security</div>
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-red-600">{reportData.userStats?.admin || 0}</div>
+                                            <div className="text-2xl font-bold" style={{ color: '#F79646' }}>{reportData.userStats?.admin || 0}</div>
                                             <div className="text-sm text-gray-600">Admin</div>
                                         </div>
                                     </div>
@@ -585,20 +585,16 @@ export default function ReportsPage() {
                                     <h4 className="text-lg font-semibold text-gray-900">Vehicle Statistics</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-green-600">{reportData.vehicleStats?.approved || 0}</div>
-                                            <div className="text-sm text-gray-600">Approved Vehicles</div>
-                                        </div>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-blue-600">{reportData.vehicleStats?.twoWheel || 0}</div>
+                                            <div className="text-2xl font-bold" style={{ color: '#dbb902' }}>{reportData.vehicleStats?.twoWheel || 0}</div>
                                             <div className="text-sm text-gray-600">Two-wheel</div>
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-purple-600">{reportData.vehicleStats?.fourWheel || 0}</div>
+                                            <div className="text-2xl font-bold" style={{ color: '#355E3B' }}>{reportData.vehicleStats?.fourWheel || 0}</div>
                                             <div className="text-sm text-gray-600">Four-wheel</div>
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <div className="text-2xl font-bold text-orange-600">{(reportData.vehicleStats?.approved / reportData.vehicleStats?.total * 100).toFixed(1) || 0}%</div>
-                                            <div className="text-sm text-gray-600">Approval Rate</div>
+                                            <div className="text-2xl font-bold" style={{ color: '#3B82F6' }}>{reportData.vehicleStats?.approved || 0}</div>
+                                            <div className="text-sm text-gray-600">Approved Vehicles</div>
                                         </div>
                                     </div>
                                 </div>
@@ -687,6 +683,10 @@ export default function ReportsPage() {
                                     <h4 className="text-lg font-semibold text-gray-900">Violation Statistics</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="bg-gray-50 p-4 rounded-lg">
+                                            <div className="text-2xl font-bold text-orange-600">{reportData.violationStats?.total || 0}</div>
+                                            <div className="text-sm text-gray-600">Total Violations</div>
+                                        </div>
+                                        <div className="bg-gray-50 p-4 rounded-lg">
                                             <div className="text-2xl font-bold text-red-600">{reportData.violationStats?.pending || 0}</div>
                                             <div className="text-sm text-gray-600">Pending</div>
                                         </div>
@@ -694,11 +694,11 @@ export default function ReportsPage() {
                                             <div className="text-2xl font-bold text-green-600">{reportData.violationStats?.resolved || 0}</div>
                                             <div className="text-sm text-gray-600">Resolved</div>
                                         </div>
-                                        <div className="bg-gray-50 p-4 rounded-lg col-span-2">
+                                        <div className="bg-gray-50 p-4 rounded-lg">
                                             <div className="text-2xl font-bold text-blue-600">
                                                 {reportData.violationStats?.total > 0
-                                                    ? Math.round(((reportData.violationStats.resolved || 0) / reportData.violationStats.total) * 100)
-                                                    : 100}%
+                                                    ? `${Math.round(((reportData.violationStats.resolved || 0) / reportData.violationStats.total) * 100)}%`
+                                                    : 'N/A'}
                                             </div>
                                             <div className="text-sm text-gray-600">Resolution Rate</div>
                                         </div>
