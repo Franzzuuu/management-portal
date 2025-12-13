@@ -1479,7 +1479,6 @@ export default function ViolationsManagement() {
                                 </div>
                             ) : contestedViolations.length === 0 ? (
                                 <div className="py-10 text-center text-gray-600">
-                                    <div className="text-4xl mb-3">🎉</div>
                                     <p className="text-base font-semibold">No contested violations</p>
                                     <p className="text-sm text-gray-500 mt-1">
                                         All appeals have been reviewed. You&apos;ll see new appeals here as they are filed.

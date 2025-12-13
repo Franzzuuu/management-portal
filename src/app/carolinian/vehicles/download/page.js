@@ -11,18 +11,40 @@ const formatDateForInput = (date) => {
 };
 
 const getQuickSelectRanges = () => {
-    const today = new Date();
-    const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    
-    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+
+    // Helper to create a UTC Date at 00:00:00 (Prevents timezone -1 day bugs)
+    const createUTCDate = (year, month, day) => new Date(Date.UTC(year, month, day));
+
+    const todayStart = createUTCDate(currentYear, currentMonth, currentDay);
+
+    //Ranges 
+
+    // Last 7 Days
+    const sevenDaysAgo = new Date(todayStart);
+    sevenDaysAgo.setUTCDate(todayStart.getUTCDate() - 6);
+
+    // Last 30 Days
+    const thirtyDaysAgo = new Date(todayStart);
+    thirtyDaysAgo.setUTCDate(todayStart.getUTCDate() - 29);
+
+    // This Month
+    const thisMonthStart = createUTCDate(currentYear, currentMonth, 1);
+    const thisMonthEnd = new Date(now); 
+
+    // Last Month
+    const lastMonthStart = createUTCDate(currentYear, currentMonth - 1, 1);
+    // Day 0 of current month = Last day of previous month
+    const lastMonthEnd = createUTCDate(currentYear, currentMonth, 0); 
 
     return {
-        'Last 7 Days': { start: sevenDaysAgo, end: today },
-        'Last 30 Days': { start: thirtyDaysAgo, end: today },
-        'This Month': { start: thisMonthStart, end: today },
+        'Today': { start: todayStart, end: new Date(now) },
+        'Last 7 Days': { start: sevenDaysAgo, end: new Date(now) },
+        'Last 30 Days': { start: thirtyDaysAgo, end: new Date(now) },
+        'This Month': { start: thisMonthStart, end: thisMonthEnd },
         'Last Month': { start: lastMonthStart, end: lastMonthEnd }
     };
 };
