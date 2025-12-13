@@ -80,14 +80,16 @@ export default function LoginPage() {
                 <div className="text-center mb-6 sm:mb-8">
 
                     <div className="flex justify-center items-center gap-4 mb-8">
-                        <Image
-                            src="/images/USC_seal.svg"
-                            alt="USC Seal"
-                            width={128}
-                            height={128}
-                            className="h-64 w-64 sm:h-36 sm:w-36 drop-shadow-lg"
-                            priority
-                        />
+                        <div className="bg-white rounded-full p-3 shadow-lg">
+                            <Image
+                                src="/images/USC_seal.svg"
+                                alt="USC Seal"
+                                width={128}
+                                height={128}
+                                className="h-60 w-60 sm:h-32 sm:w-32"
+                                priority
+                            />
+                        </div>
                     </div>
 
                     <div className="mb-6 sm:mb-8">

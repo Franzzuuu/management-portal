@@ -120,17 +120,19 @@ export default function Header({ user, onLogout }) {
                                     e.stopPropagation();
                                     handleLogoClick();
                                 }}
-                                className="hover:opacity-80 transition-opacity duration-200 focus:outline-none rounded-lg p-1 cursor-pointer"
+                                className="hover:opacity-80 transition-opacity duration-200 focus:outline-none rounded-full p-1 cursor-pointer"
                                 aria-label="Navigate to main dashboard"
                                 type="button"
                             >
-                                <Image
-                                    src="/images/USC_seal.svg"
-                                    alt="USC Seal"
-                                    width={32}
-                                    height={32}
-                                    className="h-24 w-24 sm:h-24 sm:w-24 object-contain shrink-0"
-                                />
+                                <div className="bg-white rounded-full p-2 shadow-sm">
+                                    <Image
+                                        src="/images/USC_seal.svg"
+                                        alt="USC Seal"
+                                        width={32}
+                                        height={32}
+                                        className="h-20 w-20 sm:h-20 sm:w-20 object-contain shrink-0"
+                                    />
+                                </div>
                             </button>
                             <div className="min-w-0">
                                 <h1 className="font-bold text-white text-[clamp(1.125rem,2.5vw,1.5rem)] leading-tight">
