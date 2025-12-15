@@ -1147,9 +1147,11 @@ export default function AddNewUser() {
                             </div>
                             <h3 className="text-lg font-semibold text-red-600">Delete User</h3>
                         </div>
-                        <p className="text-gray-600 mb-4">
-                            Are you sure you want to delete <strong>{selectedUser.full_name}</strong>?
-                            This action cannot be undone and will delete the user along with all associated data including:
+                        <div className="text-gray-600 mb-4">
+                            <p className="mb-2">
+                                Are you sure you want to delete <strong>{selectedUser.full_name}</strong>?
+                                This action cannot be undone and will delete the user along with all associated data including:
+                            </p>
                             <ul className="list-disc ml-5 mt-2">
                                 <li>User profile information</li>
                                 <li>All vehicles registered to this user</li>
@@ -1159,7 +1161,7 @@ export default function AddNewUser() {
                                 <li>All contested violation records</li>
                                 <li>All notifications</li>
                             </ul>
-                        </p>
+                        </div>
                         <div className="flex space-x-3">
                             <button
                                 onClick={() => handleDeleteUser(selectedUser.id)}
