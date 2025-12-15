@@ -16,24 +16,56 @@ export async function GET() {
         const uscId = session.uscId;
 
         // Get user's vehicles with RFID tag information (using approval_status for consistency)
-        const vehicles = await queryMany(`
-            SELECT 
-                v.vehicle_id,
-                v.plate_number,
-                v.make,
-                v.model,
-                v.year,
-                v.color,
-                v.vehicle_type,
-                v.approval_status as registration_status,
-                v.created_at,
-                rt.tag_uid as rfid_tag_uid,
-                rt.status as rfid_status
-            FROM vehicles v
-            LEFT JOIN rfid_tags rt ON v.vehicle_id = rt.vehicle_id
-            WHERE v.usc_id = ?
-            ORDER BY v.created_at DESC
-        `, [uscId]);
+        // Note: sticker_rejection_reason column may not exist if migration hasn't run
+        let vehicles;
+        try {
+            vehicles = await queryMany(`
+                SELECT 
+                    v.vehicle_id,
+                    v.plate_number,
+                    v.make,
+                    v.model,
+                    v.year,
+                    v.color,
+                    v.vehicle_type,
+                    v.approval_status as registration_status,
+                    v.sticker_status,
+                    v.sticker_rejection_reason,
+                    v.created_at,
+                    rt.tag_uid as rfid_tag_uid,
+                    rt.status as rfid_status
+                FROM vehicles v
+                LEFT JOIN rfid_tags rt ON v.vehicle_id = rt.vehicle_id
+                WHERE v.usc_id = ?
+                ORDER BY v.created_at DESC
+            `, [uscId]);
+        } catch (columnError) {
+            // Fallback if sticker_rejection_reason column doesn't exist yet
+            if (columnError.code === 'ER_BAD_FIELD_ERROR') {
+                vehicles = await queryMany(`
+                    SELECT 
+                        v.vehicle_id,
+                        v.plate_number,
+                        v.make,
+                        v.model,
+                        v.year,
+                        v.color,
+                        v.vehicle_type,
+                        v.approval_status as registration_status,
+                        v.sticker_status,
+                        NULL as sticker_rejection_reason,
+                        v.created_at,
+                        rt.tag_uid as rfid_tag_uid,
+                        rt.status as rfid_status
+                    FROM vehicles v
+                    LEFT JOIN rfid_tags rt ON v.vehicle_id = rt.vehicle_id
+                    WHERE v.usc_id = ?
+                    ORDER BY v.created_at DESC
+                `, [uscId]);
+            } else {
+                throw columnError;
+            }
+        }
 
         // Format the response
         const formattedVehicles = vehicles.map(vehicle => ({

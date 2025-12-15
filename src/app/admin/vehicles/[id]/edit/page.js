@@ -18,6 +18,7 @@ export default function EditVehicle({ params }) {
         year: '',
         color: '',
         plateNumber: '',
+        stickerStatus: '',
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -42,6 +43,7 @@ export default function EditVehicle({ params }) {
                     color: data.vehicle.color || '',
                     plateNumber: data.vehicle.plate_number || '',
                     userId: data.vehicle.user_id || '',
+                    stickerStatus: data.vehicle.sticker_status || 'pending',
                 });
             } else {
                 setError('Failed to fetch vehicle details');
@@ -105,6 +107,7 @@ export default function EditVehicle({ params }) {
                     year: formData.year ? parseInt(formData.year, 10) : formData.year,
                     color: formData.color,
                     plateNumber: formData.plateNumber,
+                    stickerStatus: formData.stickerStatus,
                 }),
             });
 
@@ -343,6 +346,38 @@ export default function EditVehicle({ params }) {
                                         value={formData.color}
                                         onChange={handleInputChange}
                                     />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="stickerStatus" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Sticker Status
+                                        {vehicle?.sticker_status && (
+                                            <span className={`ml-2 text-xs px-2 py-1 rounded-full font-medium ${
+                                                vehicle.sticker_status === 'renewed' ? 'bg-green-100 text-green-800' :
+                                                vehicle.sticker_status === 'expired' ? 'bg-red-100 text-red-800' :
+                                                vehicle.sticker_status === 'renewal_requested' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                Current: {vehicle.sticker_status === 'renewal_requested' ? 'Renewal Requested' : vehicle.sticker_status}
+                                            </span>
+                                        )}
+                                    </label>
+                                    <select
+                                        id="stickerStatus"
+                                        name="stickerStatus"
+                                        className="w-full px-3 py-2 border border-gray-300 hover:cursor-pointer rounded-lg focus:ring-2 focus:border-transparent focus:outline-none placeholder:text-gray-400 text-gray-700"
+                                        style={{ '--tw-ring-color': '#355E3B' }}
+                                        value={formData.stickerStatus}
+                                        onChange={handleInputChange}
+                                    >
+                                        <option value="pending">Pending</option>
+                                        <option value="renewed">Renewed</option>
+                                        <option value="expired">Expired</option>
+                                        <option value="renewal_requested">Renewal Requested</option>
+                                    </select>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Set the vehicle sticker registration status
+                                    </p>
                                 </div>
                             </div>
 

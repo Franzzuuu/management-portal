@@ -83,8 +83,21 @@ export async function GET() {
             LIMIT 5
         `, [uscId]);
 
+        // Get recent notifications (sticker status changes, etc.)
+        const recentNotifications = await queryMany(`
+            SELECT 
+                n.type,
+                CONCAT(n.title, ': ', LEFT(n.message, 100)) as description,
+                n.created_at as timestamp
+            FROM notifications n
+            JOIN users u ON n.user_id = u.id
+            WHERE u.usc_id = ?
+            ORDER BY n.created_at DESC
+            LIMIT 5
+        `, [uscId]);
+
         // Combine and sort recent activity
-        const recentActivity = [...recentViolations, ...recentLogs]
+        const recentActivity = [...recentViolations, ...recentLogs, ...recentNotifications]
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
             .slice(0, 8)
             .map(activity => ({
@@ -97,6 +110,7 @@ export async function GET() {
                     minute: '2-digit'
                 })
             }));
+
 
         return Response.json({
             success: true,

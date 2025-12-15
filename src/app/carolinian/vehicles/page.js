@@ -27,6 +27,9 @@ export default function CarolinianVehicles() {
         color: '',
         plateNumber: ''
     });
+    const [showRenewalModal, setShowRenewalModal] = useState(false);
+    const [renewalLoading, setRenewalLoading] = useState(false);
+    const [selectedRenewalVehicle, setSelectedRenewalVehicle] = useState(null);
     const router = useRouter();
 
     // Form state helpers
@@ -263,6 +266,38 @@ export default function CarolinianVehicles() {
         }
     };
 
+    const handleRenewalRequest = async () => {
+        if (!selectedRenewalVehicle) return;
+        
+        setRenewalLoading(true);
+        try {
+            const response = await fetch('/api/carolinian/request-renewal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vehicleId: selectedRenewalVehicle.vehicle_id })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                setMessage({ type: 'success', text: 'Renewal request submitted successfully! Admin will review your request.' });
+                setShowRenewalModal(false);
+                setSelectedRenewalVehicle(null);
+                await fetchVehicles();
+            } else {
+                setMessage({ type: 'error', text: result.error || 'Failed to submit renewal request' });
+            }
+        } catch (error) {
+            console.error('Error submitting renewal request:', error);
+            setMessage({ type: 'error', text: 'Failed to submit renewal request. Please try again.' });
+        } finally {
+            setRenewalLoading(false);
+        }
+    };
+
+    // Get vehicles eligible for renewal (expired status only)
+    const expiredVehicles = registeredVehicles.filter(v => v.sticker_status === 'expired');
+
     const getApprovalStatusColor = (status) => {
         switch (status) {
             case 'approved': return 'bg-green-100 text-green-800';
@@ -276,6 +311,7 @@ export default function CarolinianVehicles() {
         switch (status) {
             case 'renewed': return 'bg-green-100 text-green-800';
             case 'expired': return 'bg-red-100 text-red-800';
+            case 'renewal_requested': return 'bg-blue-100 text-blue-800';
             case 'pending': return 'bg-gray-100 text-gray-800';
             default: return 'bg-gray-100 text-gray-800';
         }
@@ -350,6 +386,13 @@ export default function CarolinianVehicles() {
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStickerStatusColor(vehicle.sticker_status)}`}>
                             {vehicle.sticker_status || 'pending'}
                         </span>
+                    </div>
+                )}
+                {isRegistered && vehicle.sticker_rejection_reason && vehicle.sticker_status === 'expired' && (
+                    <div className="col-span-full mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-xs text-red-700">
+                            <span className="font-medium">Renewal Rejected:</span> {vehicle.sticker_rejection_reason}
+                        </p>
                     </div>
                 )}
                 {vehicle.rfid_tag_uid && (
@@ -446,14 +489,27 @@ export default function CarolinianVehicles() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 sm:space-x-4">
-                            {/* Register Vehicle Button */}
-                            <button
-                                onClick={() => setShowForm(!showForm)}
-                                className="w-full sm:w-auto px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer"
-                                style={{ backgroundColor: '#FFD700', color: '#355E3B' }}
-                            >
-                                {showForm ? 'Cancel' : '+ Register Vehicle'}
-                            </button>
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                {/* Register Vehicle Button */}
+                                <button
+                                    onClick={() => setShowForm(!showForm)}
+                                    className="w-full sm:w-auto px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer"
+                                    style={{ backgroundColor: '#FFD700', color: '#355E3B' }}
+                                >
+                                    {showForm ? 'Cancel' : '+ Register Vehicle'}
+                                </button>
+
+                                {/* Apply for Renewal Button */}
+                                {expiredVehicles.length > 0 && (
+                                    <button
+                                        onClick={() => setShowRenewalModal(true)}
+                                        className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer bg-blue-600 text-white hover:bg-blue-700"
+                                    >
+                                        Apply for Renewal ({expiredVehicles.length})
+                                    </button>
+                                )}
+                            </div>
 
                             {/* Tab Navigation */}
                             <div className="flex space-x-2 bg-green-950 bg-opacity-30 rounded-lg p-1">
@@ -873,6 +929,116 @@ export default function CarolinianVehicles() {
                 )}
             </main>
 
+            {/* Renewal Request Modal */}
+            {showRenewalModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm overflow-y-auto p-4">
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
+                        {/* Modal Header */}
+                        <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl" style={{ background: 'linear-gradient(90deg, #355E3B 0%, #2d4f32 100%)' }}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
+                                        <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">Apply for Sticker Renewal</h3>
+                                        <p className="text-sm" style={{ color: '#FFD700' }}>Select a vehicle to renew</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setShowRenewalModal(false);
+                                        setSelectedRenewalVehicle(null);
+                                    }}
+                                    className="text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors duration-200 hover:cursor-pointer"
+                                >
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            {/* Vehicle Selection */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                    Select Vehicle with Expired Sticker
+                                </label>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {expiredVehicles.map((vehicle) => (
+                                        <div
+                                            key={vehicle.vehicle_id}
+                                            onClick={() => setSelectedRenewalVehicle(vehicle)}
+                                            className={`p-3 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                                                selectedRenewalVehicle?.vehicle_id === vehicle.vehicle_id
+                                                    ? 'border-green-500 bg-green-50'
+                                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="font-medium text-gray-900">{vehicle.make} {vehicle.model}</p>
+                                                    <p className="text-sm text-gray-500">{vehicle.plate_number}</p>
+                                                </div>
+                                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                                    Expired
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Info Box */}
+                            <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-start space-x-2">
+                                    <svg className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p className="text-sm text-blue-700">
+                                        Your renewal request will be reviewed by an administrator. You will be notified once your request is processed.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Modal Actions */}
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={() => {
+                                        setShowRenewalModal(false);
+                                        setSelectedRenewalVehicle(null);
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer"
+                                    disabled={renewalLoading}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRenewalRequest}
+                                    disabled={!selectedRenewalVehicle || renewalLoading}
+                                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    style={{ backgroundColor: '#355E3B' }}
+                                >
+                                    {renewalLoading ? (
+                                        <span className="flex items-center">
+                                            <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Submitting...
+                                        </span>
+                                    ) : (
+                                        'Submit Renewal Request'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

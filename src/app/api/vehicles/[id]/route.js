@@ -24,6 +24,7 @@ export async function GET(request, { params }) {
                 v.vehicle_type,
                 v.year,
                 v.approval_status,
+                v.sticker_status,
                 v.usc_id,
                 up.full_name as owner_name,
                 rt.tag_uid,

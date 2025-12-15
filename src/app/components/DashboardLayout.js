@@ -157,7 +157,13 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                             {recentActivity && recentActivity.length > 0 ? (
                                 <div className="space-y-4 sm:space-y-4">
                                     {recentActivity.map((activity, index) => (
-                                        <div key={index} className="flex items-center p-4 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                                        <div key={index} className={`flex items-center p-4 sm:p-4 rounded-lg transition-colors duration-200 ${
+                                            activity.type === 'sticker_status' && activity.description?.toLowerCase().includes('expired')
+                                                ? 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100'
+                                                : activity.type === 'sticker_status' && activity.description?.toLowerCase().includes('renewed')
+                                                ? 'bg-green-50 border-l-4 border-green-500 hover:bg-green-100'
+                                                : 'bg-gray-50 hover:bg-gray-100'
+                                        }`}>
                                             <div className="flex-shrink-0">
                                                 {activity.type === 'access' && activity.access_type ? (
                                                     <div className={`h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center ${activity.access_type === 'entry' ? 'bg-green-100 border-2 border-green-200' : 'bg-blue-100 border-2 border-blue-200'
@@ -171,12 +177,32 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                                                             )}
                                                         </svg>
                                                     </div>
-                                                ) : activity.type === 'violation' ? (
+                                                ) : activity.type === 'violation' || activity.type === 'violation_issued' ? (
                                                     <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center bg-red-100 border-2 border-red-200">
                                                         <svg className="h-4 w-4 sm:h-4 sm:w-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                         </svg>
                                                     </div>
+                                                ) : activity.type === 'sticker_status' ? (
+                                                    activity.description?.toLowerCase().includes('expired') ? (
+                                                        <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center bg-red-100 border-2 border-red-300 animate-pulse">
+                                                            <svg className="h-4 w-4 sm:h-4 sm:w-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                        </div>
+                                                    ) : activity.description?.toLowerCase().includes('renewed') ? (
+                                                        <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center bg-green-100 border-2 border-green-300">
+                                                            <svg className="h-4 w-4 sm:h-4 sm:w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center bg-amber-100 border-2 border-amber-200">
+                                                            <svg className="h-4 w-4 sm:h-4 sm:w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                            </svg>
+                                                        </div>
+                                                    )
                                                 ) : (
                                                     <div className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#355E3B' }}>
                                                         <svg className="h-4 w-4 sm:h-4 sm:w-4" style={{ color: '#FFD700' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +212,13 @@ export default function DashboardLayout({ children, user, setUser, stats, quickA
                                                 )}
                                             </div>
                                             <div className="ml-4 sm:ml-4 min-w-0 flex-1">
-                                                <p className="text-sm sm:text-sm font-medium text-gray-900">{activity.description}</p>
+                                                <p className={`text-sm sm:text-sm font-medium ${
+                                                    activity.type === 'sticker_status' && activity.description?.toLowerCase().includes('expired')
+                                                        ? 'text-red-800'
+                                                        : activity.type === 'sticker_status' && activity.description?.toLowerCase().includes('renewed')
+                                                        ? 'text-green-800'
+                                                        : 'text-gray-900'
+                                                }`}>{activity.description}</p>
                                                 <p className="text-xs text-gray-500">{activity.timestamp}</p>
                                             </div>
                                         </div>

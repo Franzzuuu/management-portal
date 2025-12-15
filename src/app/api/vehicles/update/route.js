@@ -1,5 +1,6 @@
 import { executeQuery } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { emit } from '@/lib/realtime';
 
 export async function PUT(request) {
     try {
@@ -15,7 +16,7 @@ export async function PUT(request) {
         console.log('Received vehicle update data:', vehicleData);
 
         // Extract and validate required fields
-        const { vehicleId, vehicleType, make, model, color, plateNumber, year } = vehicleData;
+        const { vehicleId, vehicleType, make, model, color, plateNumber, year, stickerStatus, stickerRejectionReason } = vehicleData;
 
         if (!vehicleId) {
             return Response.json(
@@ -102,6 +103,25 @@ export async function PUT(request) {
             }
         }
 
+        if (stickerStatus !== undefined) {
+            // Validate sticker status value
+            const validStatuses = ['renewed', 'expired', 'pending', 'renewal_requested'];
+            if (!validStatuses.includes(stickerStatus)) {
+                return Response.json(
+                    { error: 'Invalid sticker status. Must be renewed, expired, pending, or renewal_requested.' },
+                    { status: 400 }
+                );
+            }
+            updateFields.push('sticker_status = ?');
+            updateValues.push(stickerStatus);
+        }
+
+        // Handle sticker rejection reason (used when rejecting renewal requests)
+        if (stickerRejectionReason !== undefined) {
+            updateFields.push('sticker_rejection_reason = ?');
+            updateValues.push(stickerRejectionReason || null);
+        }
+
         // If no fields to update
         if (updateFields.length === 0) {
             return Response.json({
@@ -119,6 +139,75 @@ export async function PUT(request) {
         console.log('Update values:', updateValues);
 
         const result = await executeQuery(query, updateValues);
+
+        // Emit real-time update and create notification if sticker status was changed
+        if (stickerStatus !== undefined && stickerStatus !== existingVehicle[0].sticker_status) {
+            emit('vehicles:sticker_update', {
+                vehicleId,
+                stickerStatus,
+                ownerId: existingVehicle[0].usc_id
+            });
+
+            // Create notification for the vehicle owner
+            try {
+                const ownerUser = await executeQuery(
+                    'SELECT id FROM users WHERE usc_id = ?',
+                    [existingVehicle[0].usc_id]
+                );
+
+                if (ownerUser && ownerUser.length > 0) {
+                    let notificationTitle, notificationMessage;
+                    
+                    // Determine notification content based on status change
+                    if (stickerStatus === 'expired' && existingVehicle[0].sticker_status === 'renewal_requested') {
+                        // Renewal request was rejected
+                        notificationTitle = 'Sticker Renewal Rejected';
+                        notificationMessage = stickerRejectionReason 
+                            ? `Your renewal request for ${existingVehicle[0].plate_number} has been rejected. Reason: ${stickerRejectionReason}`
+                            : `Your renewal request for ${existingVehicle[0].plate_number} has been rejected.`;
+                    } else if (stickerStatus === 'renewed' && existingVehicle[0].sticker_status === 'renewal_requested') {
+                        // Renewal request was approved
+                        notificationTitle = 'Sticker Renewal Approved';
+                        notificationMessage = `Your renewal request for ${existingVehicle[0].plate_number} has been approved. Your sticker is now renewed.`;
+                    } else if (stickerStatus === 'expired') {
+                        notificationTitle = 'Vehicle Sticker Expired';
+                        notificationMessage = `Your vehicle sticker for ${existingVehicle[0].plate_number} has been marked as expired. Please renew your sticker.`;
+                    } else if (stickerStatus === 'renewed') {
+                        notificationTitle = 'Vehicle Sticker Renewed';
+                        notificationMessage = `Your vehicle sticker for ${existingVehicle[0].plate_number} has been renewed successfully.`;
+                    } else {
+                        notificationTitle = 'Sticker Status Updated';
+                        notificationMessage = `Your vehicle sticker status for ${existingVehicle[0].plate_number} has been updated to ${stickerStatus}.`;
+                    }
+
+                    await executeQuery(`
+                        INSERT INTO notifications (
+                            user_id,
+                            type,
+                            title,
+                            message,
+                            created_at
+                        ) VALUES (?, ?, ?, ?, NOW())
+                    `, [
+                        ownerUser[0].id,
+                        'sticker_status',
+                        notificationTitle,
+                        notificationMessage
+                    ]);
+
+                    // Emit notification event for real-time update
+                    emit('notifications:new', {
+                        userId: existingVehicle[0].usc_id,
+                        title: notificationTitle,
+                        message: notificationMessage,
+                        type: 'sticker_status'
+                    });
+                }
+            } catch (notificationError) {
+                console.warn('Failed to create sticker status notification:', notificationError);
+                // Don't fail the request if notification fails
+            }
+        }
 
         return Response.json({
             success: true,
