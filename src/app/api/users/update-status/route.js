@@ -103,9 +103,10 @@ export async function PUT(request) {
                         vehicleIds
                     );
 
+                    // Set vehicles' approval_status back to approved
                     await executeQuery(
-                        `UPDATE vehicles SET sticker_status = 'active', updated_at = CURRENT_TIMESTAMP 
-                         WHERE vehicle_id IN (${placeholders}) AND status = 'pending'`,
+                        `UPDATE vehicles SET sticker_status = 'renewed', updated_at = CURRENT_TIMESTAMP 
+                         WHERE vehicle_id IN (${placeholders}) AND sticker_status = 'pending'`,
                         vehicleIds
                     );
                 }
