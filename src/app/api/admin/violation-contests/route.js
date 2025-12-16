@@ -1,5 +1,6 @@
 import { queryMany, executeQuery } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { createNotification, NotificationTypes } from '@/lib/notifications';
 
 export async function GET(request) {
     try {
@@ -226,40 +227,31 @@ export async function POST(request) {
         // Create notification for the user
         try {
             let notificationMessage = '';
+            let notificationTitle = 'Violation Appeal Update';
             switch (action) {
                 case 'approve':
                     notificationMessage = `Your violation appeal for violation #${contestData.violation_id} has been approved. The violation has been resolved.`;
+                    notificationTitle = 'Appeal Approved';
                     break;
                 case 'deny':
-                    notificationMessage = `Your violation appeal for violation #${contestData.violation_id} has been denied. ${reviewNotes ? 'Reason: ' + reviewNotes : 'The violation stands as recorded.'} No further action is required.`;
+                    notificationMessage = `Your violation appeal for violation #${contestData.violation_id} has been denied. ${reviewNotes ? 'Reason: ' + reviewNotes : 'The violation stands as recorded.'}`;
+                    notificationTitle = 'Appeal Denied';
                     break;
                 case 'under_review':
                     notificationMessage = `Your violation appeal for violation #${contestData.violation_id} is now under review.`;
+                    notificationTitle = 'Appeal Under Review';
                     break;
             }
 
-            // Check if notifications table exists before inserting
-            try {
-                await executeQuery(`
-                    INSERT INTO notifications (
-                        user_id,
-                        title,
-                        message,
-                        type,
-                        created_at
-                    ) VALUES (?, ?, ?, ?, NOW())
-                `, [
-                    contestData.user_id,
-                    'Violation Appeal Update',
-                    notificationMessage,
-                    'violation_appeal_update'
-                ]);
-            } catch (notificationError) {
-                console.warn('Failed to create notification (table may not exist):', notificationError);
-                // Don't fail the main operation if notification fails
-            }
+            await createNotification({
+                userId: contestData.user_id,
+                title: notificationTitle,
+                message: notificationMessage,
+                type: NotificationTypes.APPEAL_RESOLVED,
+                relatedId: contestData.violation_id
+            });
         } catch (notificationError) {
-            console.warn('Failed to prepare notification:', notificationError);
+            console.warn('Failed to create notification:', notificationError);
         }
 
         console.log('Appeal action completed successfully:', { action, contestId });

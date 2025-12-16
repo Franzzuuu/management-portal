@@ -1,6 +1,7 @@
-import { queryMany, executeQuery } from '@/lib/database';
+import { queryMany, executeQuery, queryOne } from '@/lib/database';
 import { getSession } from '@/lib/utils';
 import { emit } from '@/lib/realtime';
+import { createNotification, notifyAllAdmins, NotificationTypes } from '@/lib/notifications';
 
 export async function POST(request) {
     try {
@@ -153,6 +154,23 @@ export async function POST(request) {
                     reported_by: violation.reported_by,
                     created_at: violation.created_at
                 });
+
+                // Create notification for vehicle owner
+                if (violation.owner_id) {
+                    const owner = await queryOne(
+                        'SELECT id FROM users WHERE usc_id = ?',
+                        [violation.owner_id]
+                    );
+                    if (owner) {
+                        await createNotification({
+                            userId: owner.id,
+                            title: 'New Violation Issued',
+                            message: `A ${violation.violation_type} violation has been issued for your vehicle (${violation.vehicle_plate}).`,
+                            type: NotificationTypes.VIOLATION_ISSUED,
+                            relatedId: violation.id
+                        });
+                    }
+                }
             }
         } catch (emitError) {
             console.warn('Failed to emit real-time update:', emitError);

@@ -1,5 +1,6 @@
 import { executeQuery, queryOne, queryMany } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { createNotification, NotificationTypes } from '@/lib/notifications';
 
 export async function PUT(request) {
     try {
@@ -111,6 +112,25 @@ export async function PUT(request) {
                     );
                 }
             }
+        }
+
+        // Create notification for the user about their status change
+        try {
+            const statusMessage = status === 'active' 
+                ? 'Your account has been activated. You can now access all features.'
+                : status === 'inactive'
+                    ? 'Your account has been deactivated. Please contact an administrator if you believe this is an error.'
+                    : 'Your account status has been updated to pending verification.';
+            
+            await createNotification({
+                userId: userId,
+                title: 'Account Status Updated',
+                message: statusMessage,
+                type: NotificationTypes.ACCOUNT_STATUS_CHANGED,
+                relatedId: null
+            });
+        } catch (notifError) {
+            console.warn('Failed to create notification:', notifError);
         }
 
         return Response.json({

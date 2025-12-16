@@ -1,6 +1,7 @@
-import { executeQuery } from '@/lib/database';
+import { executeQuery, queryOne } from '@/lib/database';
 import { getSession } from '@/lib/utils';
 import { emit } from '@/lib/realtime';
+import { createNotification, NotificationTypes } from '@/lib/notifications';
 
 export async function POST(request) {
     try {
@@ -88,6 +89,38 @@ export async function POST(request) {
             });
         } catch (emitError) {
             console.warn('Failed to emit real-time update:', emitError);
+        }
+
+        // Create notification for vehicle owner
+        try {
+            const owner = await queryOne(
+                `SELECT u.id, v.plate_number FROM vehicles v 
+                 JOIN users u ON v.usc_id = u.usc_id 
+                 WHERE v.vehicle_id = ?`,
+                [vehicleId]
+            );
+            
+            if (owner) {
+                const notifType = status === 'approved' 
+                    ? NotificationTypes.VEHICLE_APPROVED 
+                    : NotificationTypes.VEHICLE_REJECTED;
+                const title = status === 'approved' 
+                    ? 'Vehicle Approved' 
+                    : 'Vehicle Rejected';
+                const message = status === 'approved'
+                    ? `Your vehicle (${owner.plate_number}) has been approved.`
+                    : `Your vehicle (${owner.plate_number}) was rejected. ${rejectionReason || ''}`;
+                
+                await createNotification({
+                    userId: owner.id,
+                    title,
+                    message,
+                    type: notifType,
+                    relatedId: vehicleId
+                });
+            }
+        } catch (notifError) {
+            console.warn('Failed to create notification:', notifError);
         }
 
         return Response.json({

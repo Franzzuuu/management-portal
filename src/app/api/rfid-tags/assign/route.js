@@ -1,5 +1,6 @@
-import { executeQuery } from '@/lib/database';
+import { executeQuery, queryOne } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { createNotification, NotificationTypes } from '@/lib/notifications';
 
 export async function POST(request) {
     try {
@@ -91,6 +92,28 @@ export async function POST(request) {
         );
 
         console.log('Vehicle sticker_status update result:', vehicleUpdateResult);
+
+        // Notify vehicle owner about sticker assignment
+        try {
+            const owner = await queryOne(
+                `SELECT u.id, v.plate_number FROM vehicles v 
+                 JOIN users u ON v.usc_id = u.usc_id 
+                 WHERE v.vehicle_id = ?`,
+                [vehicleId]
+            );
+            
+            if (owner) {
+                await createNotification({
+                    userId: owner.id,
+                    title: 'RFID Sticker Assigned',
+                    message: `An RFID sticker has been assigned to your vehicle (${owner.plate_number}). Your vehicle is now fully registered.`,
+                    type: NotificationTypes.STICKER_ASSIGNED,
+                    relatedId: vehicleId
+                });
+            }
+        } catch (notifError) {
+            console.warn('Failed to create notification:', notifError);
+        }
 
         return Response.json({
             success: true,

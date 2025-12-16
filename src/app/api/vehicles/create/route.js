@@ -1,5 +1,6 @@
 import { executeQuery } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { notifyAllAdmins, NotificationTypes } from '@/lib/notifications';
 
 export async function POST(request) {
     try {
@@ -110,6 +111,20 @@ export async function POST(request) {
             [ownerUscId, vehicleType, make, model, color, plateNumber, regDate,
                 approvalStatus, stickerStatus, yearValue]
         );
+
+        // Notify admins about pending vehicle (only for non-admin self-registration)
+        if (session.userRole !== 'Admin') {
+            try {
+                await notifyAllAdmins(
+                    'New Vehicle Pending Approval',
+                    `A new vehicle (${plateNumber}) has been registered and is awaiting approval.`,
+                    NotificationTypes.VEHICLE_PENDING,
+                    result.insertId
+                );
+            } catch (notifError) {
+                console.warn('Failed to notify admins:', notifError);
+            }
+        }
 
         return Response.json({
             success: true,

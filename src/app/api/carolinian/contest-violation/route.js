@@ -1,5 +1,6 @@
 import { queryOne, executeQuery } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { notifyAllAdmins, NotificationTypes } from '@/lib/notifications';
 
 export async function POST(request) {
     try {
@@ -103,27 +104,14 @@ export async function POST(request) {
             }
         }
 
-        // Create notification for admins (optional)
+        // Create notification for admins
         try {
-            await executeQuery(`
-                INSERT INTO notifications (
-                    user_id,
-                    title,
-                    message,
-                    type,
-                    created_at
-                ) 
-                SELECT 
-                    u.id,
-                    'New Violation Appeal',
-                    ?,
-                    'violation_contested',
-                    NOW()
-                FROM users u 
-                WHERE u.designation = 'Admin'
-            `, [
-                `A new violation appeal has been submitted by ${session.username} for violation #${violationId}. Contest ID: ${contestResult.insertId}`
-            ]);
+            await notifyAllAdmins(
+                'New Violation Appeal',
+                `A new violation appeal has been submitted for violation #${violationId}.`,
+                NotificationTypes.APPEAL_PENDING,
+                parseInt(violationId)
+            );
         } catch (notificationError) {
             console.warn('Failed to create notification:', notificationError);
             // Don't fail the main operation if notification fails
