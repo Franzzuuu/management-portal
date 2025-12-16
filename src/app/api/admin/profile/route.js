@@ -1,5 +1,6 @@
 import { queryOne, executeQuery, getConnection } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { autoGeneratePinIfNeeded } from '@/lib/pin-utils';
 
 export async function GET() {
     try {
@@ -15,6 +16,9 @@ export async function GET() {
 
         const userId = session.userId;
 
+        // Auto-generate PIN if user doesn't have one (first profile view)
+        const pin = await autoGeneratePinIfNeeded(session.uscId, 'Admin');
+
         // Get user profile information
         const profile = await queryOne(`
             SELECT 
@@ -26,7 +30,8 @@ export async function GET() {
                 u.email as username,
                 u.designation,
                 u.created_at,
-                up.profile_picture_type
+                up.profile_picture_type,
+                u.pin
             FROM users u
             LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
             WHERE u.usc_id = ?
@@ -54,7 +59,8 @@ export async function GET() {
                     u.email as username,
                     u.designation,
                     u.created_at,
-                    up.profile_picture_type
+                    up.profile_picture_type,
+                    u.pin
                 FROM users u
                 LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
                 WHERE u.usc_id = ?
@@ -70,7 +76,8 @@ export async function GET() {
                     employee_id: '',
                     username: session.userEmail || '',
                     designation: 'Admin',
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    pin: pin
                 }
             });
         }

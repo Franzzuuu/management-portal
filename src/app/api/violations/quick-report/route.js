@@ -1,6 +1,7 @@
 import { queryOne, executeQuery } from '@/lib/database';
 import { getSession } from '@/lib/utils';
 import { emit } from '@/lib/realtime';
+import { getUserByPin } from '@/lib/pin-utils';
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -11,31 +12,80 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
  * 
  * Quick violation reporting for security handheld devices.
  * Accepts tag_uid, violation_type_id, and a photo.
+ * Supports TWO authentication methods:
+ *   1. Session-based (web app)
+ *   2. PIN-based (handheld device)
  * Automatically populates all violation record fields.
  */
 export async function POST(request) {
     try {
-        // 1. Authentication check
-        const session = await getSession();
-        if (!session) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        // 2. Role-based authorization - only Security and Admin can report violations
-        if (!['Security', 'Admin'].includes(session.userRole)) {
-            return Response.json({ 
-                error: 'Insufficient permissions. Only Security and Admin users can report violations.' 
-            }, { status: 403 });
-        }
-
-        // 3. Parse multipart form data
+        // 1. Parse multipart form data first (to check for PIN)
         const formData = await request.formData();
+        const pin = formData.get('pin'); // Optional - for handheld device auth
         const tag_uid = formData.get('tag_uid');
         const violation_type_id = formData.get('violation_type_id');
         const photo = formData.get('photo');
         const location = formData.get('location'); // Optional
 
-        // 4. Validate required fields
+        let authenticatedUser = null;
+
+        // 2. Determine authentication method
+        if (pin) {
+            // PIN-based authentication (handheld device)
+            const user = await getUserByPin(pin);
+            
+            if (!user) {
+                return Response.json({ 
+                    error: 'Invalid PIN. Please check your 4-digit PIN and try again.' 
+                }, { status: 401 });
+            }
+
+            // Ensure user is Admin or Security
+            if (!['Admin', 'Security'].includes(user.designation)) {
+                return Response.json({ 
+                    error: 'Access denied. Only Admin and Security users can report violations.' 
+                }, { status: 403 });
+            }
+
+            authenticatedUser = {
+                userId: user.id,
+                uscId: user.usc_id,
+                role: user.designation
+            };
+        } else {
+            // Session-based authentication (web app)
+            const session = await getSession();
+            
+            if (!session) {
+                return Response.json({ 
+                    error: 'Unauthorized. Please provide a PIN or valid session.' 
+                }, { status: 401 });
+            }
+
+            // Role-based authorization - only Security and Admin can report violations
+            if (!['Security', 'Admin'].includes(session.userRole)) {
+                return Response.json({ 
+                    error: 'Insufficient permissions. Only Security and Admin users can report violations.' 
+                }, { status: 403 });
+            }
+
+            // Get user ID from session
+            const userResult = await queryOne('SELECT id, usc_id FROM users WHERE usc_id = ?', [session.uscId]);
+            
+            if (!userResult) {
+                return Response.json({ 
+                    error: 'User not found in database.' 
+                }, { status: 401 });
+            }
+
+            authenticatedUser = {
+                userId: userResult.id,
+                uscId: userResult.usc_id,
+                role: session.userRole
+            };
+        }
+
+        // 3. Validate required fields
         if (!tag_uid || !violation_type_id || !photo) {
             return Response.json({
                 error: 'Missing required fields',
@@ -47,7 +97,7 @@ export async function POST(request) {
             }, { status: 400 });
         }
 
-        // 5. Validate photo is a file
+        // 4. Validate photo is a file
         if (!(photo instanceof File)) {
             return Response.json({
                 error: 'Photo must be a file upload'
@@ -104,18 +154,9 @@ export async function POST(request) {
         // 11. Convert photo to buffer
         const photoBuffer = Buffer.from(await photo.arrayBuffer());
 
-        // 12. Get reporter's database user ID from session
-        // Session contains uscId, we need to get the database id
-        const reporter = await queryOne(
-            'SELECT id, usc_id, designation FROM users WHERE usc_id = ?',
-            [session.uscId]
-        );
-
-        if (!reporter) {
-            return Response.json({
-                error: 'Reporter user not found in database'
-            }, { status: 500 });
-        }
+        // 12. Use authenticated user information (already validated)
+        const reporterId = authenticatedUser.userId;
+        const reporterUscId = authenticatedUser.uscId;
 
         // 13. Lookup vehicle by tag_uid
         let vehicle = null;
@@ -153,7 +194,7 @@ export async function POST(request) {
             violation_type_id: violationTypeId,
             description: description,
             location: location ? location.toString().trim() : null,
-            reported_by: reporter.id,
+            reported_by: reporterId,  // Use authenticated user ID
             status: 'pending',
             contest_status: null,
             contest_explanation: null,
@@ -230,7 +271,7 @@ export async function POST(request) {
         try {
             emit('violations', 'create', {
                 violation: createdViolation,
-                reportedBy: session.uscId,
+                reportedBy: reporterUscId,  // Use authenticated user USC ID
                 timestamp: new Date().toISOString()
             });
         } catch (emitError) {

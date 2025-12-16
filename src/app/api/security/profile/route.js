@@ -1,11 +1,15 @@
 import { queryOne, executeQuery, getConnection } from '@/lib/database';
 import { getSession } from '@/lib/utils';
+import { autoGeneratePinIfNeeded } from '@/lib/pin-utils';
 
 export async function GET() {
     try {
         const session = await getSession();
         if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
         if (session.userRole !== 'Security') return Response.json({ error: 'Access denied. Security only.' }, { status: 403 });
+
+        // Auto-generate PIN if user doesn't have one (first profile view)
+        const pin = await autoGeneratePinIfNeeded(session.uscId, 'Security');
 
         const profile = await queryOne(`
             SELECT 
@@ -17,7 +21,8 @@ export async function GET() {
                 u.email as username,
                 u.designation,
                 u.created_at,
-                up.profile_picture_type
+                up.profile_picture_type,
+                u.pin
             FROM users u
             LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
             WHERE u.usc_id = ?
@@ -39,7 +44,8 @@ export async function GET() {
                     u.email as username,
                     u.designation,
                     u.created_at,
-                    up.profile_picture_type
+                    up.profile_picture_type,
+                    u.pin
                 FROM users u
                 LEFT JOIN user_profiles up ON u.usc_id = up.usc_id
                 WHERE u.usc_id = ?
@@ -55,7 +61,8 @@ export async function GET() {
                     employee_id: session.uscId,
                     username: session.userEmail || '',
                     designation: 'Security',
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    pin: pin
                 }
             });
         }
