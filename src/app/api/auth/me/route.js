@@ -22,6 +22,14 @@ export async function GET() {
             );
         }
 
+        // Check if user account is still active
+        if (user.status !== 'active') {
+            return Response.json(
+                { error: 'Account is not active' },
+                { status: 403 }
+            );
+        }
+
         // Return user data (without sensitive info)
         const { id, email, designation, full_name, phone_number, gender, status, usc_id, must_change_password } = user;
 

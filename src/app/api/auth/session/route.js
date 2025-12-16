@@ -15,6 +15,7 @@ export async function GET() {
                 u.usc_id,
                 u.email,
                 u.designation,
+                u.status,
                 u.created_at,
                 up.full_name,
                 up.department,
@@ -26,6 +27,11 @@ export async function GET() {
 
         if (!user) {
             return Response.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        // Check if user account is still active
+        if (user.status !== 'active') {
+            return Response.json({ error: 'Account is not active' }, { status: 403 });
         }
 
         return Response.json({
