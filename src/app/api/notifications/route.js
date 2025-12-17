@@ -22,7 +22,7 @@ export async function GET(request) {
 
         // Build query with limit directly in the string to avoid prepared statement issues
         let query = `
-            SELECT id, user_id, title, message, type, is_read, created_at
+            SELECT id, user_id, title, message, type, related_id, is_read, created_at
             FROM notifications
             WHERE user_id = ?
         `;
