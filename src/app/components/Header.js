@@ -123,6 +123,19 @@ export default function Header({ user, onLogout }) {
         }
     }, [hasCheckedWelcome, unreadCount, notifications]);
 
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (showWelcomeModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showWelcomeModal]);
+
     // Close welcome modal
     const closeWelcomeModal = () => {
         setShowWelcomeModal(false);
@@ -507,6 +520,7 @@ export default function Header({ user, onLogout }) {
                                     <button
                                         onClick={() => {
                                             setIsDropdownOpen(false);
+                                            sessionStorage.removeItem('welcomeModalShown');
                                             onLogout();
                                         }}
                                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
@@ -526,77 +540,124 @@ export default function Header({ user, onLogout }) {
             {/* Welcome Notification Modal */}
             {showWelcomeModal && unreadNotifications.length > 0 && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Blurred backdrop */}
-                    <div 
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={closeWelcomeModal}
-                    />
+                    {/* Blurred backdrop - click disabled */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-black/40 backdrop-blur-md" />
                     
                     {/* Modal */}
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-[#355E3B] to-[#4a7c4f]">
-                            <div>
-                                <h2 className="text-xl font-bold text-white">Welcome Back!</h2>
-                                <p className="text-sm text-white/80 mt-0.5">
-                                    You have {unreadNotifications.length} unread notification{unreadNotifications.length !== 1 ? 's' : ''}
-                                </p>
-                            </div>
-                            <button
-                                onClick={closeWelcomeModal}
-                                className="p-2 rounded-full hover:bg-white/20 transition-colors text-white"
-                                aria-label="Close modal"
-                            >
-                                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
+                    <div className="relative bg-white rounded-2xl shadow-2xl border-2 border-[#355E3B]/20 w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                        {/* Decorative top accent */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#355E3B] via-[#FFD700] to-[#355E3B]" />
                         
-                        {/* Notification List */}
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="px-4 py-2">
-                                <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider px-2 py-2">
-                                    While you were away...
-                                </p>
-                            </div>
-                            {unreadNotifications.map((notification) => (
-                                <div
-                                    key={notification.id}
-                                    className="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
-                                >
-                                    <div className="flex items-start gap-3">
-                                        {/* Icon */}
-                                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getNotificationIconColor(notification.type)}`}>
-                                            {getNotificationIcon(notification.type)}
+                        {/* Header */}
+                        <div className="relative px-6 py-5 bg-gradient-to-br from-[#355E3B] via-[#3d6b44] to-[#355E3B]">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-10 h-10 rounded-full bg-[#FFD700] flex items-center justify-center shadow-lg">
+                                            <svg className="h-6 w-6 text-[#355E3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                            </svg>
                                         </div>
-                                        
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-900">
-                                                {notification.title}
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                                                {notification.message}
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                {formatTimeAgo(notification.created_at)}
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-white">Welcome Back!</h2>
+                                            <p className="text-sm text-[#FFD700] font-medium mt-0.5">
+                                                {user?.fullName || user?.full_name || 'User'}
                                             </p>
                                         </div>
                                     </div>
+                                    <div className="flex items-center gap-2 mt-3">
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                                            <div className="w-2 h-2 rounded-full bg-[#FFD700] animate-pulse" />
+                                            <span className="text-sm font-semibold text-white">
+                                                {unreadNotifications.length} New Update{unreadNotifications.length !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                            ))}
+                                <button
+                                    onClick={closeWelcomeModal}
+                                    className="flex-shrink-0 p-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 transition-all duration-200 text-white border border-white/20 hover:border-white/40 group"
+                                    aria-label="Close modal"
+                                >
+                                    <svg className="h-5 w-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         
-                        {/* Footer hint */}
-                        <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
-                            <p className="text-xs text-gray-500 text-center">
-                                Click the bell icon to manage your notifications
+                        {/* Section Header */}
+                        <div className="px-6 py-4 bg-white border-b border-gray-200">
+                            <p className="text-xs text-gray-600 uppercase font-bold tracking-wider flex items-center gap-2">
+                                <svg className="h-4 w-4 text-[#355E3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                While you were away
                             </p>
                         </div>
+                        
+                        {/* Notification List */}
+                        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-gray-50">
+                            <div className="p-4 space-y-3">
+                                {unreadNotifications.map((notification, index) => (
+                                    <div
+                                        key={notification.id}
+                                        className="group relative bg-white rounded-xl p-4 border border-gray-200 hover:border-[#355E3B]/30 hover:shadow-lg transition-all duration-200"
+                                        style={{
+                                            animationDelay: `${index * 50}ms`,
+                                            animation: 'slideInRight 0.3s ease-out forwards'
+                                        }}
+                                    >
+                                        {/* Unread indicator */}
+                                        <div className="absolute top-4 right-4">
+                                            <span className="flex h-3 w-3">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFD700] opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FFD700]"></span>
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="flex items-start gap-3 pr-6">
+                                            {/* Icon */}
+                                            <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-md ${getNotificationIconColor(notification.type)}`}>
+                                                {getNotificationIcon(notification.type)}
+                                            </div>
+                                            
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-900 mb-1">
+                                                    {notification.title}
+                                                </p>
+                                                <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+                                                    {notification.message}
+                                                </p>
+                                                <div className="flex items-center gap-1.5 mt-2">
+                                                    <svg className="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        {formatTimeAgo(notification.created_at)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Slide-in animation */}
+                        <style jsx>{`
+                            @keyframes slideInRight {
+                                from {
+                                    opacity: 0;
+                                    transform: translateX(20px);
+                                }
+                                to {
+                                    opacity: 1;
+                                    transform: translateX(0);
+                                }
+                            }
+                        `}</style>
                     </div>
                 </div>
             )}
